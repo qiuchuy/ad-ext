@@ -1,0 +1,7 @@
+.pytest_cache/
+ainl.egg-info/
+build/
+__pycache__/
+.idea/
+.vscode/
+cmake-build-debug/

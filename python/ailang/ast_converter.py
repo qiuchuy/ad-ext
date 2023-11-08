@@ -1,0 +1,131 @@
+import gast
+import inspect
+import textwrap
+from typing import Callable, Union
+
+from ailang import AstTransformer
+
+
+class SymbolTable:
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.child = []
+        self.env = []
+
+    def resolve(self):
+        if self.parent is not None:
+            idx = self.parent.child.index(self)
+            if idx != (len(self.parent.child) - 1):
+                return self.parent.child[idx + 1]
+            else:
+                return self.parent.resolve()
+        else:
+            return self
+
+    def insert(self, variable):
+        self.env.append(variable)
+
+    def query(self, name):
+        if name in self.env:
+            return True
+        else:
+            while self.parent is not None:
+                return self.parent.query(name)
+            return False
+
+    @classmethod
+    def add_scope(cls, self):
+        new_scope = cls(self)
+        self.child.append(new_scope)
+        return new_scope
+
+
+class TransformerVisitor(gast.NodeVisitor):
+    """Lowering Python AST into AINL Ast"""
+
+    def __init__(self):
+        super().__init__()
+        self.root = None
+        self.transformer = AstTransformer()
+        self.env = SymbolTable()
+
+    def visit_Module(self, node):
+        stmt_list = []
+        for stmt in node.body:
+            method_name = "visit_" + stmt.__class__.__name__
+            stmt_node = getattr(self, method_name)(stmt)
+            stmt_list.append(stmt_node)
+        module = self.transformer.convert_Module(stmt_list)
+        module.stmts = stmt_list
+        self.root = module
+        return module
+
+    def visit_Assign(self, node):
+        target_list = []
+        for target in node.targets:
+            method_name = "visit_" + target.__class__.__name__
+            target_list.append(getattr(self, method_name)(target))
+        source = node.value
+        method_name = "visit_" + source.__class__.__name__
+        src = getattr(self, method_name)(source)
+
+        assign = self.transformer.convert_Assign(target_list, src)
+        assign.targets = target_list
+        assign.src = src
+        return assign
+
+    def visit_Tuple(self, node):
+        elts = []
+        for elt in node.elts:
+            method_name = "visit_" + elt.__class__.__name__
+            elts.append(getattr(self, method_name)(elt))
+        tuple_node = self.transformer.convert_Tuple(elts)
+        tuple_node.elts = elts
+        return tuple_node
+
+    def visit_FunctionDef(self, node):
+        # [TODO] handle class method
+        arg_list = []
+        for argument in node.args.args:
+            arg_list.append(argument)
+        body_list = []
+        for body in node.body:
+            method_name = "visit_" + body.__class__.__name__
+            body_list.append(getattr(self, method_name)(body))
+        name = node.name
+        func_def = self.transformer.convert_FunctionDef(name, arg_list, body_list)
+        func_def.name = name
+        func_def.args = arg_list
+        func_def.body = body_list
+        return func_def
+
+    def visit_Name(self, node):
+        return self.transformer.convert_Name(node.id)
+
+    def visit_Constant(self, node):
+        return self.transformer.convert_Constant(str(node.value))
+
+    def transform(self, tree):
+        self.visit(tree)
+        return self.root
+
+
+def parse_pycallable(
+    source: Union[str, Callable], verbose: bool = True
+):
+    """
+    Parse a python callable into ModuleNode in AILang Ast
+    :param source: a python callable or its string form
+    :param verbose: print debug information
+    :return: a ModuleNode in AILang Ast
+    """
+    tree = None
+    if isinstance(source, str):
+        tree = gast.parse(source)
+    else:
+        tree = gast.parse(textwrap.dedent(inspect.getsource(source)))
+    if verbose:
+        print(gast.dump(tree, indent=4))
+    transformer = TransformerVisitor()
+    ast = transformer.transform(tree)
+    return ast
