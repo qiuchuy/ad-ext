@@ -41,7 +41,9 @@ class SymbolTable:
 
 
 class TransformerVisitor(gast.NodeVisitor):
-    """Lowering Python AST into AINL Ast"""
+    """
+    Lowering Python AST into AINL Ast
+    """
 
     def __init__(self):
         super().__init__()
