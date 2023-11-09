@@ -19,6 +19,7 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
         BinaryOp,
         FunctionDef,
         Return,
+        Compare,
         WhileLoop,
         If,
         Call,
@@ -29,11 +30,17 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
 
     ~ASTNode() = default;
     std::string getName() const { return str(); }
-    bool match(const ASTNode& other) const {return this->hash() == other.hash();}
+    bool match(const ASTNode &other) const {
+        return this->hash() == other.hash();
+    }
     virtual ASTNodeKind kind() const { return ASTNodeKind::NumNodes; }
     virtual std::string str() const { return ""; }
-    bool operator==(const ASTNode& other) const {return this->hash() == other.hash();}
-    bool operator!=(const ASTNode& other) const {return this->hash() != other.hash();}
+    bool operator==(const ASTNode &other) const {
+        return this->hash() == other.hash();
+    }
+    bool operator!=(const ASTNode &other) const {
+        return this->hash() != other.hash();
+    }
 
     virtual size_t hash() const {
         size_t seed = 0;

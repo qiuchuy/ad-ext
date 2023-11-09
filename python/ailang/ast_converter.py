@@ -3,7 +3,7 @@ import inspect
 import textwrap
 from typing import Callable, Union
 
-from ailang import AstTransformer
+from ailang import AstTransformer, ModuleNode
 
 
 class SymbolTable:
@@ -107,14 +107,49 @@ class TransformerVisitor(gast.NodeVisitor):
     def visit_Constant(self, node):
         return self.transformer.convert_Constant(str(node.value))
 
-    def transform(self, tree):
+    def visit_BinOp(self, node):
+        lhs_method = "visit_" + node.left.__class__.__name__
+        lhs = getattr(self, lhs_method)(node.left)
+        rhs_method = "visit_" + node.right.__class__.__name__
+        rhs = getattr(self, rhs_method)(node.right)
+        opname = node.op.__class__.__name__
+        binop = self.transformer.convert_BinOp(opname, lhs, rhs)
+        binop.lhs = lhs
+        binop.rhs = rhs
+        return binop
+
+    def visit_UnaryOp(self, node):
+        method = "visit_" + node.operand.__class__.__name__
+        operand = getattr(self, method)(node.operand)
+        opname = node.op.__class__.__name__
+        unaryop = self.transformer.convert_UnaryOp(opname, operand)
+        unaryop.operand = operand
+        return unaryop
+
+    def visit_Call(self, node):
+        method = "visit_" + node.func.__class__.__name__
+        func = getattr(self, method)(node.func)
+        args = []
+        for arg in node.args:
+            method_name = "visit_" + arg.__class__.__name__
+            args.append(getattr(self, method_name)(arg))
+        # [TODO] Support Keyword Args
+        call = self.transformer.convert_Call(func, args)
+        call.func = func
+        call.args = args
+        return call
+
+    def visit_Attribute(self, node):
+        namespace = node.value.id
+        attr = node.attr
+        return self.transformer.convert_Attribute(namespace + "::" + attr)
+
+    def transform(self, tree) -> ModuleNode:
         self.visit(tree)
         return self.root
 
 
-def parse_pycallable(
-    source: Union[str, Callable], verbose: bool = True
-):
+def parse_pycallable(source: Union[str, Callable], verbose: bool = False):
     """
     Parse a python callable into ModuleNode in AILang Ast
     :param source: a python callable or its string form

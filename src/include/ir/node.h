@@ -66,6 +66,7 @@ class Node : public Value {
     virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
 
     friend class Graph;
+
   protected:
     void setUse(ValuePtr value, int idx);
     virtual std::string str() { return ""; }

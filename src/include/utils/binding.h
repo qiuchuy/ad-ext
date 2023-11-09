@@ -11,9 +11,6 @@
 
 namespace py = pybind11;
 
-void initAINL(py::module_& m);
-
-
-
+void initAINL(py::module_ &m);
 
 #endif // AINL_SRC_INCLUDE_BINDING_H

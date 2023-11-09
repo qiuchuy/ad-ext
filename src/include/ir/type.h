@@ -232,15 +232,14 @@ class TensorType;
 using TensorTypePtr = std::shared_ptr<TensorType>;
 class TensorType : public Type {
   public:
-    static TensorTypePtr createDense(const TypePtr& elementType,
+    static TensorTypePtr createDense(const TypePtr &elementType,
                                      const std::vector<int> &shape) {
         std::vector<int> stride(1, (int)shape.size());
         return std::make_shared<TensorType>(elementType, shape, stride);
     }
     TensorType(TypePtr elementType, const std::vector<int> &shape,
                const std::vector<int> &stride)
-        : elementType(std::move(elementType)), shape(shape),
-          stride(stride) {}
+        : elementType(std::move(elementType)), shape(shape), stride(stride) {}
 
   public:
     TypeKind kind() const override { return Type::TypeKind::TensorType; }

@@ -31,12 +31,13 @@ class ModuleNode : public StmtNode {
         // Combine the hash of the node's fields
         seed ^= stringHash("Module") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         // Recursively hash the child nodes (subtrees)
-        for (const Stmt& stmt : stmts) {
+        for (const Stmt &stmt : stmts) {
             seed ^= stmt->hash();
         }
         return seed;
     }
-private:
+
+  private:
     std::vector<Stmt> stmts;
 };
 using Module = std::shared_ptr<ModuleNode>;
@@ -44,10 +45,11 @@ using Module = std::shared_ptr<ModuleNode>;
 class VarNode : public ExprNode {
   public:
     VarNode() = default;
-    explicit VarNode(std::string  name) :name(std::move(name)) {}
+    explicit VarNode(std::string name) : name(std::move(name)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Var; }
     std::string str() const override { return name; }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -55,6 +57,7 @@ private:
         seed ^= stringHash(name) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
+
   private:
     std::string name;
 };
@@ -63,16 +66,18 @@ using Var = std::shared_ptr<VarNode>;
 class VarDefNode : public StmtNode {
   public:
     VarDefNode() = default;
-    VarDefNode(std::vector<Expr>  targets, Expr  source):
-      targets(std::move(targets)), source(std::move(source)) {}
+    VarDefNode(std::vector<Expr> targets, Expr source)
+        : targets(std::move(targets)), source(std::move(source)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::VarDef; }
     std::string str() const override {
         std::stringstream ssm;
-        for (size_t i = 0; i < targets.size() - 1; i++) ssm << targets[i]->getName() << ", ";
+        for (size_t i = 0; i < targets.size() - 1; i++)
+            ssm << targets[i]->getName() << ", ";
         ssm << targets[targets.size() - 1]->getName();
         ssm << " = " << source->getName();
         return ssm.str();
     }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -80,20 +85,21 @@ class VarDefNode : public StmtNode {
         // Combine the hash of the node's fields
         seed ^= stringHash("=") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         // Recursively hash the child nodes (subtrees)
-        for (const Expr& expr : targets) {
+        for (const Expr &expr : targets) {
             seed ^= expr->hash();
         }
         seed ^= source->hash();
         return seed;
     }
-private:
+
+  private:
     std::vector<Expr> targets;
     Expr source;
 };
 using VarDef = std::shared_ptr<VarDefNode>;
 
 class TupleNode : public ExprNode {
-public:
+  public:
     TupleNode() = default;
     explicit TupleNode(std::vector<Expr> elems) : elems(std::move(elems)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Constant; }
@@ -105,19 +111,21 @@ public:
         ssm << elems[elems.size() - 1]->getName() << ")";
         return ssm.str();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
         // Combine the hash of the node's fields
         seed ^= stringHash("()") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         // Recursively hash the child nodes (subtrees)
-        for (const Expr& elem : elems) {
+        for (const Expr &elem : elems) {
             seed ^= elem->hash();
         }
         return seed;
     }
-private:
+
+  private:
     std::vector<Expr> elems;
 };
 using Tuple = std::shared_ptr<TupleNode>;
@@ -125,7 +133,7 @@ using Tuple = std::shared_ptr<TupleNode>;
 class ConstantNode : public ExprNode {
   public:
     ConstantNode() = default;
-    explicit ConstantNode(std::string  value) : value(std::move(value)) {}
+    explicit ConstantNode(std::string value) : value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Constant; }
     std::string str() const override { return value; }
 
@@ -137,7 +145,8 @@ class ConstantNode : public ExprNode {
         seed ^= stringHash(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
-private:
+
+  private:
     std::string value;
 };
 using Constant = std::shared_ptr<ConstantNode>;
@@ -154,21 +163,26 @@ class UnaryOpNode : public ExprNode {
         NumUnaryOp,
     };
     UnaryOpNode() = default;
+    UnaryOpNode(UnaryOpKind op, Expr value) : op(op), value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::UnaryOp; }
     std::string str() const override {
-        return UnaryOpString[(size_t)kind()] + " " + value->getName();
+        return UnaryOpString[(size_t)op] + " " + value->getName();
     }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
         // Combine the hash of the node's fields
-        seed ^= stringHash(UnaryOpString[(size_t)kind()]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= stringHash(UnaryOpString[(size_t)op]) + 0x9e3779b9 +
+                (seed << 6) + (seed >> 2);
         // Recursively hash the child nodes (subtrees)
         seed ^= value->hash();
         return seed;
     }
-private:
+
+  private:
+    UnaryOpKind op;
     Expr value;
 };
 using UnaryOp = std::shared_ptr<UnaryOpNode>;
@@ -179,6 +193,7 @@ extern std::array<std::string, 13> BinaryOpString;
 class BinaryOpNode : public ExprNode {
   public:
     enum class BinaryOpKind {
+        // Arith BinaryOp
         Add,
         Sub,
         Mul,
@@ -192,26 +207,34 @@ class BinaryOpNode : public ExprNode {
         BitXor,
         BitAnd,
         MatMult,
+        // Comparison BinaryOp
         //---,
         NumBinaryOp,
     };
     BinaryOpNode() = default;
+    BinaryOpNode(BinaryOpKind op, Expr op1, Expr op2)
+        : op(op), op1(std::move(op1)), op2(std::move(op2)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::BinaryOp; }
     std::string str() const override {
-        return op1->getName() + " " +
-                BinaryOpString[(size_t)kind()] + " " + op2->getName();
+        return op1->getName() + " " + BinaryOpString[(size_t)op] + " " +
+               op2->getName();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
         // Combine the hash of the node's fields
-        seed ^= stringHash(BinaryOpString[(size_t)kind()]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= stringHash(BinaryOpString[(size_t)op]) + 0x9e3779b9 +
+                (seed << 6) + (seed >> 2);
         // Recursively hash the child nodes (subtrees)
-        seed ^= op1->hash(); seed ^= op2->hash();
+        seed ^= op1->hash();
+        seed ^= op2->hash();
         return seed;
     }
+
   private:
+    BinaryOpKind op;
     Expr op1;
     Expr op2;
 };
@@ -222,8 +245,7 @@ static_assert(BinaryOpString.size() ==
 class FunctionDefNode : public StmtNode {
   public:
     FunctionDefNode() = default;
-    FunctionDefNode(std::string name,
-                    std::vector<std::string> params,
+    FunctionDefNode(std::string name, std::vector<std::string> params,
                     std::vector<Stmt> body)
         : name(std::move(name)), params(std::move(params)),
           body(std::move(body)) {}
@@ -241,21 +263,23 @@ class FunctionDefNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
         // Combine the hash of the node's fields
         seed ^= stringHash(name) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        for (const std::string& param : params) {
+        for (const std::string &param : params) {
             seed ^= stringHash(param);
         }
         // Recursively hash the child nodes (subtrees)
-        for (const Stmt& stmt : body) {
+        for (const Stmt &stmt : body) {
             seed ^= stmt->hash();
         }
         return seed;
     }
+
   private:
     std::string name;
     std::vector<std::string> params;
@@ -268,7 +292,8 @@ class ReturnNode : public StmtNode {
     ReturnNode() = default;
     ASTNodeKind kind() const override { return ASTNodeKind::Return; }
     std::string str() const override { return "return " + value->getName(); }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -278,10 +303,67 @@ private:
         seed ^= value->hash();
         return seed;
     }
+
   private:
     Expr value;
 };
 using ReturnStmt = std::shared_ptr<ReturnNode>;
+
+extern std::array<std::string, 10> CompareOpString;
+class CompareOpNode : public ExprNode {
+  public:
+    enum class CompareOpKind {
+        Eq,
+        NotEq,
+        Lt,
+        LtE,
+        Gt,
+        GtE,
+        Is,
+        IsNot,
+        In,
+        NotIn,
+        // ---
+        NumCompareOp,
+    };
+    CompareOpNode() = default;
+    CompareOpNode(Expr left, std::vector<CompareOpKind> ops,
+                  std::vector<Expr> comparators)
+        : left(std::move(left)), ops(std::move(ops)),
+          comparators(std::move(comparators)) {}
+    ASTNodeKind kind() const override { return ASTNodeKind::Compare; }
+    std::string str() const override {
+        std::stringstream ssm;
+        ssm << left->getName() << " ";
+        assert(ops.size() == comparators.size());
+        for (size_t i = 0; i < ops.size(); i++)
+            ssm << CompareOpString[(size_t)(ops[i])] << " "
+                << comparators[i]->getName() << " ";
+        return ssm.str();
+    }
+
+  private:
+    size_t hash() const override {
+        size_t seed = 0;
+        std::hash<std::string> stringHash;
+        // Combine the hash of the node's fields
+        seed ^= left->hash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        // Recursively hash the child nodes (subtrees)
+        for (size_t i = 0; i < ops.size(); i++) {
+            seed ^= stringHash(CompareOpString[(size_t)(ops[i])]);
+            seed ^= comparators[i]->hash();
+        }
+        return seed;
+    }
+
+  private:
+    Expr left;
+    std::vector<CompareOpKind> ops;
+    std::vector<Expr> comparators;
+};
+using Compare = std::shared_ptr<CompareOpNode>;
+static_assert(CompareOpString.size() ==
+              (size_t)CompareOpNode::CompareOpKind::NumCompareOp);
 
 class WhileLoopNode : public StmtNode {
   public:
@@ -296,7 +378,8 @@ class WhileLoopNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -304,11 +387,12 @@ private:
         seed ^= stringHash("while") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= cond->hash();
         // Recursively hash the child nodes (subtrees)
-        for (const Stmt& stmt : body) {
+        for (const Stmt &stmt : body) {
             seed ^= stmt->hash();
         }
         return seed;
     }
+
   private:
     Expr cond;
     std::vector<Stmt> body;
@@ -332,7 +416,8 @@ class IfNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -340,15 +425,16 @@ private:
         seed ^= stringHash("if") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= cond->hash();
         // Recursively hash the child nodes (subtrees)
-        for (const Stmt& stmt : thenBranch) {
+        for (const Stmt &stmt : thenBranch) {
             seed ^= stmt->hash();
         }
-        for (const Stmt& stmt : elseBranch) {
+        for (const Stmt &stmt : elseBranch) {
             seed ^= stmt->hash();
         }
         return seed;
     }
-private:
+
+  private:
     Expr cond;
     std::vector<Stmt> thenBranch;
     std::vector<Stmt> elseBranch;
@@ -358,6 +444,8 @@ using IfStmt = std::shared_ptr<IfNode>;
 class CallNode : public ExprNode {
   public:
     CallNode() = default;
+    CallNode(Expr func, std::vector<Expr> args)
+        : func(std::move(func)), args(std::move(args)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Call; }
     std::string str() const override {
         std::stringstream ssm;
@@ -367,7 +455,8 @@ class CallNode : public ExprNode {
         ssm << args[args.size() - 1] << ")";
         return ssm.str();
     }
-private:
+
+  private:
     size_t hash() const override {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -375,11 +464,12 @@ private:
         seed ^= stringHash("call") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= func->hash();
         // Recursively hash the child nodes (subtrees)
-        for (const Expr& arg : args) {
+        for (const Expr &arg : args) {
             seed ^= arg->hash();
         }
         return seed;
     }
+
   private:
     Expr func;
     std::vector<Expr> args;
