@@ -1,8 +1,0 @@
-setup.py
-ailang/__init__.py
-ailang/ast_converter.py
-ailang.egg-info/PKG-INFO
-ailang.egg-info/SOURCES.txt
-ailang.egg-info/dependency_links.txt
-ailang.egg-info/top_level.txt
-ailang/ffi/__init__.py

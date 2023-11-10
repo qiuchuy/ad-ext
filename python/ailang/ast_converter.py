@@ -89,7 +89,7 @@ class TransformerVisitor(gast.NodeVisitor):
         # [TODO] handle class method
         arg_list = []
         for argument in node.args.args:
-            arg_list.append(argument)
+            arg_list.append(argument.id)
         body_list = []
         for body in node.body:
             method_name = "visit_" + body.__class__.__name__
@@ -100,6 +100,13 @@ class TransformerVisitor(gast.NodeVisitor):
         func_def.args = arg_list
         func_def.body = body_list
         return func_def
+
+    def visit_Return(self, node):
+        method_name = "visit_" + node.value.__class__.__name__
+        value = getattr(self, method_name)(node.value)
+        return_node = self.transformer.convert_Return(value)
+        return_node.value = value
+        return return_node
 
     def visit_Name(self, node):
         return self.transformer.convert_Name(node.id)
@@ -143,6 +150,40 @@ class TransformerVisitor(gast.NodeVisitor):
         namespace = node.value.id
         attr = node.attr
         return self.transformer.convert_Attribute(namespace + "::" + attr)
+
+    def visit_Expr(self, node):
+        value_method = "visit_" + node.value.__class__.__name__
+        return getattr(self, value_method)(node.value)
+
+    def visit_Compare(self, node):
+        left = node.left
+        left_method = "visit_" + left.__class__.__name__
+        left_node = getattr(self, left_method)(left)
+        ops = []
+        for op in node.ops:
+            ops.append(op.__class__.__name__)
+        comparators = []
+        for comparator in node.comparators:
+            comparator_method = "visit_" + comparator.__class__.__name__
+            comparator_node = getattr(self, comparator_method)(comparator)
+            comparators.append(comparator_node)
+        compare = self.transformer.convert_Compare(left_node, ops, comparators)
+        compare.left = left_node
+        compare.ops = ops
+        compare.comparators = comparators
+        return compare
+
+    def visit_While(self, node):
+        test_method = "visit_" + node.test.__class__.__name__
+        test = getattr(self, test_method)(node.test)
+        body = []
+        for stmt in node.body:
+            method_name = "visit_" + stmt.__class__.__name__
+            body.append(getattr(self, method_name)(stmt))
+        while_node = self.transformer.convert_While(test, body)
+        while_node.test = test
+        while_node.body = body
+        return while_node
 
     def transform(self, tree) -> ModuleNode:
         self.visit(tree)

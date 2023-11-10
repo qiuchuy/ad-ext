@@ -56,11 +56,14 @@ void initAst(py::module_ &m) {
 
     py::class_<FunctionDefNode, StmtNode, std::shared_ptr<FunctionDefNode>>(
         m, "FunctionDefNode", py::dynamic_attr())
-        .def(py::init<>());
+        .def(py::init<>())
+        .def(py::init<std::string, std::vector<std::string>,
+                      std::vector<Stmt>>());
 
     py::class_<ReturnNode, StmtNode, std::shared_ptr<ReturnNode>>(
         m, "ReturnNode", py::dynamic_attr())
-        .def(py::init<>());
+        .def(py::init<>())
+        .def(py::init<Expr>());
 
     py::class_<CompareOpNode, ExprNode, std::shared_ptr<CompareOpNode>>(
         m, "CompareOpNode")
@@ -75,7 +78,8 @@ void initAst(py::module_ &m) {
 
     py::class_<WhileLoopNode, StmtNode, std::shared_ptr<WhileLoopNode>>(
         m, "WhileLoopNode", py::dynamic_attr())
-        .def(py::init<>());
+        .def(py::init<>())
+        .def(py::init<Expr, std::vector<Stmt>>());
 
     py::class_<IfNode, StmtNode, std::shared_ptr<IfNode>>(m, "IfNode",
                                                           py::dynamic_attr())
@@ -109,5 +113,9 @@ void initAst(py::module_ &m) {
         .def_static("convert_Attribute", &AstTransformer::convertVar,
                     py::return_value_policy::reference)
         .def_static("convert_Compare", &AstTransformer::convertCompare,
+                    py::return_value_policy::reference)
+        .def_static("convert_While", &AstTransformer::convertWhile,
+                    py::return_value_policy::reference)
+        .def_static("convert_Return", &AstTransformer::convertReturn,
                     py::return_value_policy::reference);
 }

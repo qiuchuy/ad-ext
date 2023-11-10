@@ -73,6 +73,14 @@ class AstTransformer {
             iops.push_back(CompareOpASTHelper(op));
         return std::make_shared<CompareOpNode>(left, iops, comparators);
     }
+
+    static While convertWhile(const Expr &cond, std::vector<Stmt> &body) {
+        return std::make_shared<WhileLoopNode>(cond, body);
+    }
+
+    static Return convertReturn(const Expr &value) {
+        return std::make_shared<ReturnNode>(value);
+    }
 };
 
 void initAst(py::module_ &m);

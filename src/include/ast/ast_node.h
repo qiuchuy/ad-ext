@@ -290,6 +290,7 @@ using FunctionDef = std::shared_ptr<FunctionDefNode>;
 class ReturnNode : public StmtNode {
   public:
     ReturnNode() = default;
+    explicit ReturnNode(Expr value) : value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Return; }
     std::string str() const override { return "return " + value->getName(); }
 
@@ -307,10 +308,12 @@ class ReturnNode : public StmtNode {
   private:
     Expr value;
 };
-using ReturnStmt = std::shared_ptr<ReturnNode>;
+using Return = std::shared_ptr<ReturnNode>;
 
 extern std::array<std::string, 10> CompareOpString;
 class CompareOpNode : public ExprNode {
+    // [TODO] This inheritance will cause a bug when the return value of Compare
+    // Expression is not used or stored
   public:
     enum class CompareOpKind {
         Eq,
@@ -368,6 +371,8 @@ static_assert(CompareOpString.size() ==
 class WhileLoopNode : public StmtNode {
   public:
     WhileLoopNode() = default;
+    WhileLoopNode(Expr cond, std::vector<Stmt> body)
+        : cond(std::move(cond)), body(std::move(body)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::WhileLoop; }
     std::string str() const override {
         std::stringstream ssm;
@@ -397,7 +402,7 @@ class WhileLoopNode : public StmtNode {
     Expr cond;
     std::vector<Stmt> body;
 };
-using WhileStmt = std::shared_ptr<WhileLoopNode>;
+using While = std::shared_ptr<WhileLoopNode>;
 
 class IfNode : public StmtNode {
   public:
