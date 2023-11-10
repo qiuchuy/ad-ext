@@ -121,6 +121,6 @@ class Environment {
     }
 };
 
-extern Environment* env;
+extern Environment *env;
 
 #endif // AINL_SRC_INCLUDE_SYMBOL_H

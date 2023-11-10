@@ -80,7 +80,7 @@ class Type : public std::enable_shared_from_this<Type> {
 
     bool operator==(const Type &other) { return equals(other); }
     bool operator!=(const Type &other) { return !equals(other); }
-    bool operator<(const Type &other) const {return kind() < other.kind();}
+    bool operator<(const Type &other) const { return kind() < other.kind(); }
     bool compare(const Type &other);
 };
 
@@ -145,8 +145,10 @@ using FunctionTypePtr = std::shared_ptr<FunctionType>;
 class FunctionType : public Type {
   public:
     TypeKind kind() const override { return Type::TypeKind::FunctionType; }
-    FunctionType(TypePtr inputType, TypePtr returnType):argType(std::move(inputType)), returnType(std::move(returnType)) {}
-    static FunctionTypePtr create(const TypePtr& inType, const TypePtr& retType) {
+    FunctionType(TypePtr inputType, TypePtr returnType)
+        : argType(std::move(inputType)), returnType(std::move(returnType)) {}
+    static FunctionTypePtr create(const TypePtr &inType,
+                                  const TypePtr &retType) {
         return std::make_shared<FunctionType>(inType, retType);
     }
     bool equals(const Type &rhs) override {
@@ -165,7 +167,8 @@ class FunctionType : public Type {
     }
     bool isFunctionType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
-    TypePtr getReturnType() {return returnType;}
+    TypePtr getReturnType() { return returnType; }
+
   private:
     TypePtr argType;
     TypePtr returnType;
@@ -229,7 +232,8 @@ class TupleType : public Type {
 
     TypePtr getTypePtr() override { return shared_from_this(); }
 
-    std::vector<TypePtr> getTypes() {return types;}
+    std::vector<TypePtr> getTypes() { return types; }
+
   private:
     std::vector<TypePtr> types;
     std::vector<std::string> names;
@@ -308,7 +312,8 @@ class TensorType : public Type {
     bool isTensorType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
     std::vector<ValuePtr> getShape() { return shape; }
-    TypePtr getElementType() {return elementType;}
+    TypePtr getElementType() { return elementType; }
+
   private:
     TypePtr elementType;
     std::vector<ValuePtr> shape;

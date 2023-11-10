@@ -26,7 +26,8 @@ class ModuleNode : public StmtNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isModuleNode() override {return true;}
+    bool isModuleNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -53,8 +54,9 @@ class VarNode : public ExprNode {
         : ExprNode(std::move(type)), name(std::move(name)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Var; }
     std::string str() const override { return name; }
-    std::string getName() {return name;}
-    bool isVarNode() override {return true;}
+    std::string getName() { return name; }
+    bool isVarNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -84,10 +86,11 @@ class VarDefNode : public StmtNode {
         ssm << " = " << source->getName();
         return ssm.str();
     }
-    std::vector<Expr> getTargets() {return targets;}
-    Expr getSource() {return source;}
+    std::vector<Expr> getTargets() { return targets; }
+    Expr getSource() { return source; }
     void accept(Visitor *visitor) override;
-    bool isVarDefNode() override {return true;}
+    bool isVarDefNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -127,8 +130,9 @@ class TupleNode : public ExprNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isTupleNode() override {return true;}
-    std::vector<Expr> getElems() {return elems;}
+    bool isTupleNode() override { return true; }
+    std::vector<Expr> getElems() { return elems; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -155,9 +159,10 @@ class ConstantNode : public ExprNode {
         : ExprNode(std::move(type)), value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Constant; }
     std::string str() const override { return value; }
-    std::string getValue() {return value;}
+    std::string getValue() { return value; }
     void accept(Visitor *visitor) override;
-    bool isConstantNode() override {return true;}
+    bool isConstantNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -191,9 +196,10 @@ class UnaryOpNode : public ExprNode {
     std::string str() const override {
         return UnaryOpString[(size_t)op] + " " + value->getName();
     }
-    Expr getOperand() {return value;}
-    bool isUnaryOpNode() override {return true;}
+    Expr getOperand() { return value; }
+    bool isUnaryOpNode() override { return true; }
     void accept(Visitor *visitor) override;
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -243,14 +249,15 @@ class BinaryOpNode : public ExprNode {
         : ExprNode(std::move(type)), op(op), op1(std::move(op1)),
           op2(std::move(op2)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::BinaryOp; }
-    Expr getLHS() const {return op1;}
-    Expr getRHS() const {return op2;}
+    Expr getLHS() const { return op1; }
+    Expr getRHS() const { return op2; }
     std::string str() const override {
         return op1->getName() + " " + BinaryOpString[(size_t)op] + " " +
                op2->getName();
     }
     void accept(Visitor *visitor) override;
-    bool isBinaryOpNode() override {return true;}
+    bool isBinaryOpNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -295,9 +302,10 @@ class FunctionDefNode : public StmtNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    std::vector<std::string> getParams() const {return params;}
-    std::string getName() {return name;}
-    bool isFunctionDefNode() override {return true;}
+    std::vector<std::string> getParams() const { return params; }
+    std::string getName() { return name; }
+    bool isFunctionDefNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -327,9 +335,10 @@ class ReturnNode : public StmtNode {
     explicit ReturnNode(Expr value) : value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Return; }
     std::string str() const override { return "return " + value->getName(); }
-    bool isReturnNode() override {return true;}
-    Expr getReturnValue() {return value;}
+    bool isReturnNode() override { return true; }
+    Expr getReturnValue() { return value; }
     void accept(Visitor *visitor) override;
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -381,7 +390,8 @@ class CompareNode : public ExprNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isCompareNode() override {return true;}
+    bool isCompareNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -421,7 +431,8 @@ class WhileNode : public StmtNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isWhileNode() override {return true;}
+    bool isWhileNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -460,7 +471,8 @@ class IfNode : public StmtNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isIfNode() override {return true;}
+    bool isIfNode() override { return true; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -503,8 +515,9 @@ class CallNode : public ExprNode {
         return ssm.str();
     }
     void accept(Visitor *visitor) override;
-    bool isCallNode() override {return true;}
-    Expr getFunction() {return func;}
+    bool isCallNode() override { return true; }
+    Expr getFunction() { return func; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;

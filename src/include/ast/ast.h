@@ -8,10 +8,10 @@
 
 class Visitor;
 
-#define ASTNODE_TYPE(asttype) \
-    virtual bool is##asttype##Node () {return false;} \
+#define ASTNODE_TYPE(asttype)                                                  \
+    virtual bool is##asttype##Node() { return false; }
 
-#define SAFE_AST_DOWNCAST(shared_ptr, derived_type)                           \
+#define SAFE_AST_DOWNCAST(shared_ptr, derived_type)                            \
     std::dynamic_pointer_cast<derived_type>(shared_ptr)
 
 class ASTNode : public std::enable_shared_from_this<ASTNode> {
@@ -82,11 +82,12 @@ class ExprNode : public ASTNode {
     ExprNode() = default;
     explicit ExprNode(TypePtr type) : type(std::move(type)) {}
     TypePtr getType() { return type; }
-    void setType(TypePtr inType) {this->type = std::move(inType);}
+    void setType(TypePtr inType) { this->type = std::move(inType); }
     ASTNodeKind kind() const override { return ASTNodeKind::Expr; }
     std::string str() const override { return ""; }
     void accept(Visitor *visitor) override;
-    bool isExprNode() override {return true;}
+    bool isExprNode() override { return true; }
+
   protected:
     TypePtr type;
 };
@@ -98,7 +99,7 @@ class StmtNode : public ASTNode {
     ASTNodeKind kind() const override { return ASTNodeKind::Stmt; }
     std::string str() const override { return ""; }
     void accept(Visitor *visitor) override;
-    bool isStmtNode() override {return true;}
+    bool isStmtNode() override { return true; }
 };
 using Stmt = std::shared_ptr<StmtNode>;
 

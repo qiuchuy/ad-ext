@@ -8,7 +8,8 @@
 class TypeInfer : Visitor {
   public:
     TypeInfer() = default;
-    TypeInfer(const std::vector<std::string>& args, const std::vector<TypePtr>& types);
+    TypeInfer(const std::vector<std::string> &args,
+              const std::vector<TypePtr> &types);
     void visitModule(ModuleNode *node) override;
     void visitStmt(StmtNode *node) override;
     void visitExpr(ExprNode *node) override;
@@ -24,7 +25,8 @@ class TypeInfer : Visitor {
     void visitReturn(ReturnNode *node) override;
     void visitCompare(CompareNode *node) override;
     void visitIf(IfNode *node) override;
-private:
+
+  private:
     std::map<std::string, TypePtr> typedParams;
     std::string curFunc;
 };

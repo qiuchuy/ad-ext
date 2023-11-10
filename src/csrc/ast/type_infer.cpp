@@ -1,16 +1,15 @@
 #include "type_infer.h"
 #include "symbol.h"
 
-TypeInfer::TypeInfer(const std::vector<std::string> &args, const std::vector<TypePtr> &types) {
+TypeInfer::TypeInfer(const std::vector<std::string> &args,
+                     const std::vector<TypePtr> &types) {
     assert(args.size() == types.size());
     size_t len = args.size();
     for (size_t i = 0; i < len; i++)
         typedParams[args[i]] = types[i];
 }
 
-void TypeInfer::visitModule(ModuleNode *node) {
-
-}
+void TypeInfer::visitModule(ModuleNode *node) {}
 
 void TypeInfer::visitBinaryOp(BinaryOpNode *node) {
     TypePtr lhsType = node->getLHS()->getType();
@@ -23,7 +22,11 @@ void TypeInfer::visitBinaryOp(BinaryOpNode *node) {
 }
 
 void TypeInfer::visitCall(CallNode *node) {
-    TypePtr returnType = SAFE_TYPE_DOWNCAST((env->lookup(node->getFunction()->getName())->getType()), FunctionType)->getReturnType();
+    TypePtr returnType =
+        SAFE_TYPE_DOWNCAST(
+            (env->lookup(node->getFunction()->getName())->getType()),
+            FunctionType)
+            ->getReturnType();
     node->setType(returnType);
 }
 
@@ -44,7 +47,7 @@ void TypeInfer::visitExpr(ExprNode *node) {}
 void TypeInfer::visitFunctionDef(FunctionDefNode *node) {
     env = new Environment();
     auto params = node->getParams();
-    for (const auto& param : params) {
+    for (const auto &param : params) {
         env->insertSymbol(param, typedParams[param]);
     }
     curFunc = node->getName();
@@ -52,11 +55,12 @@ void TypeInfer::visitFunctionDef(FunctionDefNode *node) {
 
 void TypeInfer::visitReturn(ReturnNode *node) {
     std::vector<TypePtr> types;
-    for (const auto& param : typedParams) {
+    for (const auto &param : typedParams) {
         types.push_back(param.second);
     }
     TypePtr returnType = node->getReturnValue()->getType();
-    FunctionTypePtr type = FunctionType::create(TupleType::createUnnamedTuple(types), returnType);
+    FunctionTypePtr type =
+        FunctionType::create(TupleType::createUnnamedTuple(types), returnType);
     env->insertSymbol(curFunc, type);
 }
 
@@ -78,7 +82,7 @@ void TypeInfer::visitVar(VarNode *node) {
 
 void TypeInfer::visitTuple(TupleNode *node) {
     std::vector<TypePtr> types;
-    for (const auto& expr : node->getElems()) {
+    for (const auto &expr : node->getElems()) {
         types.push_back(expr->getType());
     }
     node->setType(TupleType::createUnnamedTuple(types));
@@ -91,22 +95,26 @@ void TypeInfer::visitVarDef(VarDefNode *node) {
     if (targetSize == 0)
         throw AINLError("Illegal VarDef statement.");
     if (targetSize > 1) {
-        for (auto& target : targets) {
+        for (auto &target : targets) {
             target->setType(sourceType);
             env->insertSymbol(target->getName(), sourceType);
         }
-        return ;
+        return;
     }
     auto target = targets.back();
     if (target->isTupleNode()) {
         assert(sourceType->isTupleType());
-        TupleTypePtr sourceTupleType = SAFE_TYPE_DOWNCAST(sourceType, TupleType);
+        TupleTypePtr sourceTupleType =
+            SAFE_TYPE_DOWNCAST(sourceType, TupleType);
         Tuple targetTupleNode = SAFE_AST_DOWNCAST(target, TupleNode);
-        assert(sourceTupleType->getTypes().size() == targetTupleNode->getElems().size());
+        assert(sourceTupleType->getTypes().size() ==
+               targetTupleNode->getElems().size());
         size_t len = sourceTupleType->getTypes().size();
         for (size_t i = 0; i < len; i++) {
-            targetTupleNode->getElems()[i]->setType(sourceTupleType->getTypes()[i]);
-            env->insertSymbol(targetTupleNode->getElems()[i]->getName(), sourceTupleType->getTypes()[i]);
+            targetTupleNode->getElems()[i]->setType(
+                sourceTupleType->getTypes()[i]);
+            env->insertSymbol(targetTupleNode->getElems()[i]->getName(),
+                              sourceTupleType->getTypes()[i]);
         }
     } else {
         target->setType(sourceType);

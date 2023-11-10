@@ -1,3 +1,3 @@
 #include "symbol.h"
 
-Environment* env;
+Environment *env;

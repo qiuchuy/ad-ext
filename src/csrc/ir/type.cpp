@@ -15,21 +15,27 @@ std::string TensorType::str() {
 
 // true: <, false: >=
 bool Type::compare(const Type &other) {
-    if (this->kind() > TypeKind::TensorType || other.kind() > TypeKind::TensorType)
+    if (this->kind() > TypeKind::TensorType ||
+        other.kind() > TypeKind::TensorType)
         throw AINLError("Illegal type comparison.");
 
     Type rhsType = other;
     TypePtr rhsPtr = rhsType.getTypePtr();
     if (this->isTensorType() && rhsPtr->isTensorType()) {
-        TypePtr thisBaseType = SAFE_TYPE_DOWNCAST(shared_from_this(), TensorType)->getElementType();
-        TypePtr rhsBaseType = SAFE_TYPE_DOWNCAST(rhsPtr, TensorType)->getElementType();
+        TypePtr thisBaseType =
+            SAFE_TYPE_DOWNCAST(shared_from_this(), TensorType)
+                ->getElementType();
+        TypePtr rhsBaseType =
+            SAFE_TYPE_DOWNCAST(rhsPtr, TensorType)->getElementType();
         if (thisBaseType < rhsBaseType) {
             return true;
         } else {
             return false;
         }
     }
-    if (this->isTensorType()) return false;
-    if (rhsPtr->isTensorType()) return true;
+    if (this->isTensorType())
+        return false;
+    if (rhsPtr->isTensorType())
+        return true;
     return (*this < rhsType);
 }
