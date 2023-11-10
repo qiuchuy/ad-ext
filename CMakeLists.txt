@@ -65,8 +65,7 @@ add_definitions(${LLVM_DEFINITIONS})
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ast
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ir
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/pass
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils
 )
 
@@ -74,16 +73,14 @@ include_directories(
 file(GLOB SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/ast/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/ir/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/pass/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/symbol/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/utils/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/tensor/*.cpp
 )
 file(GLOB HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ast/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ir/*.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/pass/*.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor/*.h
 )
 
 pybind11_add_module(libailang SHARED ${SOURCES} ${HEADERS})

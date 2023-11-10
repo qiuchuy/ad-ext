@@ -6,15 +6,21 @@
 #include <tuple>
 
 #include "linklist.h"
+#include "logger.h"
 #include "type.h"
 #include "use.h"
+
+#define SAFE_VALUE_DOWNCAST(value, derived_type)                               \
+    dynamic_cast<derived_type *>(value)
 
 class Attribute;
 class Value;
 class Use;
+class Type;
 using AttributePtr = Attribute *;
 using ValuePtr = Value *;
 using UsePtr = Use *;
+using TypePtr = std::shared_ptr<Type>;
 
 class Attribute {
   public:
@@ -35,7 +41,7 @@ class Attribute {
         std::get<(size_t)AttributeKind::TangentValue>(names_) = "tangent";
     }
 
-    ~Attribute() {}
+    ~Attribute() = default;
 
     static AttributePtr createConstantAttributeValue(ValuePtr constant) {
         return new Attribute(constant, nullptr, nullptr);
@@ -55,7 +61,8 @@ class Attribute {
     }
 
     void setLinearAttributeValue(TypePtr linear) {
-        std::get<(size_t)AttributeKind::Linearity>(attributes_) = linear;
+        std::get<(size_t)AttributeKind::Linearity>(attributes_) =
+            std::move(linear);
         std::get<(size_t)AttributeKind::Linearity>(names_) = "linear";
     }
 
@@ -64,7 +71,7 @@ class Attribute {
         std::get<(size_t)AttributeKind::TangentValue>(names_) = "tangent";
     }
 
-    operator std::string() { return str(attributes_, names_); }
+    explicit operator std::string() { return str(attributes_, names_); }
 
   private:
     template <size_t Index = 0, typename... Types1, typename... Types2>
@@ -97,6 +104,7 @@ class Value : public ILinkNode {
         Node,
         Graph,
         Block,
+        Literal,
     };
 
     std::string prefix;
@@ -108,14 +116,18 @@ class Value : public ILinkNode {
     static std::string LOCAL_NAME_PREFIX;
     static std::string FPARAM_NAME_PREFIX;
 
+    // bool is_literal() {return false;}
+
   public:
     Value();
-    Value(TypePtr type);
+    Value(const TypePtr &type);
     Value(const std::vector<TypePtr> &types);
     ~Value() override = default;
-    operator std::string() const { return ""; }
+    explicit operator std::string() const { return ""; }
     virtual std::string getName() const;
     TypePtr getType() { return type; }
+
+    virtual bool is_literal() { return "false"; }
 
   public:
     void insertUseAtEnd(UsePtr use);
@@ -125,11 +137,10 @@ class Value : public ILinkNode {
     AttributePtr attribute;
     UsePtr beginUse;
     UsePtr endUse;
-    ValuePtr beginValue;
-    ValuePtr endValue;
+    // ValuePtr beginValue;
+    // ValuePtr endValue;
+    std::vector<ValuePtr> values;
 };
-
-class Constant : public Value {};
 
 TypePtr createTypePtrForValues(const std::vector<ValuePtr> &values);
 

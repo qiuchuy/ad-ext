@@ -1,7 +1,7 @@
 #include "ast_binding.h"
 #include "utils.h"
 
-void initAst(py::module_ &m) {
+void initAST(py::module_ &m) {
     py::class_<ASTNode, std::shared_ptr<ASTNode>>(m, "ASTNode",
                                                   py::dynamic_attr())
         .def(py::init<>())

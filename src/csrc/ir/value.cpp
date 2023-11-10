@@ -1,5 +1,7 @@
 #include "value.h"
 
+#include <utility>
+
 #include "use.h"
 
 Value::Value() {
@@ -7,33 +9,21 @@ Value::Value() {
     endUse = new Use();
     beginUse->setNext(endUse);
     endUse->setPrev(beginUse);
-    beginValue = new Value();
-    endValue = new Value();
-    beginValue->setNext(endValue);
-    endValue->setPrev(beginValue);
 }
 
-Value::Value(TypePtr type) {
+Value::Value(const TypePtr &type) {
     beginUse = new Use();
     endUse = new Use();
     this->type = type;
     beginUse->setNext(endUse);
     endUse->setPrev(beginUse);
-    beginValue = new Value();
-    endValue = new Value();
-    beginValue->setNext(endValue);
-    endValue->setPrev(beginValue);
 }
 
 Value::Value(const std::vector<TypePtr> &types) {
     this->type = TupleType::createUnnamedTuple(types);
-    beginValue = new Value();
-    endValue = new Value();
-    beginValue->setNext(endValue);
-    endValue->setPrev(beginValue);
     for (const auto &type : types) {
-        ValuePtr value = new Value(type);
-        endValue->insertBefore(value);
+        auto value = new Value(type);
+        values.push_back(value);
     }
 }
 

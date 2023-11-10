@@ -83,6 +83,6 @@ class AstTransformer {
     }
 };
 
-void initAst(py::module_ &m);
+void initAST(py::module_ &m);
 
 #endif // AINL_SRC_INCLUDE_AST_BINDING_H

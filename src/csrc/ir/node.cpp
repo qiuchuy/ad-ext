@@ -66,7 +66,8 @@ Alloca::Alloca(const TypePtr &type)
     this->contentType = type;
 }
 Load::Load(const ValuePtr &inVal)
-    : Node((SAFE_DOWNCAST(inVal->getType(), PointerType))->getPointeeType()) {
+    : Node((SAFE_TYPE_DOWNCAST(inVal->getType(), PointerType))
+               ->getPointeeType()) {
     setUse(inVal, 0);
 }
 

@@ -1,7 +1,3 @@
-//
-// Created by kom on 23-10-30.
-//
-
 #ifndef AINL_SRC_INCLUDE_TYPE_H
 #define AINL_SRC_INCLUDE_TYPE_H
 
@@ -12,22 +8,33 @@
 #include <utility>
 #include <vector>
 
-#define SAFE_DOWNCAST(shared_ptr, derived_type)                                \
+#include "logger.h"
+#include "value.h"
+
+class Value;
+using ValuePtr = Value *;
+
+#define SAFE_TYPE_DOWNCAST(shared_ptr, derived_type)                           \
     std::dynamic_pointer_cast<derived_type>(shared_ptr)
 
 template <typename T> class SingletonTypePtr {
   public:
     static std::shared_ptr<T> get() {
-        static std::shared_ptr<T> ptr;
-        return ptr;
+        if (SingletonTypePtr::ptr == nullptr) {
+            SingletonTypePtr::ptr = std::make_shared<T>();
+            return SingletonTypePtr::ptr;
+        } else {
+            return SingletonTypePtr::ptr;
+        }
     }
 
   public:
     SingletonTypePtr(SingletonTypePtr const &) = delete;
     void operator=(SingletonTypePtr const &) = delete;
+    static std::shared_ptr<T> ptr;
 };
 
-// Type: Basic class in Type hirachy
+// Type: Basic class in Type hierarchy
 class Type;
 using TypePtr = std::shared_ptr<Type>;
 class Type : public std::enable_shared_from_this<Type> {
@@ -89,7 +96,7 @@ using VoidTypePtr = SingletonTypePtr<VoidType>;
 
 class IntType : public Type {
   public:
-    TypeKind kind() const override { return Type::TypeKind::VoidType; }
+    TypeKind kind() const override { return Type::TypeKind::IntType; }
 
     bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
 
@@ -103,7 +110,7 @@ using IntTypePtr = SingletonTypePtr<IntType>;
 
 class FloatType : public Type {
   public:
-    TypeKind kind() const override { return Type::TypeKind::IntType; }
+    TypeKind kind() const override { return Type::TypeKind::FloatType; }
 
     bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
 
@@ -232,14 +239,15 @@ class TensorType;
 using TensorTypePtr = std::shared_ptr<TensorType>;
 class TensorType : public Type {
   public:
-    static TensorTypePtr createDense(const TypePtr &elementType,
-                                     const std::vector<int> &shape) {
-        std::vector<int> stride(1, (int)shape.size());
-        return std::make_shared<TensorType>(elementType, shape, stride);
+    static TensorTypePtr create(const TypePtr &elementType,
+                                const std::vector<ValuePtr> &shape) {
+        // std::vector<int> stride(1, (int)shape.size());
+        return std::make_shared<TensorType>(elementType, shape);
     }
-    TensorType(TypePtr elementType, const std::vector<int> &shape,
-               const std::vector<int> &stride)
-        : elementType(std::move(elementType)), shape(shape), stride(stride) {}
+
+    TensorType(TypePtr elementType, const std::vector<ValuePtr> &shape)
+        // const std::vector<ValuePtr> &stride)
+        : elementType(std::move(elementType)), shape(shape) {}
 
   public:
     TypeKind kind() const override { return Type::TypeKind::TensorType; }
@@ -260,26 +268,15 @@ class TensorType : public Type {
             return true;
         }
     }
-    std::string str() override {
-        std::stringstream ssm;
-        size_t size = shape.size();
-        ssm << "tensor<";
-        for (size_t i = 0; i < size; i++) {
-            if (i == size - 1) {
-                ssm << shape[i] << ">";
-            } else {
-                ssm << shape[i] << "x";
-            }
-        }
-        return ssm.str();
-    }
+    std::string str() override;
     bool isTensorType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
+    std::vector<ValuePtr> getShape() { return shape; }
 
   private:
     TypePtr elementType;
-    std::vector<int> shape;
-    std::vector<int> stride;
+    std::vector<ValuePtr> shape;
+    // std::vector<ValuePtr> stride;
 };
 
 class LinearType : public Type {
