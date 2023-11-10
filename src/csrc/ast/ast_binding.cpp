@@ -65,19 +65,19 @@ void initAST(py::module_ &m) {
         .def(py::init<>())
         .def(py::init<Expr>());
 
-    py::class_<CompareOpNode, ExprNode, std::shared_ptr<CompareOpNode>>(
+    py::class_<CompareNode, ExprNode, std::shared_ptr<CompareNode>>(
         m, "CompareOpNode")
         .def(py::init<>())
         .def(py::init([](const Expr &left, const std::vector<std::string> &ops,
                          const std::vector<Expr> &comparators) {
-            std::vector<CompareOpNode::CompareOpKind> iops;
+            std::vector<CompareNode::CompareOpKind> iops;
             for (const auto &op : ops)
                 iops.push_back(CompareOpASTHelper(op));
-            return std::make_shared<CompareOpNode>(left, iops, comparators);
+            return std::make_shared<CompareNode>(left, iops, comparators);
         }));
 
-    py::class_<WhileLoopNode, StmtNode, std::shared_ptr<WhileLoopNode>>(
-        m, "WhileLoopNode", py::dynamic_attr())
+    py::class_<WhileNode, StmtNode, std::shared_ptr<WhileNode>>(
+        m, "WhileNode", py::dynamic_attr())
         .def(py::init<>())
         .def(py::init<Expr, std::vector<Stmt>>());
 

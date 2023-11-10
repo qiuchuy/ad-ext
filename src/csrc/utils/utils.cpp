@@ -25,7 +25,7 @@ UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind) {
     throw AINLError("Unsupported UnaryOpNode when transforming AST.");
 }
 
-CompareOpNode::CompareOpKind CompareOpASTHelper(std::string OpKind) {
+CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind) {
     DISPATCH_COMPAREOP(Eq)
     DISPATCH_COMPAREOP(NotEq)
     DISPATCH_COMPAREOP(Lt)

@@ -7,6 +7,8 @@
 #include "ast.h"
 #include "logger.h"
 
+class Visitor;
+
 class ModuleNode : public StmtNode {
   public:
     ModuleNode() = default;
@@ -23,7 +25,8 @@ class ModuleNode : public StmtNode {
             << "\n";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isModuleNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -46,9 +49,12 @@ class VarNode : public ExprNode {
   public:
     VarNode() = default;
     explicit VarNode(std::string name) : name(std::move(name)) {}
+    VarNode(std::string name, TypePtr type)
+        : ExprNode(std::move(type)), name(std::move(name)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Var; }
     std::string str() const override { return name; }
-
+    std::string getName() {return name;}
+    bool isVarNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -57,6 +63,7 @@ class VarNode : public ExprNode {
         seed ^= stringHash(name) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
+    void accept(Visitor *visitor) override;
 
   private:
     std::string name;
@@ -77,7 +84,10 @@ class VarDefNode : public StmtNode {
         ssm << " = " << source->getName();
         return ssm.str();
     }
-
+    std::vector<Expr> getTargets() {return targets;}
+    Expr getSource() {return source;}
+    void accept(Visitor *visitor) override;
+    bool isVarDefNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -102,6 +112,11 @@ class TupleNode : public ExprNode {
   public:
     TupleNode() = default;
     explicit TupleNode(std::vector<Expr> elems) : elems(std::move(elems)) {}
+    explicit TupleNode(std::vector<Expr> elems,
+                       const std::vector<TypePtr> &type)
+        : elems(std::move(elems)) {
+        this->type = TupleType::createUnnamedTuple(type);
+    }
     ASTNodeKind kind() const override { return ASTNodeKind::Constant; }
     std::string str() const override {
         std::stringstream ssm;
@@ -111,7 +126,9 @@ class TupleNode : public ExprNode {
         ssm << elems[elems.size() - 1]->getName() << ")";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isTupleNode() override {return true;}
+    std::vector<Expr> getElems() {return elems;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -134,9 +151,13 @@ class ConstantNode : public ExprNode {
   public:
     ConstantNode() = default;
     explicit ConstantNode(std::string value) : value(std::move(value)) {}
+    explicit ConstantNode(std::string value, TypePtr type)
+        : ExprNode(std::move(type)), value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Constant; }
     std::string str() const override { return value; }
-
+    std::string getValue() {return value;}
+    void accept(Visitor *visitor) override;
+    bool isConstantNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -164,11 +185,15 @@ class UnaryOpNode : public ExprNode {
     };
     UnaryOpNode() = default;
     UnaryOpNode(UnaryOpKind op, Expr value) : op(op), value(std::move(value)) {}
+    UnaryOpNode(UnaryOpKind op, Expr value, TypePtr type)
+        : ExprNode(std::move(type)), op(op), value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::UnaryOp; }
     std::string str() const override {
         return UnaryOpString[(size_t)op] + " " + value->getName();
     }
-
+    Expr getOperand() {return value;}
+    bool isUnaryOpNode() override {return true;}
+    void accept(Visitor *visitor) override;
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -214,12 +239,18 @@ class BinaryOpNode : public ExprNode {
     BinaryOpNode() = default;
     BinaryOpNode(BinaryOpKind op, Expr op1, Expr op2)
         : op(op), op1(std::move(op1)), op2(std::move(op2)) {}
+    BinaryOpNode(BinaryOpKind op, Expr op1, Expr op2, TypePtr type)
+        : ExprNode(std::move(type)), op(op), op1(std::move(op1)),
+          op2(std::move(op2)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::BinaryOp; }
+    Expr getLHS() const {return op1;}
+    Expr getRHS() const {return op2;}
     std::string str() const override {
         return op1->getName() + " " + BinaryOpString[(size_t)op] + " " +
                op2->getName();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isBinaryOpNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -263,7 +294,10 @@ class FunctionDefNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    std::vector<std::string> getParams() const {return params;}
+    std::string getName() {return name;}
+    bool isFunctionDefNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -293,7 +327,9 @@ class ReturnNode : public StmtNode {
     explicit ReturnNode(Expr value) : value(std::move(value)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Return; }
     std::string str() const override { return "return " + value->getName(); }
-
+    bool isReturnNode() override {return true;}
+    Expr getReturnValue() {return value;}
+    void accept(Visitor *visitor) override;
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -311,7 +347,7 @@ class ReturnNode : public StmtNode {
 using Return = std::shared_ptr<ReturnNode>;
 
 extern std::array<std::string, 10> CompareOpString;
-class CompareOpNode : public ExprNode {
+class CompareNode : public ExprNode {
     // [TODO] This inheritance will cause a bug when the return value of Compare
     // Expression is not used or stored
   public:
@@ -329,11 +365,11 @@ class CompareOpNode : public ExprNode {
         // ---
         NumCompareOp,
     };
-    CompareOpNode() = default;
-    CompareOpNode(Expr left, std::vector<CompareOpKind> ops,
-                  std::vector<Expr> comparators)
-        : left(std::move(left)), ops(std::move(ops)),
-          comparators(std::move(comparators)) {}
+    CompareNode() = default;
+    CompareNode(Expr left, std::vector<CompareOpKind> ops,
+                std::vector<Expr> comparators)
+        : ExprNode(BoolTypePtr::get()), left(std::move(left)),
+          ops(std::move(ops)), comparators(std::move(comparators)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Compare; }
     std::string str() const override {
         std::stringstream ssm;
@@ -344,7 +380,8 @@ class CompareOpNode : public ExprNode {
                 << comparators[i]->getName() << " ";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isCompareNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -364,14 +401,14 @@ class CompareOpNode : public ExprNode {
     std::vector<CompareOpKind> ops;
     std::vector<Expr> comparators;
 };
-using Compare = std::shared_ptr<CompareOpNode>;
+using Compare = std::shared_ptr<CompareNode>;
 static_assert(CompareOpString.size() ==
-              (size_t)CompareOpNode::CompareOpKind::NumCompareOp);
+              (size_t)CompareNode::CompareOpKind::NumCompareOp);
 
-class WhileLoopNode : public StmtNode {
+class WhileNode : public StmtNode {
   public:
-    WhileLoopNode() = default;
-    WhileLoopNode(Expr cond, std::vector<Stmt> body)
+    WhileNode() = default;
+    WhileNode(Expr cond, std::vector<Stmt> body)
         : cond(std::move(cond)), body(std::move(body)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::WhileLoop; }
     std::string str() const override {
@@ -383,7 +420,8 @@ class WhileLoopNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isWhileNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -402,7 +440,7 @@ class WhileLoopNode : public StmtNode {
     Expr cond;
     std::vector<Stmt> body;
 };
-using While = std::shared_ptr<WhileLoopNode>;
+using While = std::shared_ptr<WhileNode>;
 
 class IfNode : public StmtNode {
   public:
@@ -421,7 +459,8 @@ class IfNode : public StmtNode {
         ssm << "]\n";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isIfNode() override {return true;}
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -444,13 +483,16 @@ class IfNode : public StmtNode {
     std::vector<Stmt> thenBranch;
     std::vector<Stmt> elseBranch;
 };
-using IfStmt = std::shared_ptr<IfNode>;
+using If = std::shared_ptr<IfNode>;
 
 class CallNode : public ExprNode {
   public:
     CallNode() = default;
     CallNode(Expr func, std::vector<Expr> args)
         : func(std::move(func)), args(std::move(args)) {}
+    CallNode(Expr func, std::vector<Expr> args, TypePtr type)
+        : ExprNode(std::move(type)), func(std::move(func)),
+          args(std::move(args)) {}
     ASTNodeKind kind() const override { return ASTNodeKind::Call; }
     std::string str() const override {
         std::stringstream ssm;
@@ -460,7 +502,9 @@ class CallNode : public ExprNode {
         ssm << args[args.size() - 1] << ")";
         return ssm.str();
     }
-
+    void accept(Visitor *visitor) override;
+    bool isCallNode() override {return true;}
+    Expr getFunction() {return func;}
   private:
     size_t hash() const override {
         size_t seed = 0;

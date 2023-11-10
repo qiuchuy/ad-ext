@@ -67,6 +67,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ir
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol
 )
 
 # find CXX source files
@@ -75,12 +76,14 @@ file(GLOB SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/ir/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/utils/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/tensor/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/symbol/*.cpp
 )
 file(GLOB HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ast/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ir/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol/*.h
 )
 
 pybind11_add_module(libailang SHARED ${SOURCES} ${HEADERS})

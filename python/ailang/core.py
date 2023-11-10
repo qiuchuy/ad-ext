@@ -14,8 +14,8 @@ def compile(f: Union[Callable]):
     ast = parse_pycallable(f)
 
     def compiled_f(*args: Union[Tuple[Tensor], Tensor]):
-        ast.type_infer(args)
-        mlir_module = ast.to_mlir()
+        alir = ast.compile(args)
+        mlir_module = alir.to_mlir()
         return mlir_module(*args)
 
     return compiled_f

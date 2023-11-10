@@ -11,9 +11,9 @@
         return UnaryOpNode::UnaryOpKind::op;
 #define DISPATCH_COMPAREOP(op)                                                 \
     if (OpKind == #op)                                                         \
-        return CompareOpNode::CompareOpKind::op;
+        return CompareNode::CompareOpKind::op;
 BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind);
 UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind);
-CompareOpNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
+CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
 
 #endif // AINL_SRC_INCLUDE_UTILS_H

@@ -6,6 +6,14 @@
 
 #include "type.h"
 
+class Visitor;
+
+#define ASTNODE_TYPE(asttype) \
+    virtual bool is##asttype##Node () {return false;} \
+
+#define SAFE_AST_DOWNCAST(shared_ptr, derived_type)                           \
+    std::dynamic_pointer_cast<derived_type>(shared_ptr)
+
 class ASTNode : public std::enable_shared_from_this<ASTNode> {
   public:
     enum class ASTNodeKind {
@@ -29,19 +37,36 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
     };
 
     ~ASTNode() = default;
+
+    ASTNODE_TYPE(Module)
+    ASTNODE_TYPE(Expr)
+    ASTNODE_TYPE(Stmt)
+    ASTNODE_TYPE(Var)
+    ASTNODE_TYPE(VarDef)
+    ASTNODE_TYPE(Constant)
+    ASTNODE_TYPE(UnaryOp)
+    ASTNODE_TYPE(BinaryOp)
+    ASTNODE_TYPE(FunctionDef)
+    ASTNODE_TYPE(Return)
+    ASTNODE_TYPE(Compare)
+    ASTNODE_TYPE(While)
+    ASTNODE_TYPE(If)
+    ASTNODE_TYPE(Call)
+    ASTNODE_TYPE(Tuple)
+
     std::string getName() const { return str(); }
     bool match(const ASTNode &other) const {
         return this->hash() == other.hash();
     }
     virtual ASTNodeKind kind() const { return ASTNodeKind::NumNodes; }
     virtual std::string str() const { return ""; }
+    virtual void accept(Visitor *visitor);
     bool operator==(const ASTNode &other) const {
         return this->hash() == other.hash();
     }
     bool operator!=(const ASTNode &other) const {
         return this->hash() != other.hash();
     }
-
     virtual size_t hash() const {
         size_t seed = 0;
         std::hash<std::string> stringHash;
@@ -57,9 +82,11 @@ class ExprNode : public ASTNode {
     ExprNode() = default;
     explicit ExprNode(TypePtr type) : type(std::move(type)) {}
     TypePtr getType() { return type; }
+    void setType(TypePtr inType) {this->type = std::move(inType);}
     ASTNodeKind kind() const override { return ASTNodeKind::Expr; }
     std::string str() const override { return ""; }
-
+    void accept(Visitor *visitor) override;
+    bool isExprNode() override {return true;}
   protected:
     TypePtr type;
 };
@@ -70,6 +97,8 @@ class StmtNode : public ASTNode {
     StmtNode() = default;
     ASTNodeKind kind() const override { return ASTNodeKind::Stmt; }
     std::string str() const override { return ""; }
+    void accept(Visitor *visitor) override;
+    bool isStmtNode() override {return true;}
 };
 using Stmt = std::shared_ptr<StmtNode>;
 

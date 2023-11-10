@@ -68,14 +68,14 @@ class AstTransformer {
     static Compare convertCompare(const Expr &left,
                                   const std::vector<std::string> &ops,
                                   const std::vector<Expr> &comparators) {
-        std::vector<CompareOpNode::CompareOpKind> iops;
+        std::vector<CompareNode::CompareOpKind> iops;
         for (const auto &op : ops)
             iops.push_back(CompareOpASTHelper(op));
-        return std::make_shared<CompareOpNode>(left, iops, comparators);
+        return std::make_shared<CompareNode>(left, iops, comparators);
     }
 
     static While convertWhile(const Expr &cond, std::vector<Stmt> &body) {
-        return std::make_shared<WhileLoopNode>(cond, body);
+        return std::make_shared<WhileNode>(cond, body);
     }
 
     static Return convertReturn(const Expr &value) {

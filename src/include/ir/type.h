@@ -40,13 +40,14 @@ using TypePtr = std::shared_ptr<Type>;
 class Type : public std::enable_shared_from_this<Type> {
   public:
     enum class TypeKind {
-        // Basic Types
+        // Basic Types, they are ranked in partial order
         VoidType = 0,
+        BoolType,
         IntType,
         FloatType,
-        BoolType,
-        TensorType,
         // Derived Types
+        TensorType,
+        FunctionType,
         TupleType,
         PointerType,
         SumType,
@@ -68,6 +69,7 @@ class Type : public std::enable_shared_from_this<Type> {
     virtual bool isIntType() { return false; }
     virtual bool isFloatType() { return false; }
     virtual bool isBoolType() { return false; }
+    virtual bool isFunctionType() { return false; }
     virtual bool isTensorType() { return false; }
     virtual bool isTupleType() { return false; }
     virtual bool isPointerType() { return false; }
@@ -78,6 +80,8 @@ class Type : public std::enable_shared_from_this<Type> {
 
     bool operator==(const Type &other) { return equals(other); }
     bool operator!=(const Type &other) { return !equals(other); }
+    bool operator<(const Type &other) const {return kind() < other.kind();}
+    bool compare(const Type &other);
 };
 
 class VoidType : public Type {
@@ -135,6 +139,37 @@ class BoolType : public Type {
     TypePtr getTypePtr() override { return SingletonTypePtr<BoolType>::get(); }
 };
 using BoolTypePtr = SingletonTypePtr<BoolType>;
+
+class FunctionType;
+using FunctionTypePtr = std::shared_ptr<FunctionType>;
+class FunctionType : public Type {
+  public:
+    TypeKind kind() const override { return Type::TypeKind::FunctionType; }
+    FunctionType(TypePtr inputType, TypePtr returnType):argType(std::move(inputType)), returnType(std::move(returnType)) {}
+    static FunctionTypePtr create(const TypePtr& inType, const TypePtr& retType) {
+        return std::make_shared<FunctionType>(inType, retType);
+    }
+    bool equals(const Type &rhs) override {
+        if (kind() != rhs.kind()) {
+            return false;
+        } else {
+            Type rhsType = rhs;
+            FunctionTypePtr rhsPtr =
+                std::dynamic_pointer_cast<FunctionType>(rhsType.getTypePtr());
+            return argType->equals(*rhsPtr->argType) &&
+                   returnType->equals(*rhsPtr->returnType);
+        }
+    }
+    std::string str() override {
+        return argType->getName() + " -> " + returnType->getName();
+    }
+    bool isFunctionType() override { return true; }
+    TypePtr getTypePtr() override { return shared_from_this(); }
+    TypePtr getReturnType() {return returnType;}
+  private:
+    TypePtr argType;
+    TypePtr returnType;
+};
 
 class TupleType;
 using TupleTypePtr = std::shared_ptr<TupleType>;
@@ -194,6 +229,7 @@ class TupleType : public Type {
 
     TypePtr getTypePtr() override { return shared_from_this(); }
 
+    std::vector<TypePtr> getTypes() {return types;}
   private:
     std::vector<TypePtr> types;
     std::vector<std::string> names;
@@ -272,7 +308,7 @@ class TensorType : public Type {
     bool isTensorType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
     std::vector<ValuePtr> getShape() { return shape; }
-
+    TypePtr getElementType() {return elementType;}
   private:
     TypePtr elementType;
     std::vector<ValuePtr> shape;

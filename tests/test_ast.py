@@ -9,8 +9,8 @@ from ailang import (
     BinaryOpNode,
     UnaryOpNode,
     CallNode,
-    CompareOpNode,
-    WhileLoopNode,
+    CompareNode,
+    WhileNode,
     FunctionDefNode,
     ReturnNode,
 )
@@ -147,7 +147,7 @@ class TestLoop:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                WhileLoopNode(
+                WhileNode(
                     CompareOpNode(VarNode("i"), ["Lt"], [VarNode("j")]),
                     [VarDefNode([VarNode("y")], VarNode("x"))],
                 )
