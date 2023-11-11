@@ -2,8 +2,9 @@ import ailang
 from ailang import parse_pycallable
 from ailang import (
     ModuleNode,
-    VarDefNode,
+    BindNode,
     VarNode,
+    VarDefNode,
     ConstantNode,
     TupleNode,
     BinaryOpNode,
@@ -16,31 +17,33 @@ from ailang import (
 )
 
 
-class TestVarDef:
+class TestBind:
     def test_variable(self):
         code_str = "x = y"
         ast = parse_pycallable(code_str)
-        ref_ast = ModuleNode([VarDefNode([VarNode("x")], VarNode("y"))])
+        ref_ast = ModuleNode([BindNode([VarDefNode("x")], VarNode("y"))])
         assert ast.match(ref_ast)
 
     def test_constant(self):
         code_str = "x = 1"
         ast = parse_pycallable(code_str)
-        ref_ast = ModuleNode([VarDefNode([VarNode("x")], ConstantNode("1"))])
+        ref_ast = ModuleNode([BindNode([VarDefNode("x")], ConstantNode("1"))])
         assert ast.match(ref_ast)
 
     def test_tuple(self):
         code_str = "x, y = z"
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
-            [VarDefNode([TupleNode([VarNode("x"), VarNode("y")])], VarNode("z"))]
+            [BindNode([TupleNode([VarDefNode("x"), VarDefNode("y")])], VarNode("z"))]
         )
         assert ast.match(ref_ast)
 
     def test_sequential(self):
         code_str = "x = y = z"
         ast = parse_pycallable(code_str)
-        ref_ast = ModuleNode([VarDefNode([VarNode("x"), VarNode("y")], VarNode("z"))])
+        ref_ast = ModuleNode(
+            [BindNode([VarDefNode("x"), VarDefNode("y")], VarNode("z"))]
+        )
         assert ast.match(ref_ast)
 
     def test_binop_variable(self):
@@ -48,8 +51,8 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("x")], BinaryOpNode("Add", VarNode("y"), VarNode("z"))
+                BindNode(
+                    [VarDefNode("x")], BinaryOpNode("Add", VarNode("y"), VarNode("z"))
                 )
             ]
         )
@@ -60,8 +63,9 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("x")], BinaryOpNode("Add", VarNode("y"), ConstantNode("1"))
+                BindNode(
+                    [VarDefNode("x")],
+                    BinaryOpNode("Add", VarNode("y"), ConstantNode("1")),
                 )
             ]
         )
@@ -71,7 +75,7 @@ class TestVarDef:
         code_str = "x = -y"
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
-            [VarDefNode([VarNode("x")], UnaryOpNode("USub", VarNode("y")))]
+            [BindNode([VarDefNode("x")], UnaryOpNode("USub", VarNode("y")))]
         )
         assert ast.match(ref_ast)
 
@@ -79,14 +83,14 @@ class TestVarDef:
         code_str = "x = -1"
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
-            [VarDefNode([VarNode("x")], UnaryOpNode("USub", ConstantNode("1")))]
+            [BindNode([VarDefNode("x")], UnaryOpNode("USub", ConstantNode("1")))]
         )
         assert ast.match(ref_ast)
 
     def test_attribute(self):
         code_str = "x = self.param"
         ast = parse_pycallable(code_str)
-        ref_ast = ModuleNode([VarDefNode([VarNode("x")], VarNode("self::param"))])
+        ref_ast = ModuleNode([BindNode([VarDefNode("x")], VarNode("self::param"))])
         assert ast.match(ref_ast)
 
     def test_call_variable(self):
@@ -94,8 +98,9 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("x")], CallNode(VarNode("f"), [VarNode("a"), VarNode("b")])
+                BindNode(
+                    [VarDefNode("x")],
+                    CallNode(VarNode("f"), [VarNode("a"), VarNode("b")]),
                 )
             ]
         )
@@ -106,8 +111,8 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("x")],
+                BindNode(
+                    [VarDefNode("x")],
                     CallNode(VarNode("f"), [VarNode("a"), ConstantNode("1")]),
                 )
             ]
@@ -119,8 +124,8 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("x")],
+                BindNode(
+                    [VarDefNode("x")],
                     CallNode(VarNode("self::f"), [VarNode("a"), ConstantNode("1")]),
                 )
             ]
@@ -132,8 +137,8 @@ class TestVarDef:
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
             [
-                VarDefNode(
-                    [VarNode("z")], CompareOpNode(VarNode("x"), ["Lt"], [VarNode("y")])
+                BindNode(
+                    [VarDefNode("z")], CompareNode(VarNode("x"), ["Lt"], [VarNode("y")])
                 )
             ]
         )
@@ -148,8 +153,8 @@ class TestLoop:
         ref_ast = ModuleNode(
             [
                 WhileNode(
-                    CompareOpNode(VarNode("i"), ["Lt"], [VarNode("j")]),
-                    [VarDefNode([VarNode("y")], VarNode("x"))],
+                    CompareNode(VarNode("i"), ["Lt"], [VarNode("j")]),
+                    [BindNode([VarDefNode("y")], VarNode("x"))],
                 )
             ]
         )
@@ -169,7 +174,7 @@ class TestFunctionDef:
                         y = x"
         ast = parse_pycallable(code_str)
         ref_ast = ModuleNode(
-            [FunctionDefNode("f", ["x"], [VarDefNode([VarNode("y")], VarNode("x"))])]
+            [FunctionDefNode("f", ["x"], [BindNode([VarNode("y")], VarNode("x"))])]
         )
         assert ast.match(ref_ast)
 
@@ -182,7 +187,7 @@ class TestFunctionDef:
                     "f",
                     ["x", "y"],
                     [
-                        VarDefNode(
+                        BindNode(
                             [VarNode("z")],
                             BinaryOpNode("Add", VarNode("x"), VarNode("y")),
                         ),

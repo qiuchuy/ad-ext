@@ -1,5 +1,8 @@
 #include "ast_binding.h"
+#include "tensor.h"
+#include "type_infer.h"
 #include "utils.h"
+#include "visitor.h"
 
 void initAST(py::module_ &m) {
     py::class_<ASTNode, std::shared_ptr<ASTNode>>(m, "ASTNode",
@@ -17,10 +20,37 @@ void initAST(py::module_ &m) {
     py::class_<ModuleNode, StmtNode, std::shared_ptr<ModuleNode>>(
         m, "ModuleNode", py::dynamic_attr())
         .def(py::init<>())
-        .def(py::init<std::vector<Stmt>>());
+        .def(py::init<std::vector<Stmt>>())
+        .def(
+            "type_infer",
+            [](const Module &self, const std::vector<std::string> &argNames,
+               const py::args &args) {
+                assert(args.size() == argNames.size());
+                std::vector<TypePtr> argTypes;
+                for (const auto &arg : args) {
+                    if (arg.cast<TensorPtr>()) {
+                        auto tensor = arg.cast<TensorPtr>();
+                        argTypes.push_back(tensor->getType());
+                    }
+                    if (py::isinstance<py::int_>(arg)) {
+                        argTypes.push_back(IntTypePtr::get());
+                    }
+                    if (py::isinstance<py::float_>(arg)) {
+                        argTypes.push_back(FloatTypePtr ::get());
+                    }
+                    if (py::isinstance<py::bool_>(arg)) {
+                        argTypes.push_back(BoolTypePtr::get());
+                    }
+                }
+                auto visitor = std::make_unique<TypeInfer>(argNames, argTypes);
+                auto clonedModule = std::make_shared<ModuleNode>(*self);
+                clonedModule->accept(visitor.get());
+                return clonedModule;
+            },
+            py::return_value_policy::reference);
 
-    py::class_<VarDefNode, StmtNode, std::shared_ptr<VarDefNode>>(
-        m, "VarDefNode", py::dynamic_attr())
+    py::class_<BindNode, StmtNode, std::shared_ptr<BindNode>>(
+        m, "BindNode", py::dynamic_attr())
         .def(py::init<>())
         .def(py::init<std::vector<Expr>, Expr>());
 
@@ -36,7 +66,12 @@ void initAST(py::module_ &m) {
             [](const std::string &op, const Expr &op1, const Expr &op2) {
                 return std::make_shared<BinaryOpNode>(BinaryOpASTHelper(op),
                                                       op1, op2);
-            }));
+            }))
+        .def(py::init([](const std::string &op, const Expr &op1,
+                         const Expr &op2, const TypePtr &type) {
+            return std::make_shared<BinaryOpNode>(BinaryOpASTHelper(op), op1,
+                                                  op2, type);
+        }));
 
     py::class_<UnaryOpNode, ExprNode, std::shared_ptr<UnaryOpNode>>(
         m, "UnaryOpNode", py::dynamic_attr())
@@ -46,6 +81,11 @@ void initAST(py::module_ &m) {
         }));
 
     py::class_<VarNode, ExprNode, std::shared_ptr<VarNode>>(m, "VarNode")
+        .def(py::init<>())
+        .def(py::init<std::string>())
+        .def(py::init<std::string, TypePtr>());
+    py::class_<VarDefNode, ExprNode, std::shared_ptr<VarDefNode>>(m,
+                                                                  "VarDefNode")
         .def(py::init<>())
         .def(py::init<std::string>());
 
@@ -66,7 +106,7 @@ void initAST(py::module_ &m) {
         .def(py::init<Expr>());
 
     py::class_<CompareNode, ExprNode, std::shared_ptr<CompareNode>>(
-        m, "CompareOpNode")
+        m, "CompareNode")
         .def(py::init<>())
         .def(py::init([](const Expr &left, const std::vector<std::string> &ops,
                          const std::vector<Expr> &comparators) {
@@ -96,9 +136,11 @@ void initAST(py::module_ &m) {
                     py::return_value_policy::reference)
         .def_static("convert_FunctionDef", &AstTransformer::convertFunctionDef,
                     py::return_value_policy::reference)
-        .def_static("convert_Assign", &AstTransformer::convertVarDef,
+        .def_static("convert_Assign", &AstTransformer::convertBind,
                     py::return_value_policy::reference)
         .def_static("convert_Name", &AstTransformer::convertVar,
+                    py::return_value_policy::reference)
+        .def_static("convert_NameDef", &AstTransformer::convertVarDef,
                     py::return_value_policy::reference)
         .def_static("convert_Constant", &AstTransformer::convertConstant,
                     py::return_value_policy::reference)

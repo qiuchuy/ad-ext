@@ -15,16 +15,16 @@ Node::Node(TypePtr type, const TypePtr &inType) : Value(type) {
 }
 
 void Node::setUse(ValuePtr value, int idx) {
-    UsePtr use = new Use(this, value, idx);
+    auto use = new Use(this, value, idx);
     value->insertUseAtEnd(use);
     useList.push_back(use);
     useValueList.push_back(value);
 }
 
 void Node::addBlock() {
-    BlockPtr block = new Block();
+    BlockPtr newBlock = new Block();
     if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(block);
+        this->block->endBlock->insertBefore(newBlock);
         return;
     }
     this->block->beginBlock = new Block();
@@ -35,9 +35,9 @@ void Node::addBlock() {
 }
 
 void Node::addBlock(const std::vector<ValuePtr> &inValues) {
-    BlockPtr block = new Block(inValues);
+    auto newBlock = new Block(inValues);
     if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(block);
+        this->block->endBlock->insertBefore(newBlock);
         return;
     }
     this->block->beginBlock = new Block();
@@ -49,9 +49,9 @@ void Node::addBlock(const std::vector<ValuePtr> &inValues) {
 
 void Node::addBlock(const std::vector<ValuePtr> &inValues,
                     const std::vector<ValuePtr> &outValues) {
-    BlockPtr block = new Block(inValues, outValues);
+    auto newBlock = new Block(inValues, outValues);
     if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(block);
+        this->block->endBlock->insertBefore(newBlock);
         return;
     }
     this->block->beginBlock = new Block();

@@ -22,6 +22,7 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
         Stmt,
         Var,
         VarDef,
+        Bind,
         Constant,
         UnaryOp,
         BinaryOp,
@@ -42,7 +43,7 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
     ASTNODE_TYPE(Expr)
     ASTNODE_TYPE(Stmt)
     ASTNODE_TYPE(Var)
-    ASTNODE_TYPE(VarDef)
+    ASTNODE_TYPE(Bind)
     ASTNODE_TYPE(Constant)
     ASTNODE_TYPE(UnaryOp)
     ASTNODE_TYPE(BinaryOp)

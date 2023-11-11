@@ -11,21 +11,17 @@
 
 class Node;
 class Block;
+class Signature;
 using NodePtr = Node *;
 using BlockPtr = Block *;
+using SignaturePtr = Signature *;
 class Graph : public std::enable_shared_from_this<Graph>, public Value {
   public:
     Graph(const std::vector<ValuePtr> &inValues,
-          const std::vector<ValuePtr> &returnType);
+          const std::vector<ValuePtr> &returnValues);
 
     template <typename NodeType, typename... ARGS>
-    NodePtr create(ARGS &&...args) {
-        NodePtr node = new NodeType(std::forward<ARGS>(args)...);
-        node->graph = shared_from_this();
-        node->block = endBlock;
-        insertNodeAtEnd(node);
-        return node;
-    }
+    NodePtr create(ARGS &&...args);
 
     friend class Node;
 

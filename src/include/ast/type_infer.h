@@ -5,7 +5,7 @@
 
 #include "visitor.h"
 
-class TypeInfer : Visitor {
+class TypeInfer : public Visitor {
   public:
     TypeInfer() = default;
     TypeInfer(const std::vector<std::string> &args,
@@ -13,8 +13,9 @@ class TypeInfer : Visitor {
     void visitModule(ModuleNode *node) override;
     void visitStmt(StmtNode *node) override;
     void visitExpr(ExprNode *node) override;
-    void visitVarDef(VarDefNode *node) override;
+    void visitBind(BindNode *node) override;
     void visitVar(VarNode *node) override;
+    void visitVarDef(VarDefNode *node) override;
     void visitTuple(TupleNode *node) override;
     void visitConstant(ConstantNode *node) override;
     void visitFunctionDef(FunctionDefNode *node) override;
@@ -31,4 +32,4 @@ class TypeInfer : Visitor {
     std::string curFunc;
 };
 
-#endif AINL_SRC_INCLUDE_TYPE_INFER_H
+#endif

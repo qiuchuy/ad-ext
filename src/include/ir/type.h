@@ -76,12 +76,12 @@ class Type : public std::enable_shared_from_this<Type> {
     virtual bool isSumType() { return false; }
     virtual bool isAnyType() { return false; }
     virtual bool isLinearType() { return false; }
-    virtual TypePtr getTypePtr() { return nullptr; }
+    virtual TypePtr getTypePtr() { return shared_from_this(); }
 
     bool operator==(const Type &other) { return equals(other); }
     bool operator!=(const Type &other) { return !equals(other); }
     bool operator<(const Type &other) const { return kind() < other.kind(); }
-    bool compare(const Type &other);
+    bool compare(Type &other);
 };
 
 class VoidType : public Type {

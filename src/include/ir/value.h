@@ -4,6 +4,7 @@
 #include <memory>
 #include <sstream>
 #include <tuple>
+#include <utility>
 
 #include "linklist.h"
 #include "logger.h"
@@ -35,7 +36,8 @@ class Attribute {
     Attribute(ValuePtr constant, TypePtr linear, ValuePtr tangent) {
         std::get<(size_t)AttributeKind::ConstantValue>(attributes_) = constant;
         std::get<(size_t)AttributeKind::ConstantValue>(names_) = "constant";
-        std::get<(size_t)AttributeKind::Linearity>(attributes_) = linear;
+        std::get<(size_t)AttributeKind::Linearity>(attributes_) =
+            std::move(linear);
         std::get<(size_t)AttributeKind::Linearity>(names_) = "linear";
         std::get<(size_t)AttributeKind::TangentValue>(attributes_) = tangent;
         std::get<(size_t)AttributeKind::TangentValue>(names_) = "tangent";
@@ -48,7 +50,7 @@ class Attribute {
     }
 
     static AttributePtr createLinearAttributeValue(TypePtr linear) {
-        return new Attribute(nullptr, linear, nullptr);
+        return new Attribute(nullptr, std::move(linear), nullptr);
     }
 
     static AttributePtr createTangentAttributeValue(ValuePtr tangent) {
@@ -120,7 +122,7 @@ class Value : public ILinkNode {
 
   public:
     Value();
-    Value(const TypePtr &type);
+    explicit Value(const TypePtr &type);
     Value(const std::vector<TypePtr> &types);
     ~Value() override = default;
     explicit operator std::string() const { return ""; }

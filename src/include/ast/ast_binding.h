@@ -35,13 +35,17 @@ class AstTransformer {
         return std::make_shared<FunctionDefNode>(name, arguments, stmtList);
     }
 
-    static VarDef convertVarDef(const std::vector<Expr> &target,
-                                const Expr &source) {
-        return std::make_shared<VarDefNode>(target, source);
+    static Bind convertBind(const std::vector<Expr> &target,
+                            const Expr &source) {
+        return std::make_shared<BindNode>(target, source);
     }
 
     static Var convertVar(const std::string &name) {
         return std::make_shared<VarNode>(name);
+    }
+
+    static VarDef convertVarDef(const std::string &name) {
+        return std::make_shared<VarDefNode>(name);
     }
 
     static Constant convertConstant(const std::string &value) {

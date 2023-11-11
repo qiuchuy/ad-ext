@@ -1,4 +1,5 @@
 #include "ast_node.h"
+#include "type_infer.h"
 #include "visitor.h"
 
 std::array<std::string, 4> UnaryOpString = {"+", "-", "~", "!"};
@@ -16,12 +17,14 @@ void ModuleNode::accept(Visitor *visitor) {
 
 void VarNode::accept(Visitor *visitor) { visitor->visitVar(this); }
 
-void VarDefNode::accept(Visitor *visitor) {
+void VarDefNode::accept(Visitor *visitor) { visitor->visitVarDef(this); }
+
+void BindNode::accept(Visitor *visitor) {
     source->accept(visitor);
     for (const auto &target : targets) {
         target->accept(visitor);
     }
-    visitor->visitVarDef(this);
+    visitor->visitBind(this);
 }
 
 void TupleNode::accept(Visitor *visitor) {
@@ -45,10 +48,10 @@ void BinaryOpNode::accept(Visitor *visitor) {
 }
 
 void FunctionDefNode::accept(Visitor *visitor) {
+    visitor->visitFunctionDef(this);
     for (const auto &stmt : body) {
         stmt->accept(visitor);
     }
-    visitor->visitFunctionDef(this);
 }
 
 void ReturnNode::accept(Visitor *visitor) {

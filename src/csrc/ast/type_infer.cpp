@@ -80,6 +80,8 @@ void TypeInfer::visitVar(VarNode *node) {
     node->setType(type);
 }
 
+void TypeInfer::visitVarDef(VarDefNode *node) {}
+
 void TypeInfer::visitTuple(TupleNode *node) {
     std::vector<TypePtr> types;
     for (const auto &expr : node->getElems()) {
@@ -88,12 +90,12 @@ void TypeInfer::visitTuple(TupleNode *node) {
     node->setType(TupleType::createUnnamedTuple(types));
 }
 
-void TypeInfer::visitVarDef(VarDefNode *node) {
+void TypeInfer::visitBind(BindNode *node) {
     TypePtr sourceType = node->getSource()->getType();
     auto targets = node->getTargets();
     size_t targetSize = targets.size();
     if (targetSize == 0)
-        throw AINLError("Illegal VarDef statement.");
+        throw AINLError("Illegal Bind statement.");
     if (targetSize > 1) {
         for (auto &target : targets) {
             target->setType(sourceType);
@@ -118,6 +120,7 @@ void TypeInfer::visitVarDef(VarDefNode *node) {
         }
     } else {
         target->setType(sourceType);
+        env->insertSymbol(target->getName(), sourceType);
     }
 }
 

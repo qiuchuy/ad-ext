@@ -4,13 +4,18 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <utility>
 
+#include "graph.h"
 #include "type.h"
+
+class Graph;
+using GraphPtr = std::shared_ptr<Graph>;
 
 class Signature {
   public:
-    Signature(const TypePtr &inputType, const TypePtr &returnType)
-        : inputType(inputType), returnType(returnType) {}
+    Signature(TypePtr inputType, TypePtr returnType)
+        : inputType(std::move(inputType)), returnType(std::move(returnType)) {}
     bool match(const Signature &rhs) {
         return (inputType->equals(*rhs.inputType) &&
                 returnType->equals(*rhs.returnType));
@@ -40,7 +45,8 @@ using SignaturePtr = Signature *;
 
 class Method : public std::enable_shared_from_this<Method> {
   private:
-    Signature *signature;
+    SignaturePtr signature;
+    GraphPtr graph;
 };
 using MethodPtr = std::shared_ptr<Method>;
 

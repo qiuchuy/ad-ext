@@ -20,9 +20,11 @@ Value::Value(const TypePtr &type) {
 }
 
 Value::Value(const std::vector<TypePtr> &types) {
+    beginUse = new Use();
+    endUse = new Use();
     this->type = TupleType::createUnnamedTuple(types);
-    for (const auto &type : types) {
-        auto value = new Value(type);
+    for (const auto &inType : types) {
+        auto value = new Value(inType);
         values.push_back(value);
     }
 }

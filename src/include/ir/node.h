@@ -13,8 +13,11 @@
 // Extend this class to add more operators
 class Graph;
 class Block;
+class Signature;
 using GraphPtr = std::shared_ptr<Graph>;
 using BlockPtr = Block *;
+using SignaturePtr = Signature *;
+
 class Node : public Value {
   public:
     enum class NodeKind {
@@ -51,9 +54,9 @@ class Node : public Value {
         signature = nullptr;
         block = nullptr;
     }
-    ~Node() = default;
+    ~Node() override = default;
     Node();
-    Node(TypePtr type);
+    explicit Node(TypePtr type);
     Node(TypePtr type, const TypePtr &inType);
 
     void addBlock();
@@ -61,15 +64,15 @@ class Node : public Value {
     void addBlock(const std::vector<ValuePtr> &inValues,
                   const std::vector<ValuePtr> &outValues);
 
-    std::string getName() { return str(); }
-    operator std::string() { return str(); }
+    std::string getName() const override { return str(); }
+    explicit operator std::string() { return str(); }
     virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
 
     friend class Graph;
 
   protected:
     void setUse(ValuePtr value, int idx);
-    virtual std::string str() { return ""; }
+    virtual std::string str() const { return ""; }
 
   protected:
     std::vector<ValuePtr> useValueList;
@@ -89,8 +92,8 @@ class Param : public Node {
                           const TypePtr &types) {
         return new Param(params, types);
     }
-    virtual NodeKind kind() override { return Node::NodeKind::PARAM; }
-    virtual std::string str() override {
+    NodeKind kind() override { return Node::NodeKind::PARAM; }
+    std::string str() const override {
         std::stringstream ssm;
         ssm << "(";
         if (!params.empty()) {
@@ -120,8 +123,8 @@ class Return : public Node {
         return new Return(params, types);
     }
 
-    virtual NodeKind kind() override { return NodeKind::RETURN; }
-    virtual std::string str() override {
+    NodeKind kind() override { return NodeKind::RETURN; }
+    std::string str() const override {
         std::stringstream ssm;
         ssm << "return ";
         if (!params.empty()) {
@@ -141,9 +144,9 @@ NODE_PTR_TYPE_DECL(Return)
 
 class Alloca : public Node {
   public:
-    Alloca(const TypePtr &type);
-    virtual NodeKind kind() override { return Node::NodeKind::ALLOCA; }
-    virtual std::string str() override {
+    explicit Alloca(const TypePtr &type);
+    NodeKind kind() override { return Node::NodeKind::ALLOCA; }
+    std::string str() const override {
         return getName() + " = alloca " + contentType->str();
     }
 
@@ -156,8 +159,8 @@ class Load : public Node {
   public:
     Load(const ValuePtr &inValue);
     ValuePtr getAddress() const;
-    virtual NodeKind kind() override { return Node::NodeKind::LOAD; }
-    virtual std::string str() override {
+    NodeKind kind() override { return Node::NodeKind::LOAD; }
+    std::string str() const override {
         return getName() + " = load " + getAddress()->getName();
     }
 };
@@ -168,8 +171,8 @@ class Store : public Node {
     Store(const ValuePtr &inValue, const ValuePtr &address);
     ValuePtr getAddress() const;
     ValuePtr getValue() const;
-    virtual NodeKind kind() override { return Node::NodeKind::STORE; }
-    virtual std::string str() override {
+    NodeKind kind() override { return Node::NodeKind::STORE; }
+    std::string str() const override {
         return "store " + getValue()->getName() + ", " +
                getAddress()->getName();
     }

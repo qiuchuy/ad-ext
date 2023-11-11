@@ -22,10 +22,10 @@ class SymbolTable:
         else:
             return self
 
-    def insert(self, variable):
+    def insert(self, variable: str):
         self.env.append(variable)
 
-    def query(self, name):
+    def query(self, name: str):
         if name in self.env:
             return True
         else:
@@ -33,11 +33,28 @@ class SymbolTable:
                 return self.parent.query(name)
             return False
 
-    @classmethod
-    def add_scope(cls, self):
-        new_scope = cls(self)
+    def add_scope(self):
+        new_scope = SymbolTable(self)
         self.child.append(new_scope)
         return new_scope
+
+
+class Environment:
+    def __init__(self):
+        self.table = SymbolTable()
+
+    def resolve(self):
+        self.table.resolve()
+
+    def insert(self, variable: str):
+        self.table.insert(variable)
+
+    def query(self, name: str):
+        return self.table.query(name)
+
+    def add_scope(self):
+        new_table = self.table.add_scope()
+        self.table = new_table
 
 
 class TransformerVisitor(gast.NodeVisitor):
@@ -49,7 +66,7 @@ class TransformerVisitor(gast.NodeVisitor):
         super().__init__()
         self.root = None
         self.transformer = AstTransformer()
-        self.env = SymbolTable()
+        self.env = Environment()
 
     def visit_Module(self, node):
         stmt_list = []
@@ -89,6 +106,7 @@ class TransformerVisitor(gast.NodeVisitor):
         # [TODO] handle class method
         arg_list = []
         for argument in node.args.args:
+            self.env.insert(argument.id)
             arg_list.append(argument.id)
         body_list = []
         for body in node.body:
@@ -109,7 +127,11 @@ class TransformerVisitor(gast.NodeVisitor):
         return return_node
 
     def visit_Name(self, node):
-        return self.transformer.convert_Name(node.id)
+        if not self.env.query(node.id):
+            self.env.insert(node.id)
+            return self.transformer.convert_NameDef(node.id)
+        else:
+            return self.transformer.convert_Name(node.id)
 
     def visit_Constant(self, node):
         return self.transformer.convert_Constant(str(node.value))

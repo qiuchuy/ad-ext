@@ -1,6 +1,15 @@
 #include "graph.h"
 #include "value.h"
 
+template <typename NodeType, typename... ARGS>
+NodePtr Graph::create(ARGS &&...args) {
+    NodePtr node = new NodeType(std::forward<ARGS>(args)...);
+    node->graph = shared_from_this();
+    node->block = endBlock;
+    insertNodeAtEnd(node);
+    return node;
+}
+
 Graph::Graph(const std::vector<ValuePtr> &inputValues,
              const std::vector<ValuePtr> &returnValues) {
     TypePtr inType = createTypePtrForValues(inputValues);

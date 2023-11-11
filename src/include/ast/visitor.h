@@ -8,6 +8,7 @@
 AST_PTR_TYPE_DECL(Module)
 AST_PTR_TYPE_DECL(Stmt)
 AST_PTR_TYPE_DECL(Expr)
+AST_PTR_TYPE_DECL(Bind)
 AST_PTR_TYPE_DECL(VarDef)
 AST_PTR_TYPE_DECL(Var)
 AST_PTR_TYPE_DECL(Tuple)
@@ -26,8 +27,9 @@ class Visitor {
     virtual void visitModule(ModuleNode *node) = 0;
     virtual void visitStmt(StmtNode *node) = 0;
     virtual void visitExpr(ExprNode *node) = 0;
-    virtual void visitVarDef(VarDefNode *node) = 0;
+    virtual void visitBind(BindNode *node) = 0;
     virtual void visitVar(VarNode *node) = 0;
+    virtual void visitVarDef(VarDefNode *node) = 0;
     virtual void visitTuple(TupleNode *node) = 0;
     virtual void visitConstant(ConstantNode *node) = 0;
     virtual void visitFunctionDef(FunctionDefNode *node) = 0;
