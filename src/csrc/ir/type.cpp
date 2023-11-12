@@ -1,4 +1,5 @@
 #include "type.h"
+#include "literal.h"
 
 template <typename T> std::shared_ptr<T> SingletonTypePtr<T>::ptr = nullptr;
 
@@ -25,7 +26,7 @@ bool Type::compare(Type &other) {
                 ->getElementType();
         TypePtr rhsBaseType =
             SAFE_TYPE_DOWNCAST(rhsPtr, TensorType)->getElementType();
-        if (thisBaseType < rhsBaseType) {
+        if (thisBaseType->kind() < rhsBaseType->kind()) {
             return true;
         } else {
             return false;
@@ -35,5 +36,22 @@ bool Type::compare(Type &other) {
         return false;
     if (rhsPtr->isTensorType())
         return true;
-    return (*this < *rhsPtr);
+    return this->kind() < rhsPtr->kind();
+}
+
+std::vector<int> TensorType::getConcreteShape() {
+    auto shape = getShape();
+    if (std::all_of(shape.begin(), shape.end(),
+                    [](ValuePtr value) { return value->isLiteral(); })) {
+        std::vector<int> concreteShape;
+        for (const auto &value : shape) {
+            assert(value->getType()->isIntType());
+            concreteShape.push_back((SAFE_VALUE_DOWNCAST(value, Literal)
+                    ->getIntConcreteValue()));
+        }
+        return concreteShape;
+    } else {
+        throw AINLError(
+                "Attempting to get concrete shape of a fully symbolic tensor.");
+    }
 }

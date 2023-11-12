@@ -29,6 +29,18 @@ Value::Value(const std::vector<TypePtr> &types) {
     }
 }
 
+bool Value::operator==(const Value &other) const {
+    if (!this->isLiteral() || !other.isLiteral())
+        return false;
+    if (this->getType()->kind() != other.getType()->kind())
+        return false;
+    return this->getName() == other.getName();
+}
+
+bool Value::operator!=(const Value &other) const {
+    return !(*this == other);
+}
+
 void Value::insertUseAtEnd(UsePtr use) { endUse->insertBefore(use); }
 
 std::string Value::getName() const {

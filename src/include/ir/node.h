@@ -59,26 +59,29 @@ class Node : public Value {
     explicit Node(TypePtr type);
     Node(TypePtr type, const TypePtr &inType);
 
-    void addBlock();
-    void addBlock(const std::vector<ValuePtr> &inValues);
-    void addBlock(const std::vector<ValuePtr> &inValues,
-                  const std::vector<ValuePtr> &outValues);
-
-    std::string getName() const override { return str(); }
+    std::string getName() const override { return "ailang::" + str(); }
     explicit operator std::string() { return str(); }
     virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
 
     friend class Graph;
 
   protected:
+    void addBlock();
+    void addBlock(const std::vector<ValuePtr> &inValues);
+    void addBlock(const std::vector<ValuePtr> &inValues,
+                  const std::vector<ValuePtr> &outValues);
     void setUse(ValuePtr value, int idx);
     virtual std::string str() const { return ""; }
 
   protected:
     std::vector<ValuePtr> useValueList;
     std::vector<UsePtr> useList;
+
+    // They are actually not created by the constructor
+    // Created by Graph
     SignaturePtr signature;
     GraphPtr graph;
+    // Created when creating a new local scope
     BlockPtr block;
 };
 NODE_PTR_TYPE_DECL(Node)
@@ -178,5 +181,20 @@ class Store : public Node {
     }
 };
 NODE_PTR_TYPE_DECL(Store)
+
+class MatMul : public Node {
+public:
+    MatMul(const ValuePtr &lhs, const ValuePtr &rhs);
+    NodeKind kind() override {return Node::NodeKind::MATMUL;}
+    std::string str() const override {
+        return "matmul(" + getLHS()->getName() + ", " + getRHS()->getName() + ")";
+    }
+    ValuePtr getLHS() const {return lhs;}
+    ValuePtr getRHS() const {return rhs;}
+private:
+    ValuePtr lhs;
+    ValuePtr rhs;
+};
+
 
 #endif // AINL_SRC_INCLUDE_NODE_H

@@ -1,8 +1,31 @@
 #include "type_infer.h"
 #include "symbol.h"
 
+TypePtr matmulContract(const TypePtr& lhsType, const TypePtr& rhsType) {
+    // Type Checking
+    assert(lhsType->isTensorType() && rhsType->isTensorType());
+    TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
+    TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
+    std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
+    std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
+    assert(lhsTensorType->getElementType()->equals(*rhsTensorType->getElementType()));
+    assert(lhsShape.back() == rhsShape.front());
+
+    // Construct the result type
+    std::vector<ValuePtr> lhsShapeWithoutLastDim(lhsShape.begin(), lhsShape.end() -1);
+    std::vector<ValuePtr> rhsShapeWithoutFirstDim(rhsShape.begin() + 1, rhsShape.end());
+    std::vector<ValuePtr> matmulShape(lhsShapeWithoutLastDim.begin(), lhsShapeWithoutLastDim.end());
+    matmulShape.insert(matmulShape.end(), rhsShapeWithoutFirstDim.begin(), rhsShapeWithoutFirstDim.end());
+    TypePtr elementType = lhsTensorType->getElementType();
+    return TensorType::create(elementType, matmulShape);
+}
+
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
                      const std::vector<TypePtr> &types) {
+    REGISTER_TYPE_CONTRACT("matmul", &matmulContract)
+
+
+
     assert(args.size() == types.size());
     size_t len = args.size();
     for (size_t i = 0; i < len; i++)
@@ -22,12 +45,27 @@ void TypeInfer::visitBinaryOp(BinaryOpNode *node) {
 }
 
 void TypeInfer::visitCall(CallNode *node) {
-    TypePtr returnType =
-        SAFE_TYPE_DOWNCAST(
-            (env->lookup(node->getFunction()->getName())->getType()),
-            FunctionType)
-            ->getReturnType();
-    node->setType(returnType);
+    std::string funcName = node->getCallFunction()->getName();
+    // for now, we use "::" to specify namespace
+    size_t lastNamespace = funcName.find_last_of("::");
+    if (lastNamespace != std::string::npos) {
+        // This is a library function call
+        std::string libraryFunction = funcName.substr(lastNamespace);
+        std::vector<Expr> callArgs = node->getCallArgs();
+        std::vector<TypePtr> argTypes;
+        for (const auto& arg : callArgs) {
+            argTypes.push_back(arg->getType());
+        }
+        TypePtr returnType = TypeContract::query(libraryFunction, callArgs);
+        node->setType(returnType);
+    } else {
+        TypePtr returnType =
+                SAFE_TYPE_DOWNCAST(
+                        (env->lookup(node->getCallFunction()->getName())->getType()),
+                        FunctionType)
+                        ->getReturnType();
+        node->setType(returnType);
+    }
 }
 
 void TypeInfer::visitConstant(ConstantNode *node) {

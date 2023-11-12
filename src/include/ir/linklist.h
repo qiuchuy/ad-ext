@@ -26,9 +26,9 @@ class ILinkNode {
     void insertAfter(ILinkNode *node);
     void insertBefore(ILinkNode *node);
 
-    bool operator==(const ILinkNode &other) const;
+    virtual bool operator==(const ILinkNode &other) const;
 
-    bool operator!=(const ILinkNode &other) const;
+    virtual bool operator!=(const ILinkNode &other) const;
 
     bool operator<(const ILinkNode &other) const;
 };

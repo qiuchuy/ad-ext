@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #include "logger.h"
 #include "value.h"
@@ -311,6 +312,7 @@ class TensorType : public Type {
     std::string str() override;
     bool isTensorType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
+    std::vector<int> getConcreteShape();
     std::vector<ValuePtr> getShape() { return shape; }
     TypePtr getElementType() { return elementType; }
 

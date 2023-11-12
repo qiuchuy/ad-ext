@@ -26,7 +26,7 @@ class Tensor {
     std::vector<int> getConcreteShape() {
         auto shape = type->getShape();
         if (std::all_of(shape.begin(), shape.end(),
-                        [](ValuePtr value) { return value->is_literal(); })) {
+                        [](ValuePtr value) { return value->isLiteral(); })) {
             std::vector<int> concreteShape;
             for (const auto &value : shape) {
                 assert(value->getType()->isIntType());

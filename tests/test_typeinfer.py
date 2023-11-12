@@ -83,5 +83,29 @@ class TestBind:
                 )
             ]
         )
-        print(ref_ast)
         assert typed_ast.match(ref_ast)
+
+    """
+    def test_librarycall(self):
+        def f(x, y):
+            return al.matmul(x, y)
+
+        a = al.tensor((1, 2), "Float")
+        b = al.tensor((2, 3), "Float")
+        typed_ast = compile_ast(f, a, b)
+        ref_ast = ModuleNode(
+            [
+                FunctionDefNode(
+                    "f",
+                    ["x", "y"],
+                    [
+                        ReturnNode(
+                            CallNode(VarNode("al::matmul"), [VarNode("x"), VarNode("y")]),
+                            TensorType((1, 3), "Float")
+                        )
+                    ],
+                )
+            ]
+        )
+        assert typed_ast.match(ref_ast)
+    """

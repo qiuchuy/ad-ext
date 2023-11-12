@@ -76,7 +76,7 @@ void WhileNode::accept(Visitor *visitor) {
 }
 
 void CallNode::accept(Visitor *visitor) {
-    func->accept(visitor);
+    // func->accept(visitor);
     for (const auto &arg : args) {
         arg->accept(visitor);
     }

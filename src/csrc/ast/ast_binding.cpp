@@ -128,7 +128,8 @@ void initAST(py::module_ &m) {
     py::class_<CallNode, ExprNode, std::shared_ptr<CallNode>>(
         m, "CallNode", py::dynamic_attr())
         .def(py::init<>())
-        .def(py::init<Expr, std::vector<Expr>>());
+        .def(py::init<Expr, std::vector<Expr>>())
+        .def(py::init<Expr, std::vector<Expr>, TypePtr>());
 
     py::class_<AstTransformer>(m, "AstTransformer")
         .def(py::init<>())

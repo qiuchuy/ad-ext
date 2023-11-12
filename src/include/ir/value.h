@@ -127,20 +127,27 @@ class Value : public ILinkNode {
     ~Value() override = default;
     explicit operator std::string() const { return ""; }
     virtual std::string getName() const;
-    TypePtr getType() { return type; }
+    TypePtr getType() const { return type; }
 
-    virtual bool is_literal() { return "false"; }
+    virtual bool isLiteral() const { return "false"; }
+
+    bool operator==(const Value &other) const ;
+
+    bool operator!=(const Value &other) const ;
+
+
 
   public:
     void insertUseAtEnd(UsePtr use);
 
   protected:
     TypePtr type;
+
+    // attribute will be created by nodes/analysis passes
     AttributePtr attribute;
+
     UsePtr beginUse;
     UsePtr endUse;
-    // ValuePtr beginValue;
-    // ValuePtr endValue;
     std::vector<ValuePtr> values;
 };
 
