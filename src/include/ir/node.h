@@ -183,18 +183,19 @@ class Store : public Node {
 NODE_PTR_TYPE_DECL(Store)
 
 class MatMul : public Node {
-public:
+  public:
     MatMul(const ValuePtr &lhs, const ValuePtr &rhs);
-    NodeKind kind() override {return Node::NodeKind::MATMUL;}
+    NodeKind kind() override { return Node::NodeKind::MATMUL; }
     std::string str() const override {
-        return "matmul(" + getLHS()->getName() + ", " + getRHS()->getName() + ")";
+        return "matmul(" + getLHS()->getName() + ", " + getRHS()->getName() +
+               ")";
     }
-    ValuePtr getLHS() const {return lhs;}
-    ValuePtr getRHS() const {return rhs;}
-private:
+    ValuePtr getLHS() const { return lhs; }
+    ValuePtr getRHS() const { return rhs; }
+
+  private:
     ValuePtr lhs;
     ValuePtr rhs;
 };
-
 
 #endif // AINL_SRC_INCLUDE_NODE_H

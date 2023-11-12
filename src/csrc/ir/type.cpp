@@ -46,12 +46,12 @@ std::vector<int> TensorType::getConcreteShape() {
         std::vector<int> concreteShape;
         for (const auto &value : shape) {
             assert(value->getType()->isIntType());
-            concreteShape.push_back((SAFE_VALUE_DOWNCAST(value, Literal)
-                    ->getIntConcreteValue()));
+            concreteShape.push_back(
+                (SAFE_VALUE_DOWNCAST(value, Literal)->getIntConcreteValue()));
         }
         return concreteShape;
     } else {
         throw AINLError(
-                "Attempting to get concrete shape of a fully symbolic tensor.");
+            "Attempting to get concrete shape of a fully symbolic tensor.");
     }
 }

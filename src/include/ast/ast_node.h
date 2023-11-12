@@ -565,7 +565,7 @@ class CallNode : public ExprNode {
     void accept(Visitor *visitor) override;
     bool isCallNode() override { return true; }
     Expr getCallFunction() { return func; }
-    std::vector<Expr> getCallArgs() {return args;}
+    std::vector<Expr> getCallArgs() { return args; }
 
   private:
     size_t hash() const override {

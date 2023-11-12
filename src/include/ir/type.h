@@ -1,13 +1,13 @@
 #ifndef AINL_SRC_INCLUDE_TYPE_H
 #define AINL_SRC_INCLUDE_TYPE_H
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 #include "logger.h"
 #include "value.h"

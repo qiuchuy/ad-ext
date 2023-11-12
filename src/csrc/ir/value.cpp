@@ -37,9 +37,7 @@ bool Value::operator==(const Value &other) const {
     return this->getName() == other.getName();
 }
 
-bool Value::operator!=(const Value &other) const {
-    return !(*this == other);
-}
+bool Value::operator!=(const Value &other) const { return !(*this == other); }
 
 void Value::insertUseAtEnd(UsePtr use) { endUse->insertBefore(use); }
 

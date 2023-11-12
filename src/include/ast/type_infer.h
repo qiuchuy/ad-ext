@@ -1,33 +1,35 @@
 #ifndef AINL_SRC_INCLUDE_TYPE_INFER_H
 #define AINL_SRC_INCLUDE_TYPE_INFER_H
 
-#include <map>
 #include <functional>
+#include <map>
 
 #include "visitor.h"
 
-template <typename... Args>
-struct ContractHolder {
+template <typename... Args> struct ContractHolder {
     static std::map<std::string, TypePtr (*)(Args...)> contractMap;
 };
 
 template <class... Args>
-std::map<std::string, TypePtr (*)(Args...)> ContractHolder<Args...>::contractMap;
+std::map<std::string, TypePtr (*)(Args...)>
+    ContractHolder<Args...>::contractMap;
 
 class TypeContract {
-public:
+  public:
     template <typename... Args>
-    static void registerContract(std::string name, TypePtr (*contract)(Args...)) {
+    static void registerContract(std::string name,
+                                 TypePtr (*contract)(Args...)) {
         ContractHolder<Args...>::contractMap[name] = contract;
     }
 
     template <typename... Args>
-    static TypePtr query(const std::string& name, Args &&... args) {
-        return ContractHolder<Args...>::contractMap[name](std::forward<Args>(args)...);
+    static TypePtr query(const std::string &name, Args &&...args) {
+        return ContractHolder<Args...>::contractMap[name](
+            std::forward<Args>(args)...);
     }
 };
 
-#define REGISTER_TYPE_CONTRACT(name, contract) \
+#define REGISTER_TYPE_CONTRACT(name, contract)                                 \
     TypeContract::registerContract(name, contract);
 
 /*
@@ -40,8 +42,6 @@ NodePtr Graph::create(ARGS &&...args) {
     return node;
 }
 */
-
-
 
 class TypeInfer : public Visitor {
   public:

@@ -131,11 +131,9 @@ class Value : public ILinkNode {
 
     virtual bool isLiteral() const { return "false"; }
 
-    bool operator==(const Value &other) const ;
+    bool operator==(const Value &other) const;
 
-    bool operator!=(const Value &other) const ;
-
-
+    bool operator!=(const Value &other) const;
 
   public:
     void insertUseAtEnd(UsePtr use);
