@@ -85,7 +85,6 @@ class TestBind:
         )
         assert typed_ast.match(ref_ast)
 
-    """
     def test_librarycall(self):
         def f(x, y):
             return al.matmul(x, y)
@@ -100,12 +99,17 @@ class TestBind:
                     ["x", "y"],
                     [
                         ReturnNode(
-                            CallNode(VarNode("al::matmul"), [VarNode("x"), VarNode("y")]),
-                            TensorType((1, 3), "Float")
+                            CallNode(
+                                VarNode("al::matmul"),
+                                [
+                                    VarNode("x", TensorType((1, 2), "Float")),
+                                    VarNode("y", TensorType((2, 3), "Float")),
+                                ],
+                                TensorType((1, 3), "Float"),
+                            )
                         )
                     ],
                 )
             ]
         )
         assert typed_ast.match(ref_ast)
-    """

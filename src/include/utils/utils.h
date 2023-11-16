@@ -16,4 +16,6 @@ BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind);
 UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind);
 CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
 
+std::string trim(const std::string &str);
+
 #endif // AINL_SRC_INCLUDE_UTILS_H

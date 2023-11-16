@@ -1,16 +1,20 @@
 #include "type_infer.h"
 #include "symbol.h"
+#include "utils.h"
 
 TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     // Type Checking
     assert(lhsType->isTensorType() && rhsType->isTensorType());
+    if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
+        throw AINLError("matmul operator only applies to two tensors.");
+    }
     TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
     TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
     std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
     std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
-    assert(lhsTensorType->getElementType()->equals(
-        *rhsTensorType->getElementType()));
-    assert(lhsShape.back() == rhsShape.front());
+    if (*lhsShape.back() != *rhsShape.front()) {
+        throw AINLError("tensor shapes are not matched for matmul.");
+    }
 
     // Construct the result type
     std::vector<ValuePtr> lhsShapeWithoutLastDim(lhsShape.begin(),
@@ -25,11 +29,21 @@ TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     return TensorType::create(elementType, matmulShape);
 }
 
+void TypeInfer::initLibraryOperatorTypeContract() {
+    contract.registerContract("matmul", [](std::vector<std::any> args) {
+        if (args.size() != 2) {
+            throw AINLError("Invalid argument number for operator matmul");
+        }
+        return matmulContract(std::any_cast<TypePtr>(args[0]),
+                              std::any_cast<TypePtr>(args[1]));
+    });
+}
+
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
                      const std::vector<TypePtr> &types) {
-    REGISTER_TYPE_CONTRACT("matmul", &matmulContract)
 
     assert(args.size() == types.size());
+    initLibraryOperatorTypeContract();
     size_t len = args.size();
     for (size_t i = 0; i < len; i++)
         typedParams[args[i]] = types[i];
@@ -53,13 +67,14 @@ void TypeInfer::visitCall(CallNode *node) {
     size_t lastNamespace = funcName.find_last_of("::");
     if (lastNamespace != std::string::npos) {
         // This is a library function call
-        std::string libraryFunction = funcName.substr(lastNamespace);
+        std::string libraryFunction = (funcName.substr(lastNamespace + 1));
         std::vector<Expr> callArgs = node->getCallArgs();
-        std::vector<TypePtr> argTypes;
+        std::vector<std::any> argTypes;
         for (const auto &arg : callArgs) {
             argTypes.push_back(arg->getType());
         }
-        TypePtr returnType = TypeContract::query(libraryFunction, callArgs);
+        TypePtr returnType =
+            contract.resolveContract(libraryFunction, argTypes);
         node->setType(returnType);
     } else {
         TypePtr returnType =

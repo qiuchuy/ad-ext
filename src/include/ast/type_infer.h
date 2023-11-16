@@ -1,47 +1,33 @@
 #ifndef AINL_SRC_INCLUDE_TYPE_INFER_H
 #define AINL_SRC_INCLUDE_TYPE_INFER_H
 
+#include <any>
 #include <functional>
 #include <map>
+#include <utility>
 
 #include "visitor.h"
 
-template <typename... Args> struct ContractHolder {
-    static std::map<std::string, TypePtr (*)(Args...)> contractMap;
-};
-
-template <class... Args>
-std::map<std::string, TypePtr (*)(Args...)>
-    ContractHolder<Args...>::contractMap;
-
 class TypeContract {
   public:
-    template <typename... Args>
-    static void registerContract(std::string name,
-                                 TypePtr (*contract)(Args...)) {
-        ContractHolder<Args...>::contractMap[name] = contract;
+    using AnyFunction = std::function<TypePtr(std::vector<std::any>)>;
+
+    void registerContract(const std::string &name, AnyFunction func) {
+        functions[name] = std::move(func);
     }
 
-    template <typename... Args>
-    static TypePtr query(const std::string &name, Args &&...args) {
-        return ContractHolder<Args...>::contractMap[name](
-            std::forward<Args>(args)...);
+    TypePtr resolveContract(const std::string &name,
+                            std::vector<std::any> args) {
+        if (functions.find(name) == functions.end()) {
+            throw AINLError(
+                "This operator has not been registered into the library yet.");
+        }
+        return functions[name](std::move(args));
     }
+
+  private:
+    std::map<std::string, AnyFunction> functions;
 };
-
-#define REGISTER_TYPE_CONTRACT(name, contract)                                 \
-    TypeContract::registerContract(name, contract);
-
-/*
-template <typename NodeType, typename... ARGS>
-NodePtr Graph::create(ARGS &&...args) {
-    NodePtr node = new NodeType(std::forward<ARGS>(args)...);
-    node->graph = shared_from_this();
-    node->block = endBlock;
-    insertNodeAtEnd(node);
-    return node;
-}
-*/
 
 class TypeInfer : public Visitor {
   public:
@@ -65,9 +51,12 @@ class TypeInfer : public Visitor {
     void visitCompare(CompareNode *node) override;
     void visitIf(IfNode *node) override;
 
+    void initLibraryOperatorTypeContract();
+
   private:
     std::map<std::string, TypePtr> typedParams;
     std::string curFunc;
+    TypeContract contract;
 };
 
 #endif
