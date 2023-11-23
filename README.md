@@ -9,6 +9,8 @@ mkdir build
 cd build
 cmake ..
 make
+cd ../python
+pip install -e .
 ```
 + build with custom llvm & mlir
 ```
@@ -20,6 +22,8 @@ cmake .. \
 -DUSE_CUSTOM_MLIR=ON \
 -DCUSTOM_LLVM_PATH=\path\to\your\mlir\path 
 make
+cd ../python
+pip install -e .
 ```
 + run test
 ```
