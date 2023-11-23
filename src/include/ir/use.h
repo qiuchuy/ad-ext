@@ -6,10 +6,9 @@
 #include "linklist.h"
 #include "value.h"
 
-class Use;
 class Value;
-using UsePtr = Use *;
 using ValuePtr = Value *;
+
 class Use : public ILinkNode {
   public:
     ValuePtr user{};

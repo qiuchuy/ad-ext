@@ -33,3 +33,16 @@ def compile_ast(f: Callable, *args: Union[Tuple[Tensor], Tensor]) -> ModuleNode:
     arg_names = list(inspect.signature(f).parameters.values())
     arg_names = [str(name) for name in arg_names]
     return ast.type_infer(arg_names, *args)
+
+
+def compile_ir(f: Callable, *args: Union[Tuple[Tensor], Tensor]):
+    """
+    Compile a python callable into AINL typed IR.
+    :param f: function to be compiled
+    :param args: input arguments
+    :return: typed AINL IR Module
+    """
+    ast = parse_pycallable(f)
+    arg_names = list(inspect.signature(f).parameters.values())
+    arg_names = [str(name) for name in arg_names]
+    return ast.ir_lowering(arg_names, *args)

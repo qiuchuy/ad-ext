@@ -169,6 +169,7 @@ class FunctionType : public Type {
     bool isFunctionType() override { return true; }
     TypePtr getTypePtr() override { return shared_from_this(); }
     TypePtr getReturnType() { return returnType; }
+    TypePtr getArgType() { return argType; }
 
   private:
     TypePtr argType;
@@ -218,7 +219,7 @@ class TupleType : public Type {
     std::string str() override {
         std::stringstream ssm;
         size_t size = types.size();
-        ssm << "tuple(";
+        ssm << "(";
         for (size_t i = 0; i < size; i++) {
             if (i == size - 1) {
                 ssm << types[i]->str() << ")";

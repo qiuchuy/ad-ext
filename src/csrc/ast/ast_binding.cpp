@@ -1,8 +1,8 @@
 #include "ast_binding.h"
+#include "ir_building.h"
 #include "tensor.h"
 #include "type_infer.h"
 #include "utils.h"
-#include "visitor.h"
 
 void initAST(py::module_ &m) {
     py::class_<ASTNode, std::shared_ptr<ASTNode>>(m, "ASTNode",
@@ -47,7 +47,35 @@ void initAST(py::module_ &m) {
                 clonedModule->accept(visitor.get());
                 return clonedModule;
             },
-            py::return_value_policy::reference);
+            py::return_value_policy::reference)
+        .def("ir_lowering", [](const Module &self,
+                               const std::vector<std::string> &argNames,
+                               const py::args &args) {
+            assert(args.size() == argNames.size());
+            std::vector<TypePtr> argTypes;
+            for (const auto &arg : args) {
+                if (arg.cast<TensorPtr>()) {
+                    auto tensor = arg.cast<TensorPtr>();
+                    argTypes.push_back(tensor->getType());
+                }
+                if (py::isinstance<py::int_>(arg)) {
+                    argTypes.push_back(IntTypePtr::get());
+                }
+                if (py::isinstance<py::float_>(arg)) {
+                    argTypes.push_back(FloatTypePtr ::get());
+                }
+                if (py::isinstance<py::bool_>(arg)) {
+                    argTypes.push_back(BoolTypePtr::get());
+                }
+            }
+            auto typeInferer = std::make_unique<TypeInfer>(argNames, argTypes);
+            auto clonedModule = std::make_shared<ModuleNode>(*self);
+            clonedModule->accept(typeInferer.get());
+            auto irBuilder = std::make_unique<IRBuilder>(argNames);
+            clonedModule->accept(irBuilder.get());
+            auto irModule = irBuilder->getModule();
+            return irModule;
+        });
 
     py::class_<BindNode, StmtNode, std::shared_ptr<BindNode>>(
         m, "BindNode", py::dynamic_attr())

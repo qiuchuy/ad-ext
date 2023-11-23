@@ -4,6 +4,11 @@
 
 #include "use.h"
 
+int Value::valueNum = 0;
+std::string Value::LOCAL_PREFIX = "%";
+std::string Value::LOCAL_NAME_PREFIX = "v";
+std::string Value::FPARAM_NAME_PREFIX = "f";
+
 Value::Value() {
     beginUse = new Use();
     endUse = new Use();
@@ -41,15 +46,13 @@ bool Value::operator!=(const Value &other) const { return !(*this == other); }
 
 void Value::insertUseAtEnd(UsePtr use) { endUse->insertBefore(use); }
 
-std::string Value::getName() const {
-    return std::string(*type) + " " + prefix + name;
-}
+std::string Value::getName() const { return prefix + name; }
 
-TypePtr createTypePtrForValues(const std::vector<ValuePtr> &values) {
+TypePtr createTypePtrForValues(const std::vector<Value *> &values) {
     if (values.size() > 1) {
         std::vector<std::string> names;
         std::vector<TypePtr> types;
-        for (const ValuePtr &value : values) {
+        for (const Value *value : values) {
             names.push_back(value->getName());
             types.push_back(value->getType());
         }

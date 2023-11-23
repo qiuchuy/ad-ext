@@ -1,6 +1,8 @@
-#include "node.h"
-
 #include <memory>
+
+#include "block.h"
+#include "function.h"
+#include "node.h"
 
 Node::Node() : Value() { init(); }
 
@@ -47,20 +49,6 @@ void Node::addBlock(const std::vector<ValuePtr> &inValues) {
     this->block->endBlock->insertBefore(block);
 }
 
-void Node::addBlock(const std::vector<ValuePtr> &inValues,
-                    const std::vector<ValuePtr> &outValues) {
-    auto newBlock = new Block(inValues, outValues);
-    if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(newBlock);
-        return;
-    }
-    this->block->beginBlock = new Block();
-    this->block->endBlock = new Block();
-    this->block->beginBlock->setNext(this->block->endBlock);
-    this->block->endBlock->setPrev(this->block->beginBlock);
-    this->block->endBlock->insertBefore(block);
-}
-
 Alloca::Alloca(const TypePtr &type)
     : Node(PointerType::createPointerType(type)) {
     this->contentType = type;
@@ -89,8 +77,8 @@ Param::Param(const std::vector<ValuePtr> &params, const TypePtr &type)
     this->contentType = type;
 }
 
-Return::Return() : Node(VoidTypePtr::get()) {}
-Return::Return(const std::vector<ValuePtr> &params, const TypePtr &type)
+ReturnOp::ReturnOp() : Node(VoidTypePtr::get()) {}
+ReturnOp::ReturnOp(const std::vector<ValuePtr> &params, const TypePtr &type)
     : Node(VoidTypePtr::get(), type) {
     this->params = params;
     this->contentType = type;

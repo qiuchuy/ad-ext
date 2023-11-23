@@ -2,7 +2,7 @@
 
 Block::Block() {
     paramNode = Param::create();
-    returnNode = Return::create();
+    returnNode = ReturnOp::create();
     beginNode = new Node();
     endNode = new Node();
     beginNode->setNext(endNode);
@@ -11,9 +11,14 @@ Block::Block() {
 }
 
 Block::Block(const std::vector<ValuePtr> &inValues) {
+
+    for (auto &param : inValues) {
+        param->block = this;
+    }
+
     TypePtr inType = createTypePtrForValues(inValues);
     paramNode = Param::create(inValues, inType);
-    returnNode = Return::create();
+    returnNode = ReturnOp::create();
     beginNode = new Node();
     endNode = new Node();
     beginNode->setNext(endNode);
@@ -21,17 +26,5 @@ Block::Block(const std::vector<ValuePtr> &inValues) {
     beginBlock = endBlock = nullptr;
 }
 
-Block::Block(const std::vector<ValuePtr> &inValues,
-             const std::vector<ValuePtr> &outValues) {
-    TypePtr inType = createTypePtrForValues(inValues);
-    TypePtr outType = createTypePtrForValues(outValues);
-    paramNode = Param::create(inValues, inType);
-    returnNode = Return::create(outValues, outType);
-    beginNode = new Node();
-    endNode = new Node();
-    beginNode->setNext(endNode);
-    endNode->setPrev(beginNode);
-    beginBlock = endBlock = nullptr;
-}
-
-void Block::insertNodeAtEnd(NodePtr node) { endNode->insertBefore(node); }
+std::vector<ValuePtr> Block::getParams() { return paramNode->getParams(); }
+void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }

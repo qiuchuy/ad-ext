@@ -18,10 +18,14 @@ class Attribute;
 class Value;
 class Use;
 class Type;
+class Block;
+class Graph;
 using AttributePtr = Attribute *;
 using ValuePtr = Value *;
 using UsePtr = Use *;
 using TypePtr = std::shared_ptr<Type>;
+using BlockPtr = Block *;
+using GraphPtr = std::shared_ptr<Graph>;
 
 class Attribute {
   public:
@@ -112,20 +116,19 @@ class Value : public ILinkNode {
     std::string prefix;
     std::string name;
 
-    static std::string GLOBAL_PREFIX;
+    // static std::string GLOBAL_PREFIX;
     static std::string LOCAL_PREFIX;
-    static std::string GLOBAL_NAME_PREFIX;
+    // static std::string GLOBAL_NAME_PREFIX;
     static std::string LOCAL_NAME_PREFIX;
     static std::string FPARAM_NAME_PREFIX;
 
-    // bool is_literal() {return false;}
+    static int valueNum;
 
   public:
     Value();
     explicit Value(const TypePtr &type);
     Value(const std::vector<TypePtr> &types);
     ~Value() override = default;
-    explicit operator std::string() const { return ""; }
     virtual std::string getName() const;
     TypePtr getType() const { return type; }
 
@@ -134,19 +137,30 @@ class Value : public ILinkNode {
     bool operator==(const Value &other) const;
 
     bool operator!=(const Value &other) const;
+    virtual explicit operator std::string() const { return "!value!"; }
+    friend class Block;
+    friend class ALModule;
 
   public:
     void insertUseAtEnd(UsePtr use);
 
   protected:
+    // Type of this value
     TypePtr type;
 
     // attribute will be created by nodes/analysis passes
     AttributePtr attribute;
 
+    // Use-def chain
     UsePtr beginUse;
     UsePtr endUse;
+
+    // This value could be a tuple which stores other values
     std::vector<ValuePtr> values;
+
+    // the Graph & Block which this value belongs to
+    GraphPtr graph;
+    BlockPtr block;
 };
 
 TypePtr createTypePtrForValues(const std::vector<ValuePtr> &values);

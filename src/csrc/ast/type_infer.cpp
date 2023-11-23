@@ -4,7 +4,6 @@
 
 TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     // Type Checking
-    assert(lhsType->isTensorType() && rhsType->isTensorType());
     if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
         throw AINLError("matmul operator only applies to two tensors.");
     }
@@ -30,12 +29,11 @@ TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
 }
 
 void TypeInfer::initLibraryOperatorTypeContract() {
-    contract.registerContract("matmul", [](std::vector<std::any> args) {
+    contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
             throw AINLError("Invalid argument number for operator matmul");
         }
-        return matmulContract(std::any_cast<TypePtr>(args[0]),
-                              std::any_cast<TypePtr>(args[1]));
+        return matmulContract((args[0]), (args[1]));
     });
 }
 
@@ -69,7 +67,7 @@ void TypeInfer::visitCall(CallNode *node) {
         // This is a library function call
         std::string libraryFunction = (funcName.substr(lastNamespace + 1));
         std::vector<Expr> callArgs = node->getCallArgs();
-        std::vector<std::any> argTypes;
+        std::vector<TypePtr> argTypes;
         for (const auto &arg : callArgs) {
             argTypes.push_back(arg->getType());
         }
@@ -161,7 +159,6 @@ void TypeInfer::visitBind(BindNode *node) {
     }
     auto target = targets.back();
     if (target->isTupleNode()) {
-        assert(sourceType->isTupleType());
         TupleTypePtr sourceTupleType =
             SAFE_TYPE_DOWNCAST(sourceType, TupleType);
         Tuple targetTupleNode = SAFE_AST_DOWNCAST(target, TupleNode);

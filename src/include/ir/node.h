@@ -1,16 +1,16 @@
-#ifndef AINL_SRC_INCLUDE_NODE_H
-#define AINL_SRC_INCLUDE_NODE_H
+#ifndef AINL_SRC_INCLUDE_Node_H
+#define AINL_SRC_INCLUDE_Node_H
 
 #include "block.h"
-#include "function.h"
-#include "graph.h"
 #include "type.h"
 #include "value.h"
 
-#define NODE_PTR_TYPE_DECL(name) using name##Ptr = name *;
+#define NODE_PTR_TYPE_DECL(name)                                               \
+    class name;                                                                \
+    using name##Ptr = name *;
 
-// Language builtin operators
-// Extend this class to add more operators
+// Language builtin Nodes
+// Extend this class to add more Nodes
 class Graph;
 class Block;
 class Signature;
@@ -18,6 +18,7 @@ using GraphPtr = std::shared_ptr<Graph>;
 using BlockPtr = Block *;
 using SignaturePtr = Signature *;
 
+NODE_PTR_TYPE_DECL(Node)
 class Node : public Value {
   public:
     enum class NodeKind {
@@ -50,9 +51,7 @@ class Node : public Value {
     void init() {
         useList.clear();
         useValueList.clear();
-        graph = nullptr;
         signature = nullptr;
-        block = nullptr;
     }
     ~Node() override = default;
     Node();
@@ -68,8 +67,6 @@ class Node : public Value {
   protected:
     void addBlock();
     void addBlock(const std::vector<ValuePtr> &inValues);
-    void addBlock(const std::vector<ValuePtr> &inValues,
-                  const std::vector<ValuePtr> &outValues);
     void setUse(ValuePtr value, int idx);
     virtual std::string str() const { return ""; }
 
@@ -80,21 +77,22 @@ class Node : public Value {
     // They are actually not created by the constructor
     // Created by Graph
     SignaturePtr signature;
-    GraphPtr graph;
+    // GraphPtr graph;
     // Created when creating a new local scope
-    BlockPtr block;
+    // BlockPtr block;
 };
-NODE_PTR_TYPE_DECL(Node)
 
+NODE_PTR_TYPE_DECL(Param)
 class Param : public Node {
   public:
     Param();
     Param(const std::vector<ValuePtr> &params, const TypePtr &types);
-    static NodePtr create() { return new Param(); }
-    static NodePtr create(const std::vector<ValuePtr> &params,
-                          const TypePtr &types) {
+    static ParamPtr create() { return new Param(); }
+    static ParamPtr create(const std::vector<ValuePtr> &params,
+                           const TypePtr &types) {
         return new Param(params, types);
     }
+    std::vector<ValuePtr> getParams() { return params; }
     NodeKind kind() override { return Node::NodeKind::PARAM; }
     std::string str() const override {
         std::stringstream ssm;
@@ -114,16 +112,16 @@ class Param : public Node {
     std::vector<ValuePtr> params;
     TypePtr contentType;
 };
-NODE_PTR_TYPE_DECL(Param)
 
-class Return : public Node {
+NODE_PTR_TYPE_DECL(ReturnOp)
+class ReturnOp : public Node {
   public:
-    Return();
-    Return(const std::vector<ValuePtr> &params, const TypePtr &type);
-    static NodePtr create() { return new Return(); }
-    static NodePtr create(const std::vector<ValuePtr> &params,
-                          const TypePtr &types) {
-        return new Return(params, types);
+    ReturnOp();
+    ReturnOp(const std::vector<ValuePtr> &params, const TypePtr &type);
+    static ReturnOpPtr create() { return new ReturnOp(); }
+    static ReturnOpPtr create(const std::vector<ValuePtr> &params,
+                              const TypePtr &types) {
+        return new ReturnOp(params, types);
     }
 
     NodeKind kind() override { return NodeKind::RETURN; }
@@ -143,8 +141,8 @@ class Return : public Node {
     std::vector<ValuePtr> params;
     TypePtr contentType;
 };
-NODE_PTR_TYPE_DECL(Return)
 
+NODE_PTR_TYPE_DECL(Alloca)
 class Alloca : public Node {
   public:
     explicit Alloca(const TypePtr &type);
@@ -156,8 +154,8 @@ class Alloca : public Node {
   private:
     TypePtr contentType;
 };
-NODE_PTR_TYPE_DECL(Alloca)
 
+NODE_PTR_TYPE_DECL(Load)
 class Load : public Node {
   public:
     Load(const ValuePtr &inValue);
@@ -167,8 +165,8 @@ class Load : public Node {
         return getName() + " = load " + getAddress()->getName();
     }
 };
-NODE_PTR_TYPE_DECL(Load)
 
+NODE_PTR_TYPE_DECL(Store)
 class Store : public Node {
   public:
     Store(const ValuePtr &inValue, const ValuePtr &address);
@@ -180,8 +178,8 @@ class Store : public Node {
                getAddress()->getName();
     }
 };
-NODE_PTR_TYPE_DECL(Store)
 
+NODE_PTR_TYPE_DECL(Matmul)
 class MatMul : public Node {
   public:
     MatMul(const ValuePtr &lhs, const ValuePtr &rhs);
@@ -198,4 +196,4 @@ class MatMul : public Node {
     ValuePtr rhs;
 };
 
-#endif // AINL_SRC_INCLUDE_NODE_H
+#endif // AINL_SRC_INCLUDE_Node_H

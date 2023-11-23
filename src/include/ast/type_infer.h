@@ -10,14 +10,14 @@
 
 class TypeContract {
   public:
-    using AnyFunction = std::function<TypePtr(std::vector<std::any>)>;
+    using AnyFunction = std::function<TypePtr(std::vector<TypePtr>)>;
 
     void registerContract(const std::string &name, AnyFunction func) {
         functions[name] = std::move(func);
     }
 
     TypePtr resolveContract(const std::string &name,
-                            std::vector<std::any> args) {
+                            std::vector<TypePtr> args) {
         if (functions.find(name) == functions.end()) {
             throw AINLError(
                 "This operator has not been registered into the library yet.");

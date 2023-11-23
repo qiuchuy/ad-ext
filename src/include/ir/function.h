@@ -9,11 +9,12 @@
 #include "graph.h"
 #include "type.h"
 
-class Graph;
-using GraphPtr = std::shared_ptr<Graph>;
+// class Graph;
+// using GraphPtr = std::shared_ptr<Graph>;
 
 class Signature {
   public:
+    Signature() = default;
     Signature(TypePtr inputType, TypePtr returnType)
         : inputType(std::move(inputType)), returnType(std::move(returnType)) {}
     bool match(const Signature &rhs) {
@@ -22,8 +23,7 @@ class Signature {
     }
     explicit operator std::string() const {
         std::stringstream ssm;
-        ssm << "(";
-        ssm << inputType->getName() << ") -> ";
+        ssm << inputType->getName() << " -> ";
         ssm << returnType->getName();
         return ssm.str();
     }
@@ -43,11 +43,21 @@ class Signature {
 };
 using SignaturePtr = Signature *;
 
-class Method : public std::enable_shared_from_this<Method> {
+class ALModule;
+using ModulePtr = std::shared_ptr<ALModule>;
+class ALModule : public std::enable_shared_from_this<ALModule> {
+  public:
+    ALModule() = default;
+    ALModule(std::string name, const TypePtr &inputType,
+             const TypePtr &returnType);
+    std::vector<ValuePtr> getParams();
+    std::string getName() { return name; }
+    std::string str();
+
   private:
     SignaturePtr signature;
     GraphPtr graph;
+    std::string name;
 };
-using MethodPtr = std::shared_ptr<Method>;
 
 #endif // AINL_SRC_INCLUDE_FUNCTION_H

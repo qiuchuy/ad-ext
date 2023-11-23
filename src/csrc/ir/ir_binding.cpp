@@ -1,4 +1,5 @@
 #include "ir_binding.h"
+#include "function.h"
 #include "literal.h"
 #include "tensor.h"
 #include "type.h"
@@ -24,4 +25,7 @@ void initIR(py::module_ &m) {
                                       tensorShape);
         }))
         .def("__str__", &TensorType::getName);
+    py::class_<ALModule, std::shared_ptr<ALModule>>(m, "ALModule")
+        .def(py::init<>())
+        .def("__str__", &ALModule::str);
 }
