@@ -85,12 +85,12 @@ class TestBind:
         )
         assert typed_ast.match(ref_ast)
 
-    def test_librarycall(self):
+    def test_matmul(self):
         def f(x, y):
             return al.matmul(x, y)
 
-        a = al.tensor((1, 2), "Float")
-        b = al.tensor((2, 3), "Float")
+        a = al.tensor((1, 2, 3), "Float")
+        b = al.tensor((3, 4, 5), "Float")
         typed_ast = compile_ast(f, a, b)
         ref_ast = ModuleNode(
             [
@@ -102,10 +102,37 @@ class TestBind:
                             CallNode(
                                 VarNode("al::matmul"),
                                 [
-                                    VarNode("x", TensorType((1, 2), "Float")),
-                                    VarNode("y", TensorType((2, 3), "Float")),
+                                    VarNode("x", TensorType((1, 2, 3), "Float")),
+                                    VarNode("y", TensorType((3, 4, 5), "Float")),
                                 ],
-                                TensorType((1, 3), "Float"),
+                                TensorType((1, 2, 4, 5), "Float"),
+                            )
+                        )
+                    ],
+                )
+            ]
+        )
+        assert typed_ast.match(ref_ast)
+
+    def test_transpose(self):
+        def f(x):
+            return al.transpose(x)
+
+        a = al.tensor((1, 2), "Float")
+        typed_ast = compile_ast(f, a)
+        ref_ast = ModuleNode(
+            [
+                FunctionDefNode(
+                    "f",
+                    ["x"],
+                    [
+                        ReturnNode(
+                            CallNode(
+                                VarNode("al::transpose"),
+                                [
+                                    VarNode("x", TensorType((1, 2), "Float")),
+                                ],
+                                TensorType((2, 1), "Float"),
                             )
                         )
                     ],

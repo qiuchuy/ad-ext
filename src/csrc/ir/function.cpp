@@ -4,10 +4,24 @@
 
 ALModule::ALModule(std::string name, const TypePtr &inputType,
                    const TypePtr &returnType) {
-    this->graph = std::make_shared<Graph>(name, inputType);
-    for (size_t i = 0; i < graph->getParams().size(); i++) {
-        graph->getParams()[i]->graph = graph;
+    this->graph = std::make_shared<Graph>(name);
+    std::vector<ValuePtr> params;
+    if (inputType->isTupleType()) {
+        std::vector<TypePtr> paramTypes =
+            SAFE_TYPE_DOWNCAST(inputType, TupleType)->getTypes();
+        for (int idx = 0; (size_t)idx < paramTypes.size(); idx++) {
+            auto param = new Graph::GraphParam(paramTypes[idx], idx);
+            params.push_back(param);
+        }
+    } else {
+        params.push_back(new Graph::GraphParam(inputType, 0));
     }
+    for (auto &param : params) {
+        param->graph = graph;
+    }
+    ParamPtr paramNode = Param::create(params, inputType);
+    paramNode->graph = this->graph;
+    paramNode->addBlockWithParam(paramNode);
     this->signature = new Signature(inputType, returnType);
     this->name = std::move(name);
 }
@@ -32,7 +46,6 @@ std::string ALModule::str() {
         .append(std::string(*signature))
         .append(" {\n");
     str.append(graph->str());
-
     str.append("}\n");
     return str;
 }

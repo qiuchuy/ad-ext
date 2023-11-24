@@ -140,6 +140,7 @@ class Value : public ILinkNode {
     virtual explicit operator std::string() const { return "!value!"; }
     friend class Block;
     friend class ALModule;
+    friend class Node;
 
   public:
     void insertUseAtEnd(UsePtr use);

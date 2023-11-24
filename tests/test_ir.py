@@ -5,7 +5,7 @@ b = al.tensor((2, 3), "Float")
 
 
 def f(x, y):
-    return y
+    return x
 
 
 ir = al.compile_ir(f, a, b)

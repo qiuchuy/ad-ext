@@ -16,11 +16,14 @@ using BlockPtr = Block *;
 class Block : public Value {
   public:
     Block();
-    explicit Block(const std::vector<ValuePtr> &inValues);
+    Block(int idx);
     std::vector<ValuePtr> getParams();
+    void insertNodeAtHead(NodePtr Node);
     void insertNodeAtEnd(NodePtr Node);
     friend class Node;
     friend class Graph;
+    explicit operator std::string() const override;
+    static int blockCount;
 
   private:
     // Node link list
@@ -34,6 +37,9 @@ class Block : public Value {
     // nested scope
     BlockPtr beginBlock;
     BlockPtr endBlock;
+
+    // label
+    std::string label;
 };
 
 #endif // AINL_SRC_INCLUDE_BLOCK_H

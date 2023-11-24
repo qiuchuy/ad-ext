@@ -28,12 +28,33 @@ TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     return TensorType::create(elementType, matmulShape);
 }
 
+TypePtr transposeContract(const TypePtr &inType) {
+    // Type Checking
+    if (!inType->isTensorType()) {
+        throw AINLError("transpose operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+
+    // Construct the result type
+    std::reverse(inTensorShape.begin(), inTensorShape.end());
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, inTensorShape);
+}
+
 void TypeInfer::initLibraryOperatorTypeContract() {
     contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
             throw AINLError("Invalid argument number for operator matmul");
         }
         return matmulContract((args[0]), (args[1]));
+    });
+
+    contract.registerContract("transpose", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator matmul");
+        }
+        return transposeContract((args[0]));
     });
 }
 

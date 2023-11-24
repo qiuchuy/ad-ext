@@ -1,6 +1,8 @@
 #ifndef AINL_SRC_INCLUDE_Node_H
 #define AINL_SRC_INCLUDE_Node_H
 
+#include <utility>
+
 #include "block.h"
 #include "type.h"
 #include "value.h"
@@ -58,17 +60,15 @@ class Node : public Value {
     explicit Node(TypePtr type);
     Node(TypePtr type, const TypePtr &inType);
 
-    std::string getName() const override { return "ailang::" + str(); }
-    explicit operator std::string() { return str(); }
+    explicit operator std::string() const override { return ""; }
     virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
 
     friend class Graph;
 
-  protected:
+  public:
     void addBlock();
-    void addBlock(const std::vector<ValuePtr> &inValues);
+    void addBlockWithParam(NodePtr param);
     void setUse(ValuePtr value, int idx);
-    virtual std::string str() const { return ""; }
 
   protected:
     std::vector<ValuePtr> useValueList;
@@ -86,15 +86,14 @@ NODE_PTR_TYPE_DECL(Param)
 class Param : public Node {
   public:
     Param();
-    Param(const std::vector<ValuePtr> &params, const TypePtr &types);
+    Param(std::vector<ValuePtr> params, const TypePtr &types);
     static ParamPtr create() { return new Param(); }
-    static ParamPtr create(const std::vector<ValuePtr> &params,
-                           const TypePtr &types) {
-        return new Param(params, types);
+    static ParamPtr create(std::vector<ValuePtr> params, const TypePtr &types) {
+        return new Param(std::move(params), types);
     }
     std::vector<ValuePtr> getParams() { return params; }
     NodeKind kind() override { return Node::NodeKind::PARAM; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         std::stringstream ssm;
         ssm << "(";
         if (!params.empty()) {
@@ -117,29 +116,20 @@ NODE_PTR_TYPE_DECL(ReturnOp)
 class ReturnOp : public Node {
   public:
     ReturnOp();
-    ReturnOp(const std::vector<ValuePtr> &params, const TypePtr &type);
+    explicit ReturnOp(const ValuePtr &value);
     static ReturnOpPtr create() { return new ReturnOp(); }
-    static ReturnOpPtr create(const std::vector<ValuePtr> &params,
-                              const TypePtr &types) {
-        return new ReturnOp(params, types);
-    }
+    static ReturnOpPtr create(ValuePtr value) { return new ReturnOp(value); }
 
     NodeKind kind() override { return NodeKind::RETURN; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         std::stringstream ssm;
         ssm << "return ";
-        if (!params.empty()) {
-            for (size_t i = 0; i < params.size() - 1; i++)
-                ssm << params[i]->getName() << ", ";
-            ssm << params[params.size() - 1]->getName();
-        }
-        ssm << ")";
+        ssm << value->getName();
         return ssm.str();
     }
 
   private:
-    std::vector<ValuePtr> params;
-    TypePtr contentType;
+    ValuePtr value;
 };
 
 NODE_PTR_TYPE_DECL(Alloca)
@@ -147,7 +137,7 @@ class Alloca : public Node {
   public:
     explicit Alloca(const TypePtr &type);
     NodeKind kind() override { return Node::NodeKind::ALLOCA; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         return getName() + " = alloca " + contentType->str();
     }
 
@@ -161,7 +151,7 @@ class Load : public Node {
     Load(const ValuePtr &inValue);
     ValuePtr getAddress() const;
     NodeKind kind() override { return Node::NodeKind::LOAD; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         return getName() + " = load " + getAddress()->getName();
     }
 };
@@ -173,7 +163,7 @@ class Store : public Node {
     ValuePtr getAddress() const;
     ValuePtr getValue() const;
     NodeKind kind() override { return Node::NodeKind::STORE; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         return "store " + getValue()->getName() + ", " +
                getAddress()->getName();
     }
@@ -184,7 +174,7 @@ class MatMul : public Node {
   public:
     MatMul(const ValuePtr &lhs, const ValuePtr &rhs);
     NodeKind kind() override { return Node::NodeKind::MATMUL; }
-    std::string str() const override {
+    explicit operator std::string() const override {
         return "matmul(" + getLHS()->getName() + ", " + getRHS()->getName() +
                ")";
     }

@@ -51,6 +51,7 @@ class ALModule : public std::enable_shared_from_this<ALModule> {
     ALModule(std::string name, const TypePtr &inputType,
              const TypePtr &returnType);
     std::vector<ValuePtr> getParams();
+    GraphPtr getGraph() { return graph; }
     std::string getName() { return name; }
     std::string str();
 

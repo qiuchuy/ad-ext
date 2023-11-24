@@ -33,9 +33,14 @@ class IRBuilder : public Visitor {
     ModulePtr getModule() { return module; }
 
   private:
+    ValuePtr getTOSValue() {
+        auto tos = valueStack.top();
+        valueStack.pop();
+        return tos;
+    }
     std::vector<std::string> params;
     ModulePtr module;
-    std::stack<ValuePtr> values;
+    std::stack<ValuePtr> valueStack;
 };
 
 #endif // AINL_SRC_INCLUDE_IR_BUILDING_H

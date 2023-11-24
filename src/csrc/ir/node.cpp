@@ -1,4 +1,5 @@
 #include <memory>
+#include <utility>
 
 #include "block.h"
 #include "function.h"
@@ -24,7 +25,7 @@ void Node::setUse(ValuePtr value, int idx) {
 }
 
 void Node::addBlock() {
-    BlockPtr newBlock = new Block();
+    auto newBlock = new Block();
     if (this->block->endBlock) {
         this->block->endBlock->insertBefore(newBlock);
         return;
@@ -36,17 +37,25 @@ void Node::addBlock() {
     this->block->endBlock->insertBefore(block);
 }
 
-void Node::addBlock(const std::vector<ValuePtr> &inValues) {
-    auto newBlock = new Block(inValues);
+void Node::addBlockWithParam(NodePtr param) {
+    auto newBlock = new Block(Block::blockCount++);
+    newBlock->paramNode = dynamic_cast<ParamPtr>(param);
+    for (auto &innerParam : dynamic_cast<ParamPtr>(param)->getParams()) {
+        innerParam->block = newBlock;
+    }
+    param->block = newBlock;
     if (this->block->endBlock) {
         this->block->endBlock->insertBefore(newBlock);
         return;
     }
+    /* for nested blocks */
     this->block->beginBlock = new Block();
     this->block->endBlock = new Block();
     this->block->beginBlock->setNext(this->block->endBlock);
     this->block->endBlock->setPrev(this->block->beginBlock);
-    this->block->endBlock->insertBefore(block);
+
+    /* insert this new block to graph */
+    this->graph->endBlock->insertBefore(newBlock);
 }
 
 Alloca::Alloca(const TypePtr &type)
@@ -71,15 +80,14 @@ ValuePtr Store::getValue() const { return useValueList[0]; }
 ValuePtr Store::getAddress() const { return useValueList[1]; }
 
 Param::Param() : Node(VoidTypePtr::get()) {}
-Param::Param(const std::vector<ValuePtr> &params, const TypePtr &type)
+Param::Param(std::vector<ValuePtr> params, const TypePtr &type)
     : Node(VoidTypePtr::get(), type) {
-    this->params = params;
+    this->params = std::move(params);
     this->contentType = type;
 }
 
-ReturnOp::ReturnOp() : Node(VoidTypePtr::get()) {}
-ReturnOp::ReturnOp(const std::vector<ValuePtr> &params, const TypePtr &type)
-    : Node(VoidTypePtr::get(), type) {
-    this->params = params;
-    this->contentType = type;
+ReturnOp::ReturnOp() : Node(VoidTypePtr::get()) { value = nullptr; }
+ReturnOp::ReturnOp(const ValuePtr &value)
+    : Node(VoidTypePtr::get(), value->getType()) {
+    this->value = value;
 }

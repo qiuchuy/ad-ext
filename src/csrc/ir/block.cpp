@@ -1,8 +1,10 @@
 #include "block.h"
 
+int Block::blockCount = 0;
+
 Block::Block() {
-    paramNode = Param::create();
-    returnNode = ReturnOp::create();
+    paramNode = nullptr;
+    returnNode = nullptr;
     beginNode = new Node();
     endNode = new Node();
     beginNode->setNext(endNode);
@@ -10,21 +12,29 @@ Block::Block() {
     beginBlock = endBlock = nullptr;
 }
 
-Block::Block(const std::vector<ValuePtr> &inValues) {
-
-    for (auto &param : inValues) {
-        param->block = this;
-    }
-
-    TypePtr inType = createTypePtrForValues(inValues);
-    paramNode = Param::create(inValues, inType);
-    returnNode = ReturnOp::create();
+Block::Block(int idx) {
+    paramNode = nullptr;
+    returnNode = nullptr;
     beginNode = new Node();
     endNode = new Node();
     beginNode->setNext(endNode);
     endNode->setPrev(beginNode);
     beginBlock = endBlock = nullptr;
+    label = "b" + std::to_string(idx);
 }
 
 std::vector<ValuePtr> Block::getParams() { return paramNode->getParams(); }
+void Block::insertNodeAtHead(NodePtr Node) { beginNode->insertAfter(Node); }
 void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }
+
+Block::operator std::string() const {
+    std::string str;
+    str.append(label + ":\n");
+    for (auto node = (NodePtr)beginNode->next; node->next != nullptr;
+         node = (NodePtr)node->next) {
+        str.append("\t");
+        str.append(std::string(*node));
+        str.append("\n");
+    }
+    return str;
+}
