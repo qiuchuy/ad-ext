@@ -16,3 +16,7 @@ def div():
 
 def matmul():
     ...
+
+
+def transpose():
+    ...

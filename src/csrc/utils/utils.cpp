@@ -46,3 +46,25 @@ std::string trim(const std::string &str) {
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 }
+
+int caseInsensitiveStrcmp(const std::string &str1, const std::string &str2) {
+    // Get the minimum length of the two strings
+    size_t min_length = std::min(str1.length(), str2.length());
+
+    for (size_t i = 0; i < min_length; ++i) {
+        if (std::tolower(str1[i]) < std::tolower(str2[i])) {
+            return -1;
+        } else if (std::tolower(str1[i]) > std::tolower(str2[i])) {
+            return 1;
+        }
+    }
+
+    // If the common prefix is the same, compare the lengths
+    if (str1.length() < str2.length()) {
+        return -1;
+    } else if (str1.length() > str2.length()) {
+        return 1;
+    }
+
+    return 0; // Strings are equal
+}

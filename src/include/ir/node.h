@@ -57,13 +57,14 @@ class Node : public Value {
     }
     ~Node() override = default;
     Node();
-    explicit Node(TypePtr type);
-    Node(TypePtr type, const TypePtr &inType);
+    Node(const TypePtr &type, const TypePtr &inType);
 
     explicit operator std::string() const override { return ""; }
     virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
 
     friend class Graph;
+
+    static int LOCAL_COUNT;
 
   public:
     void addBlock();
@@ -76,7 +77,7 @@ class Node : public Value {
 
     // They are actually not created by the constructor
     // Created by Graph
-    SignaturePtr signature;
+    SignaturePtr signature{};
     // GraphPtr graph;
     // Created when creating a new local scope
     // BlockPtr block;
@@ -85,9 +86,7 @@ class Node : public Value {
 NODE_PTR_TYPE_DECL(Param)
 class Param : public Node {
   public:
-    Param();
     Param(std::vector<ValuePtr> params, const TypePtr &types);
-    static ParamPtr create() { return new Param(); }
     static ParamPtr create(std::vector<ValuePtr> params, const TypePtr &types) {
         return new Param(std::move(params), types);
     }
@@ -115,9 +114,7 @@ class Param : public Node {
 NODE_PTR_TYPE_DECL(ReturnOp)
 class ReturnOp : public Node {
   public:
-    ReturnOp();
     explicit ReturnOp(const ValuePtr &value);
-    static ReturnOpPtr create() { return new ReturnOp(); }
     static ReturnOpPtr create(ValuePtr value) { return new ReturnOp(value); }
 
     NodeKind kind() override { return NodeKind::RETURN; }
@@ -170,14 +167,11 @@ class Store : public Node {
 };
 
 NODE_PTR_TYPE_DECL(Matmul)
-class MatMul : public Node {
+class Matmul : public Node {
   public:
-    MatMul(const ValuePtr &lhs, const ValuePtr &rhs);
+    Matmul(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
     NodeKind kind() override { return Node::NodeKind::MATMUL; }
-    explicit operator std::string() const override {
-        return "matmul(" + getLHS()->getName() + ", " + getRHS()->getName() +
-               ")";
-    }
+    explicit operator std::string() const override;
     ValuePtr getLHS() const { return lhs; }
     ValuePtr getRHS() const { return rhs; }
 

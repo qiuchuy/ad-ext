@@ -32,7 +32,7 @@ class Use : public ILinkNode {
 
     friend bool operator<(const Use &first, const Use &second);
 
-    virtual explicit operator std::string() const;
+    explicit operator std::string() const override;
 };
 
 #endif // AINL_SRC_INCLUDE_USE_H

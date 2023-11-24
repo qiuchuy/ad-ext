@@ -2,17 +2,44 @@
 #define AINL_SRC_INCLUDE_IR_BUILDING_H
 
 #include <stack>
+#include <utility>
 
 #include "function.h"
 #include "graph.h"
 #include "symbol.h"
+#include "utils.h"
 #include "visitor.h"
+
+class NodeContract {
+  public:
+    using AnyFunction = std::function<ValuePtr(GraphPtr, TypePtr nodeType,
+                                               std::vector<ValuePtr>)>;
+
+    void registerContract(const std::string &name, AnyFunction func) {
+        functions[name] = std::move(func);
+    }
+
+    ValuePtr resolveContract(const std::string &name, GraphPtr graph,
+                             TypePtr nodeType, std::vector<ValuePtr> args) {
+        if (functions.find(name) == functions.end()) {
+            throw AINLError(
+                "This operator has not been registered into the library yet.");
+        }
+        return functions[name](std::move(graph), std::move(nodeType),
+                               std::move(args));
+    }
+
+  private:
+    std::map<std::string, AnyFunction> functions;
+};
 
 class IRBuilder : public Visitor {
   public:
     IRBuilder() = default;
     explicit IRBuilder(const std::vector<std::string> &params)
-        : params(params) {}
+        : params(params) {
+        initLibraryOperatorNodeContract();
+    }
     void visitModule(ModuleNode *node) override;
     void visitStmt(StmtNode *node) override;
     void visitExpr(ExprNode *node) override;
@@ -31,6 +58,7 @@ class IRBuilder : public Visitor {
     void visitIf(IfNode *node) override;
 
     ModulePtr getModule() { return module; }
+    void initLibraryOperatorNodeContract();
 
   private:
     ValuePtr getTOSValue() {
@@ -41,6 +69,7 @@ class IRBuilder : public Visitor {
     std::vector<std::string> params;
     ModulePtr module;
     std::stack<ValuePtr> valueStack;
+    NodeContract contract;
 };
 
 #endif // AINL_SRC_INCLUDE_IR_BUILDING_H

@@ -1,5 +1,26 @@
 #include "ir_building.h"
-// #include
+#include "graph.h"
+
+ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                            const ValuePtr &lhs, const ValuePtr &rhs) {
+    // Type Checking
+    if (!lhs->getType()->isTensorType() || !rhs->getType()->isTensorType()) {
+        throw AINLError("matmul operator only applies to two tensors.");
+    }
+    // Construct the Result Node
+    return graph->create<Matmul>(nodeType, lhs, rhs);
+}
+
+void IRBuilder::initLibraryOperatorNodeContract() {
+    contract.registerContract("matmul", [](const GraphPtr &graph,
+                                           const TypePtr &nodeType,
+                                           std::vector<ValuePtr> args) {
+        if (args.size() != 2) {
+            throw AINLError("Invalid argument number for operator matmul");
+        }
+        return matmulNodeContract(graph, nodeType, (args[0]), (args[1]));
+    });
+}
 
 void IRBuilder::visitVarDef(VarDefNode *node) {}
 void IRBuilder::visitBind(BindNode *node) {}
@@ -18,7 +39,9 @@ void IRBuilder::visitCall(CallNode *node) {
         for (size_t i = 0; i < callArgs.size(); i++) {
             argValues.push_back(getTOSValue());
         }
-        // module->getGraph()->create<li>()
+        ValuePtr callResult = contract.resolveContract(
+            libraryFunction, module->getGraph(), node->getType(), argValues);
+        valueStack.push(callResult);
     } else {
         // [TODO]
     }

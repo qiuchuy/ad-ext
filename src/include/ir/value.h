@@ -137,7 +137,7 @@ class Value : public ILinkNode {
     bool operator==(const Value &other) const;
 
     bool operator!=(const Value &other) const;
-    virtual explicit operator std::string() const { return "!value!"; }
+    explicit operator std::string() const override { return "!value!"; }
     friend class Block;
     friend class ALModule;
     friend class Node;

@@ -5,15 +5,17 @@
 #include "function.h"
 #include "node.h"
 
-Node::Node() : Value() { init(); }
+int Node::LOCAL_COUNT = 0;
 
-Node::Node(TypePtr type) : Value(type) {
+Node::Node() {
     init();
-    this->signature = new Signature(nullptr, type);
+    this->signature = nullptr;
 }
 
-Node::Node(TypePtr type, const TypePtr &inType) : Value(type) {
+Node::Node(const TypePtr &type, const TypePtr &inType) : Value(type) {
     init();
+    prefix = LOCAL_PREFIX;
+    name = LOCAL_NAME_PREFIX + std::to_string(LOCAL_COUNT++);
     this->signature = new Signature(inType, type);
 }
 
@@ -59,19 +61,20 @@ void Node::addBlockWithParam(NodePtr param) {
 }
 
 Alloca::Alloca(const TypePtr &type)
-    : Node(PointerType::createPointerType(type)) {
+    : Node(PointerType::createPointerType(type), VoidTypePtr::get()) {
     this->contentType = type;
 }
 Load::Load(const ValuePtr &inVal)
-    : Node((SAFE_TYPE_DOWNCAST(inVal->getType(), PointerType))
-               ->getPointeeType()) {
+    : Node(
+          (SAFE_TYPE_DOWNCAST(inVal->getType(), PointerType))->getPointeeType(),
+          inVal->getType()) {
     setUse(inVal, 0);
 }
 
 ValuePtr Load::getAddress() const { return useValueList[0]; }
 
 Store::Store(const ValuePtr &inValue, const ValuePtr &address)
-    : Node(VoidTypePtr::get()) {
+    : Node(VoidTypePtr::get(), createTypePtrForValues({inValue, address})) {
     setUse(inValue, 0);
     setUse(address, 1);
 }
@@ -79,15 +82,24 @@ Store::Store(const ValuePtr &inValue, const ValuePtr &address)
 ValuePtr Store::getValue() const { return useValueList[0]; }
 ValuePtr Store::getAddress() const { return useValueList[1]; }
 
-Param::Param() : Node(VoidTypePtr::get()) {}
 Param::Param(std::vector<ValuePtr> params, const TypePtr &type)
     : Node(VoidTypePtr::get(), type) {
     this->params = std::move(params);
     this->contentType = type;
 }
 
-ReturnOp::ReturnOp() : Node(VoidTypePtr::get()) { value = nullptr; }
 ReturnOp::ReturnOp(const ValuePtr &value)
     : Node(VoidTypePtr::get(), value->getType()) {
     this->value = value;
+}
+
+Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType, createTypePtrForValues({lhs, rhs})) {
+    this->lhs = lhs;
+    this->rhs = rhs;
+}
+
+Matmul::operator std::string() const {
+    return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
+           getRHS()->getName() + "): " + std::string(*signature);
 }

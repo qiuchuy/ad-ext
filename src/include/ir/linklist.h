@@ -1,6 +1,8 @@
 #ifndef AINL_SRC_INCLUDE_LINKLIST_H
 #define AINL_SRC_INCLUDE_LINKLIST_H
 
+#include <string>
+
 class ILinkNode {
   public:
     ILinkNode *prev{};
@@ -25,7 +27,7 @@ class ILinkNode {
 
     void insertAfter(ILinkNode *node);
     void insertBefore(ILinkNode *node);
-
+    virtual explicit operator std::string() const { return ""; }
     virtual bool operator==(const ILinkNode &other) const;
 
     virtual bool operator!=(const ILinkNode &other) const;

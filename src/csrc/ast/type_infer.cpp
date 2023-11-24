@@ -2,7 +2,7 @@
 #include "symbol.h"
 #include "utils.h"
 
-TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
+TypePtr matmulTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     // Type Checking
     if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
         throw AINLError("matmul operator only applies to two tensors.");
@@ -28,7 +28,7 @@ TypePtr matmulContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     return TensorType::create(elementType, matmulShape);
 }
 
-TypePtr transposeContract(const TypePtr &inType) {
+TypePtr transposeTypeContract(const TypePtr &inType) {
     // Type Checking
     if (!inType->isTensorType()) {
         throw AINLError("transpose operator only applies to tensors.");
@@ -47,14 +47,14 @@ void TypeInfer::initLibraryOperatorTypeContract() {
         if (args.size() != 2) {
             throw AINLError("Invalid argument number for operator matmul");
         }
-        return matmulContract((args[0]), (args[1]));
+        return matmulTypeContract((args[0]), (args[1]));
     });
 
     contract.registerContract("transpose", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
             throw AINLError("Invalid argument number for operator matmul");
         }
-        return transposeContract((args[0]));
+        return transposeTypeContract((args[0]));
     });
 }
 
