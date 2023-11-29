@@ -1,9 +1,4 @@
 #!/bin/bash
-export USE_CUSTOM_LLVM=ON
-export USE_CUSTOM_MLIR=ON
-export CUSTOM_LLVM_PATH="/root/iree-build/llvm-project/lib/cmake/llvm"
-export CUSTOM_MLIR_PATH="/root/iree-build/lib/cmake/mlir"
-
 cd /root/AILang/build_tools
 mkdir ../build 
 cd ../build
@@ -11,7 +6,7 @@ cmake .. \
     -DUSE_CUSTOM_LLVM=ON \
     -DCUSTOM_LLVM_PATH=/root/iree-build/llvm-project/lib/cmake/llvm \
     -DUSE_CUSTOM_MLIR=ON \
-    -DCUSTOM_LLVM_PATH=/root/iree-build/lib/cmake/mlir \
+    -DCUSTOM_MLIR_PATH=/root/iree-build/lib/cmake/mlir \
 
 make 
 cd ../python  
