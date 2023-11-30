@@ -4,10 +4,9 @@
 docker build -t . ailang-dev 
 docker run -it ailang-dev /bin/bash
 ```
-+ pull [AILang](https://github.com/kom113/AILang) repository inside the container
-+ build IREE & AILang
++ build AINL
 ```
-./AILang/build_tools/build_iree.sh
+git clone https://github.com/kom113/AILang
+cd AILang
 ./AILang/build_tools/build.sh
 ```
-> note: you may need a docker proxy when pulling images from gcr.io

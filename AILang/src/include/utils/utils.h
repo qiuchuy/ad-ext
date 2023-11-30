@@ -1,0 +1,21 @@
+#ifndef AINL_SRC_INCLUDE_UTILS_H
+#define AINL_SRC_INCLUDE_UTILS_H
+
+#include "ast_node.h"
+
+#define DISPATCH_BINARYOP(op)                                                  \
+    if (OpKind == #op)                                                         \
+        return BinaryOpNode::BinaryOpKind::op;
+#define DISPATCH_UNARYOP(op)                                                   \
+    if (OpKind == #op)                                                         \
+        return UnaryOpNode::UnaryOpKind::op;
+#define DISPATCH_COMPAREOP(op)                                                 \
+    if (OpKind == #op)                                                         \
+        return CompareNode::CompareOpKind::op;
+BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind);
+UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind);
+CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
+
+std::string trim(const std::string &str);
+int caseInsensitiveStrcmp(const std::string &str1, const std::string &str2);
+#endif // AINL_SRC_INCLUDE_UTILS_H

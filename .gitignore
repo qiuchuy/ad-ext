@@ -1,3 +1,30 @@
+# CMake artifacts
+build/
+build-*/
+
+# Local-only config options
+version_info.json
+CMakeUserPresets.json
+
+# Python files
+.python-version
+*.venv
+.venv
+
+# Visual Studio files
+.env
+.vs/
+.vscode/
+*.sdf
+*.opensdf
+*.VC.opendb
+*.suo
+*.user
+
+# macOS files
+.DS_Store
+
+#
 .pytest_cache/
 ainl.egg-info/
 build/
