@@ -52,7 +52,7 @@ class TypeInfer : public Visitor {
     void visitIf(IfNode *node) override;
 
     void initLibraryOperatorTypeContract();
-
+    
   private:
     std::map<std::string, TypePtr> typedParams;
     std::string curFunc;

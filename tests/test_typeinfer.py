@@ -140,3 +140,10 @@ class TestBind:
             ]
         )
         assert typed_ast.match(ref_ast)
+    def test_add(self):
+        def f(x,y):
+            return al.add(x,y)
+        a = al.tensor((1, 2, 3), "Float")
+        b = al.tensor((1, 3, 3), "Float")
+        typed_ast = compile_ast(f, a, b)
+        assert True

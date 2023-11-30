@@ -42,6 +42,26 @@ TypePtr transposeTypeContract(const TypePtr &inType) {
     return TensorType::create(elementType, inTensorShape);
 }
 
+TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
+    if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
+        throw AINLError("add operator only applies to two tensors.");
+    }
+    TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
+    TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
+
+    std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
+    std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
+    // std::vector<ValuePtr> addShape = std::move(lhsShape);
+    if (lhsShape.size() != rhsShape.size()) {
+        throw AINLError("two tensor dont not have the same dim for add.");
+    }
+    if (std::equal(lhsShape.begin(), lhsShape.end(), rhsShape.begin())) {
+        throw AINLError("tensor shapes are not matched for add.");
+    }
+    TypePtr elementType = lhsTensorType->getElementType();
+    return TensorType::create(elementType, lhsShape);
+}
+
 void TypeInfer::initLibraryOperatorTypeContract() {
     contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
@@ -52,9 +72,16 @@ void TypeInfer::initLibraryOperatorTypeContract() {
 
     contract.registerContract("transpose", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator matmul");
+            throw AINLError("Invalid argument number for operator transpose");
         }
         return transposeTypeContract((args[0]));
+    });
+
+    contract.registerContract("add", [](std::vector<TypePtr> args) {
+        if (args.size() != 2) {
+            throw AINLError("Invalid argument number for operator add");
+        }
+        return addTypeContract((args[0]), (args[1]));
     });
 }
 
@@ -194,7 +221,7 @@ void TypeInfer::visitBind(BindNode *node) {
         }
     } else {
         target->setType(sourceType);
-        env->insertSymbol(target->getName(), sourceType);
+        env->insertSymbol(target->getName(), sourceType); 
     }
 }
 
