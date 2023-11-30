@@ -58,9 +58,9 @@ include(HandleLLVMOptions)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-get_property(dialect_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
-list(APPEND LINKER_LIBS LLVMSupport)
-list(APPEND LINKER_LIBS ${dialect_libs})
+# get_property(dialect_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+# list(APPEND LINKER_LIBS LLVMSupport)
+# list(APPEND LINKER_LIBS ${dialect_libs})
 add_definitions(${LLVM_DEFINITIONS})
 
 # find include directories
