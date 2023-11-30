@@ -60,7 +60,15 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
             [](ValuePtr &lhs, ValuePtr &rhs) { return *lhs == *rhs; })) {
         throw AINLError("tensor shapes are not matched for add.");
     }
-    TypePtr elementType = lhsTensorType->getElementType();
+    // TypePtr elementType = lhsTensorType->getElementType();
+    TypePtr elementType;
+    TypePtr lhsBaseType = lhsTensorType->getElementType();
+    TypePtr rhsBaseType = rhsTensorType->getElementType();
+    if (lhsBaseType->compare((*rhsBaseType))) {
+        elementType = rhsBaseType;
+    } else {
+        elementType = lhsBaseType;
+    }
     return TensorType::create(elementType, lhsShape);
 }
 

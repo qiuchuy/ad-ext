@@ -64,8 +64,8 @@ class TestBind:
         def f(x, y):
             return x + y
 
-        a = al.tensor((1, 2, 3), "Float")
-        b = al.tensor((1, 2, 3), "Int")
+        a = al.tensor((1, 2, 3), "Int")
+        b = al.tensor((1, 2, 3), "Float")
         typed_ast = compile_ast(f, a, b)
         ref_ast = ModuleNode(
             [
@@ -76,8 +76,8 @@ class TestBind:
                         ReturnNode(
                             BinaryOpNode(
                                 "Add",
-                                VarNode("x", TensorType((1, 2, 3), "Float")),
-                                VarNode("y", TensorType((1, 2, 3), "Int")),
+                                VarNode("x", TensorType((1, 2, 3), "Int")),
+                                VarNode("y", TensorType((1, 2, 3), "Float")),
                                 TensorType((1, 2, 3), "Float"),
                             )
                         )
@@ -150,7 +150,7 @@ class TestBind:
             return al.add(x, y)
 
         a = al.tensor((1, 2, 3), "Float")
-        b = al.tensor((1, 2, 3), "Float")
+        b = al.tensor((1, 2, 3), "Int")
         typed_ast = compile_ast(f, a, b)
         ref_ast = ModuleNode(
             [
@@ -165,7 +165,7 @@ class TestBind:
                                     VarNode("x", TensorType(
                                         (1, 2, 3), "Float")),
                                     VarNode("y", TensorType(
-                                        (1, 2, 3), "Float")),
+                                        (1, 2, 3), "Int")),
                                 ],
                                 TensorType((1, 2, 3), "Float"),
 
