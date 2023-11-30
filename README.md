@@ -20,7 +20,7 @@ cmake .. \
 -DUSE_CUSTOM_LLVM=ON \
 -DCUSTOM_LLVM_PATH=\path\to\your\llvm\path \
 -DUSE_CUSTOM_MLIR=ON \
--DCUSTOM_LLVM_PATH=\path\to\your\mlir\path 
+-DCUSTOM_MLIR_PATH=\path\to\your\mlir\path 
 make
 cd ../python
 pip install -e .

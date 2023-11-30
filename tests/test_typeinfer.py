@@ -28,7 +28,8 @@ class TestBind:
         ref_ast = ModuleNode(
             [
                 FunctionDefNode(
-                    "f", ["x"], [ReturnNode(VarNode("x", TensorType((1, 2, 3), "Int")))]
+                    "f", ["x"], [ReturnNode(
+                        VarNode("x", TensorType((1, 2, 3), "Int")))]
                 )
             ]
         )
@@ -51,7 +52,8 @@ class TestBind:
                             [VarNode("y", TensorType((1, 2, 3), "Float"))],
                             VarNode("x", TensorType((1, 2, 3), "Float")),
                         ),
-                        ReturnNode(VarNode("y", TensorType((1, 2, 3), "Float"))),
+                        ReturnNode(
+                            VarNode("y", TensorType((1, 2, 3), "Float"))),
                     ],
                 )
             ]
@@ -102,8 +104,10 @@ class TestBind:
                             CallNode(
                                 VarNode("al::matmul"),
                                 [
-                                    VarNode("x", TensorType((1, 2, 3), "Float")),
-                                    VarNode("y", TensorType((3, 4, 5), "Float")),
+                                    VarNode("x", TensorType(
+                                        (1, 2, 3), "Float")),
+                                    VarNode("y", TensorType(
+                                        (3, 4, 5), "Float")),
                                 ],
                                 TensorType((1, 2, 4, 5), "Float"),
                             )
@@ -140,10 +144,35 @@ class TestBind:
             ]
         )
         assert typed_ast.match(ref_ast)
+
     def test_add(self):
-        def f(x,y):
-            return al.add(x,y)
+        def f(x, y):
+            return al.add(x, y)
+
         a = al.tensor((1, 2, 3), "Float")
-        b = al.tensor((1, 3, 3), "Float")
+        b = al.tensor((1, 2, 3), "Float")
         typed_ast = compile_ast(f, a, b)
-        assert True
+        ref_ast = ModuleNode(
+            [
+                FunctionDefNode(
+                    "f",
+                    ["x", "y"],
+                    [
+                        ReturnNode(
+                            CallNode(
+                                VarNode("al::add"),
+                                [
+                                    VarNode("x", TensorType(
+                                        (1, 2, 3), "Float")),
+                                    VarNode("y", TensorType(
+                                        (1, 2, 3), "Float")),
+                                ],
+                                TensorType((1, 2, 3), "Float"),
+
+                            )
+                        )
+                    ],
+                )
+            ]
+        )
+        assert typed_ast.match(ref_ast)

@@ -55,7 +55,9 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     if (lhsShape.size() != rhsShape.size()) {
         throw AINLError("two tensor dont not have the same dim for add.");
     }
-    if (std::equal(lhsShape.begin(), lhsShape.end(), rhsShape.begin())) {
+    if (!std::equal(
+            lhsShape.begin(), lhsShape.end(), rhsShape.begin(),
+            [](ValuePtr &lhs, ValuePtr &rhs) { return *lhs == *rhs; })) {
         throw AINLError("tensor shapes are not matched for add.");
     }
     TypePtr elementType = lhsTensorType->getElementType();
@@ -221,7 +223,7 @@ void TypeInfer::visitBind(BindNode *node) {
         }
     } else {
         target->setType(sourceType);
-        env->insertSymbol(target->getName(), sourceType); 
+        env->insertSymbol(target->getName(), sourceType);
     }
 }
 
