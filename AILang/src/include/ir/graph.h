@@ -35,7 +35,7 @@ class Graph : public std::enable_shared_from_this<Graph>, public Value {
         return ((BlockPtr)(beginBlock->next))->getParams();
     }
     template <typename NodeType, typename... ARGS>
-    NodePtr create(ARGS &&...args) {
+    NodePtr create(ARGS &&... args) {
         NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
         Node->graph = shared_from_this();
         Node->block = (BlockPtr)(endBlock->prev);

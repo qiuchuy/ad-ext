@@ -1,11 +1,6 @@
 # use IREE image as base image
 FROM gcr.io/iree-oss/base:latest
 
-# get IREE source code
-WORKDIR /root
-RUN git clone https://github.com/openxla/iree.git
-RUN cd iree && git submodule update --init
-
 # install conda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && bash Miniconda3-latest-Linux-x86_64.sh -b \ 
@@ -18,7 +13,11 @@ RUN /root/miniconda3/bin/conda install pybind11
 RUN /root/miniconda3/bin/conda install cmake
 RUN /root/miniconda3/bin/conda install pytest
 RUN /root/miniconda3/bin/conda install gast
+RUN /root/miniconda3/bin/conda install black
 
+# install AINL package deps
+RUN apt-get update
+RUN apt-get install -y \
+    clang-format
 
-
-
+WORKDIR /root

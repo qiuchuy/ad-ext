@@ -4,17 +4,17 @@
   + pybind11
   + llvm & mlir
   + IREE
-+ build
++ default build
 ```
-mkdir build
-cd build
-cmake ..
-make
-cd ../python
-pip install -e .
+cmake -B build/ -G Ninja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    . 
+cmake --build build/ --target libailang
+cd AILang/python && pip install -e .
 ```
 + build with custom llvm & mlir
 ```
+<<<<<<< HEAD
 mkdir build
 cd build
 cmake .. \
@@ -30,8 +30,20 @@ cmake .. \
 make
 cd ../python
 pip install -e .
+=======
+cmake -B build/ -G Ninja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DUSE_CUSTOM_LLVM=ON \
+    -DCUSTOM_LLVM_PATH=/your/path/to/llvm \
+    -DUSE_CUSTOM_MLIR=ON \
+    -DCUSTOM_MLIR_PATH=/your/path/to/mlir \
+    . 
+
+cmake --build build/ --target libailang
+cd AILang/python && pip install -e .
+>>>>>>> origin/master
 ```
-## Build with a docker environment
+## \[Recommended\] Build with a docker environment
 See `build_tools/README.md`
 
 ## Run test
