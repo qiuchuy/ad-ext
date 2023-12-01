@@ -17,8 +17,7 @@ RUN /root/miniconda3/bin/conda install black
 
 # install AINL package deps
 RUN apt-get update
-RUN apt-get install clang-format
+RUN apt-get install -y \
+    clang-format
 
-
-
-
+WORKDIR /root
