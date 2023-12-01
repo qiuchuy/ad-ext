@@ -8,7 +8,6 @@ cmake -B build/ -G Ninja \
     -DUSE_CUSTOM_MLIR=ON \
     -DCUSTOM_MLIR_PATH=build/lib/cmake/mlir \
     . 
-rm a.out
 cmake --build build/ --target iree-compile libailang
 cd AILang/python && pip install -e .
 

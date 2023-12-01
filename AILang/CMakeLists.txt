@@ -93,6 +93,7 @@ include_directories(SYSTEM PRIVATE ${_COMPILER_ROOT}/bindings/c/iree/compiler)
 list(APPEND LINKER_LIBS iree_compiler_bindings_c_loader)
 
 # add IREE Runtime API
+add_compile_options(PRIVATE ${IREE_DEFAULT_COPTS})
 list(APPEND LINKER_LIBS iree_runtime_runtime)
 
 
