@@ -89,11 +89,11 @@ file(GLOB HEADERS
 
 # add IREE Compiler API
 set(_COMPILER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/iree/compiler")
-include_directories(SYSTEM PRIVATE ${_COMPILER_ROOT}/bindings/c/iree/compiler)
+include_directories(${_COMPILER_ROOT}/bindings/c/iree/compiler)
 list(APPEND LINKER_LIBS iree_compiler_bindings_c_loader)
 
 # add IREE Runtime API
-add_compile_options(PRIVATE ${IREE_DEFAULT_COPTS})
+add_compile_options(${IREE_DEFAULT_COPTS})
 list(APPEND LINKER_LIBS iree_runtime_runtime)
 
 
