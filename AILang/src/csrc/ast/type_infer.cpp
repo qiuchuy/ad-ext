@@ -42,6 +42,101 @@ TypePtr transposeTypeContract(const TypePtr &inType) {
     return TensorType::create(elementType, inTensorShape);
 }
 
+TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
+    if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
+        throw AINLError("add operator only applies to two tensors.");
+    }
+    TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
+    TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
+
+    std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
+    std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
+    // std::vector<ValuePtr> addShape = std::move(lhsShape);
+    if (lhsShape.size() != rhsShape.size()) {
+        throw AINLError("two tensor dont not have the same dim for add.");
+    }
+    if (!std::equal(
+            lhsShape.begin(), lhsShape.end(), rhsShape.begin(),
+            [](ValuePtr &lhs, ValuePtr &rhs) { return *lhs == *rhs; })) {
+        throw AINLError("tensor shapes are not matched for add.");
+    }
+    // TypePtr elementType = lhsTensorType->getElementType();
+    TypePtr elementType;
+    TypePtr lhsBaseType = lhsTensorType->getElementType();
+    TypePtr rhsBaseType = rhsTensorType->getElementType();
+    if (lhsBaseType->compare((*rhsBaseType))) {
+        elementType = rhsBaseType;
+    } else {
+        elementType = lhsBaseType;
+    }
+    return TensorType::create(elementType, lhsShape);
+}
+
+TypePtr reluTypeContract(const TypePtr &inType) {
+    if (!inType->isTensorType()) {
+        throw AINLError("relu operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, inTensorShape);
+}
+
+TypePtr maxpool2dTypeContract(const TypePtr &inType) {
+    // Union[int, Tuple[int, int]]
+
+    // input size (N,C,H,W) out (N,C,H_out,W_out)
+    /*
+      Shape:
+        - Input: :math:`(N, C, H_{in}, W_{in})` or :math:`(C, H_{in},
+      W_{in})`
+        - Output: :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out},
+      W_{out})`, where
+
+          .. math::
+              H_{out} = \left\lfloor\frac{H_{in} + 2 * \text{padding[0]} -
+      \text{dilation[0]} \times (\text{kernel\_size[0]} - 1) -
+      1}{\text{stride[0]}} + 1\right\rfloor
+
+          .. math::
+              W_{out} = \left\lfloor\frac{W_{in} + 2 * \text{padding[1]} -
+      \text{dilation[1]} \times (\text{kernel\_size[1]} - 1) -
+      1}{\text{stride[1]}} + 1\right\rfloor
+    */
+    if (!inType->isTensorType()) {
+        throw AINLError("maxpool2d operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+    if (inTensorShape.size() != 4) {
+        throw AINLError("expected 4d, input dim is not matched.");
+    }
+    /*
+    int padding_h = 0;
+    int dilation_h = 1;
+    int kernel_size_h = 3;
+    int stride_h = 2;
+
+    int padding_w = 0;
+    int dilation_w = 1;
+    int kernel_size_w = 3;
+    int stride_w = 2;
+
+    ValuePtr W = inTensorShape[2];
+    ValuePtr H = inTensorShape[3];
+    ValuePtr H_out =
+        (*H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
+    ValuePtr W_out =
+        (*W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
+
+    inTensorShape.assign(2, H_out);
+    inTensorShape.assign(3, W_out);
+    */
+    std::reverse(inTensorShape.begin(), inTensorShape.end());
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, inTensorShape);
+}
+
 void TypeInfer::initLibraryOperatorTypeContract() {
     contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
@@ -52,12 +147,42 @@ void TypeInfer::initLibraryOperatorTypeContract() {
 
     contract.registerContract("transpose", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator matmul");
+            throw AINLError("Invalid argument number for operator transpose");
         }
         return transposeTypeContract((args[0]));
     });
-}
 
+    contract.registerContract("add", [](std::vector<TypePtr> args) {
+        if (args.size() != 2) {
+            throw AINLError("Invalid argument number for operator add");
+        }
+        return addTypeContract((args[0]), (args[1]));
+    });
+
+    contract.registerContract("relu", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator relu");
+        }
+        return reluTypeContract((args[0]));
+    });
+
+    // kernel_size (Union[int, Tuple[int, int]]) – the size of the window to
+    // take a max over stride (Union[int, Tuple[int, int]]) – the stride of the
+    // window. Default value is kernel_size padding (Union[int, Tuple[int,
+    // int]]) – Implicit negative infinity padding to be added on both sides
+    // dilation (Union[int, Tuple[int, int]]) – a parameter that controls the
+    // stride of elements in the window 暂时没加 return_indices (bool) – if
+    // True, will return the max indices along with the outputs. Useful for
+    // torch.nn.MaxUnpool2d later ceil_mode (bool) – when True, will use ceil
+    // instead of floor to compute the output shape
+    // 先假设我们的maxpool的参数是固定，动态后面再看看思路
+    contract.registerContract("maxpool2d", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator maxpool2d");
+        }
+        return maxpool2dTypeContract((args[0]));
+    });
+}
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
                      const std::vector<TypePtr> &types) {
 
