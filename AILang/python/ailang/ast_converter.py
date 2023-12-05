@@ -159,14 +159,23 @@ class TransformerVisitor(gast.NodeVisitor):
         method = "visit_" + node.func.__class__.__name__
         func = getattr(self, method)(node.func)
         args = []
+        keywargs = {}
         for arg in node.args:
             method_name = "visit_" + arg.__class__.__name__
             args.append(getattr(self, method_name)(arg))
-        # [TODO] Support Keyword Args
-        call = self.transformer.convert_Call(func, args)
+        for keywarg in node.keywords:
+            method_name = "visit_" + keywarg.__class__.__name__
+            keywargs[keywarg.arg] = getattr(self, method_name)(keywarg)
+        call = self.transformer.convert_Call(func, args, keywargs)
         call.func = func
         call.args = args
+        call.keywargs = keywargs
         return call
+
+    def visit_keyword(self, node):
+        value = node.value
+        method_name = "visit_" + arg.__class__.__name__
+        return getattr(self, method_name)(value)
 
     def visit_Attribute(self, node):
         namespace = node.value.id

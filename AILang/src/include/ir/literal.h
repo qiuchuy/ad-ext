@@ -29,6 +29,8 @@ class Literal : public Value {
 
     static LiteralPtr create(float value) { return new Literal(value); }
 
+    static LiteralPtr create(bool value) { return new Literal(value); }
+
     int getIntConcreteValue() {
         assert(type->isIntType());
         return std::get<(size_t)LiteralType::Int>(value);

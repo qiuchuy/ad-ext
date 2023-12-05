@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "ast.h"
 #include "ast_node.h"
@@ -65,8 +66,14 @@ class AstTransformer {
         return std::make_shared<UnaryOpNode>(UnaryOpASTHelper(op), value);
     }
 
-    static Call convertCall(const Expr &func, const std::vector<Expr> &args) {
-        return std::make_shared<CallNode>(func, args);
+    static Call
+    convertCall(const Expr &func, const std::vector<Expr> &args,
+                const std::unordered_map<std::string, Expr> &keywargs) {
+        std::vector<Expr> callArgs(args);
+        for (const auto &keywarg : keywargs) {
+            callArgs.push_back(keywarg.second);
+        }
+        return std::make_shared<CallNode>(func, callArgs);
     }
 
     static Compare convertCompare(const Expr &left,

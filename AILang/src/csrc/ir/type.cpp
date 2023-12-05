@@ -55,3 +55,22 @@ std::vector<int> TensorType::getConcreteShape() {
             "Attempting to get concrete shape of a fully symbolic tensor.");
     }
 }
+
+DependentTupleType::DependentTupleType(const std::vector<ValuePtr> &values) {
+    std::vector<TypePtr> valueTypes;
+    for (const auto &value : values) {
+        valueTypes.push_back(value->getType());
+    }
+    this->types = valueTypes;
+    this->values = values;
+}
+
+bool LiteralType::equals(const Type &rhs) {
+    return value->getType()->equals(rhs);
+}
+
+LiteralType::LiteralType(const ValuePtr &value) { this->value = value; }
+
+std::string LiteralType::str() { return value->getType()->getName(); }
+
+ValuePtr LiteralType::getValue() { return value; }

@@ -47,13 +47,16 @@ class Type : public std::enable_shared_from_this<Type> {
         IntType,
         FloatType,
         // Derived Types
-        TensorType,
         FunctionType,
         TupleType,
         PointerType,
         SumType,
         AnyType,
-        // Analysis-Dependent Types
+        // Dependent Types
+        TensorType,
+        DependentTupleType,
+        LiteralType,
+        // Analysis-Ralted Types
         LinearType,
         // ----
         NumTypes,
@@ -74,8 +77,8 @@ class Type : public std::enable_shared_from_this<Type> {
     virtual bool isTensorType() { return false; }
     virtual bool isTupleType() { return false; }
     virtual bool isPointerType() { return false; }
-    virtual bool isSumType() { return false; }
-    virtual bool isAnyType() { return false; }
+    virtual bool isDependentTupleType() { return false; }
+    virtual bool isLiteralType() { return false; }
     virtual bool isLinearType() { return false; }
     virtual TypePtr getTypePtr() { return shared_from_this(); }
 
@@ -182,6 +185,7 @@ class TupleType : public Type {
   public:
     explicit TupleType(const std::vector<TypePtr> &types) : types(types) {}
 
+    TupleType() = default;
     TupleType(const std::vector<TypePtr> &types,
               const std::vector<std::string> &names)
         : types(types), names(names) {}
@@ -236,7 +240,7 @@ class TupleType : public Type {
 
     std::vector<TypePtr> getTypes() { return types; }
 
-  private:
+  protected:
     std::vector<TypePtr> types;
     std::vector<std::string> names;
 };
@@ -321,6 +325,51 @@ class TensorType : public Type {
     TypePtr elementType;
     std::vector<ValuePtr> shape;
     // std::vector<ValuePtr> stride;
+};
+
+class DependentTupleType;
+using DependentTupleTypePtr = std::shared_ptr<DependentTupleType>;
+class DependentTupleType : public TupleType {
+  public:
+    static DependentTupleTypePtr create(const std::vector<ValuePtr> &values) {
+        // std::vector<int> stride(1, (int)shape.size());
+        return std::make_shared<DependentTupleType>(values);
+    }
+
+    DependentTupleType(const std::vector<ValuePtr> &values);
+
+  public:
+    TypeKind kind() const override {
+        return Type::TypeKind::DependentTupleType;
+    }
+    bool isDependentTupleType() override { return true; }
+
+  private:
+    std::vector<ValuePtr> values;
+};
+
+class LiteralType;
+using LiteralTypePtr = std::shared_ptr<LiteralType>;
+class LiteralType : public Type {
+  public:
+    static LiteralTypePtr create(const ValuePtr &value) {
+        // std::vector<int> stride(1, (int)shape.size());
+        return std::make_shared<LiteralType>(value);
+    }
+
+    LiteralType(const ValuePtr &value);
+
+  public:
+    TypeKind kind() const override { return Type::TypeKind::LiteralType; }
+    bool equals(const Type &rhs) override;
+    bool isLiteralType() override { return true; }
+    std::string str() override;
+    TypePtr getTypePtr() override { return shared_from_this(); }
+
+    ValuePtr getValue();
+
+  private:
+    ValuePtr value;
 };
 
 class LinearType : public Type {

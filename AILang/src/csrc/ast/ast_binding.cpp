@@ -1,5 +1,6 @@
 #include "ast_binding.h"
 #include "ir_building.h"
+#include "literal.h"
 #include "tensor.h"
 #include "type_infer.h"
 #include "utils.h"
@@ -27,20 +28,22 @@ void initAST(py::module_ &m) {
                const py::args &args) {
                 assert(args.size() == argNames.size());
                 std::vector<TypePtr> argTypes;
-                for (const auto &arg : args) {
-                    if (arg.cast<TensorPtr>()) {
-                        auto tensor = arg.cast<TensorPtr>();
+                for (size_t i = 0; i < argNames.size(); i++) {
+                    if (args[i].cast<TensorPtr>()) {
+                        auto tensor = args[i].cast<TensorPtr>();
                         argTypes.push_back(tensor->getType());
                     }
-                    if (py::isinstance<py::int_>(arg)) {
-                        argTypes.push_back(IntTypePtr::get());
+                    if (py::isinstance<py::int_>(args[i])) {
+                        argTypes.push_back(LiteralType::create(
+                            Literal::create(std::stoi(argNames[i]))));
                     }
-                    if (py::isinstance<py::float_>(arg)) {
-                        argTypes.push_back(FloatTypePtr ::get());
+                    if (py::isinstance<py::float_>(args[i])) {
+                        argTypes.push_back(LiteralType::create(
+                            Literal::create(std::stof(argNames[i]))));
                     }
-                    if (py::isinstance<py::bool_>(arg)) {
-                        argTypes.push_back(BoolTypePtr::get());
+                    if (py::isinstance<py::tuple>(args[i])) {
                     }
+                    // [TODO] Add Bool
                 }
                 auto visitor = std::make_unique<TypeInfer>(argNames, argTypes);
                 auto clonedModule = std::make_shared<ModuleNode>(*self);
