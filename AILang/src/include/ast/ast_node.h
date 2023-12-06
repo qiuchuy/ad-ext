@@ -198,7 +198,23 @@ class ConstantNode : public ExprNode {
     std::string getValue() { return value; }
     void accept(Visitor *visitor) override;
     bool isConstantNode() override { return true; }
-
+    bool isFloat() {
+        return value.find('.') != std::string::npos;
+    }
+    bool isBool() {
+        return value == "True" || value == "False";
+    }
+    bool isInt() {
+      return !isFloat() && ~isBool();
+    }
+    int getIntValue() {return std::stoi(value);}
+    float getFloatValue() {return std::stof(value);}
+    bool getBoolValue() {
+      if (value == "True")
+        return true;
+      else 
+        return false;
+    }
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -550,6 +566,13 @@ class CallNode : public ExprNode {
     CallNode() = default;
     CallNode(Expr func, std::vector<Expr> args)
         : func(std::move(func)), args(std::move(args)) {}
+    CallNode(Expr func, std::vector<Expr> args,
+             std::unordered_map<std::string, Expr> kwargs)
+        : func(std::move(func)), args(std::move(args)), kwargs(kwargs) {}
+    CallNode(Expr func, std::vector<Expr> args,
+             std::unordered_map<std::string, Expr> kwargs, TypePtr type)
+        : ExprNode(std::move(type)), func(std::move(func)),
+          args(std::move(args)), kwargs(kwargs) {}
     CallNode(Expr func, std::vector<Expr> args, TypePtr type)
         : ExprNode(std::move(type)), func(std::move(func)),
           args(std::move(args)) {}
@@ -566,7 +589,9 @@ class CallNode : public ExprNode {
     bool isCallNode() override { return true; }
     Expr getCallFunction() { return func; }
     std::vector<Expr> getCallArgs() { return args; }
-
+    std::unordered_map<std::string, Expr> getKeyWordArgs() {
+      return kwargs;
+    }
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -578,6 +603,10 @@ class CallNode : public ExprNode {
         for (const Expr &arg : args) {
             seed ^= arg->hash();
         }
+        for (const auto & kwarg: kwargs) {
+            seed ^= stringHash(kwarg.first);
+            seed ^= kwarg.second->hash();
+        }
         if (type) {
             seed ^= stringHash(type->getName());
         }
@@ -587,6 +616,7 @@ class CallNode : public ExprNode {
   private:
     Expr func;
     std::vector<Expr> args;
+    std::unordered_map<std::string, Expr> kwargs;
 };
 using Call = std::shared_ptr<CallNode>;
 

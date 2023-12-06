@@ -69,6 +69,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/pass
 )
 
 # find CXX source files
@@ -78,6 +79,7 @@ file(GLOB SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/utils/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/tensor/*.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/symbol/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/pass/*.cpp
 )
 file(GLOB HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ast/*.h
@@ -85,6 +87,7 @@ file(GLOB HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/utils/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/tensor/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/symbol/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/pass
 )
 
 # add IREE Compiler API

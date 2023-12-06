@@ -120,7 +120,7 @@ class TestBind:
             ]
         )
         assert typed_ast.match(ref_ast)
-
+    
     def test_transpose(self):
         def f(x):
             return al.transpose(x)

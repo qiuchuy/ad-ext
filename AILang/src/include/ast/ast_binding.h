@@ -69,11 +69,7 @@ class AstTransformer {
     static Call
     convertCall(const Expr &func, const std::vector<Expr> &args,
                 const std::unordered_map<std::string, Expr> &keywargs) {
-        std::vector<Expr> callArgs(args);
-        for (const auto &keywarg : keywargs) {
-            callArgs.push_back(keywarg.second);
-        }
-        return std::make_shared<CallNode>(func, callArgs);
+        return std::make_shared<CallNode>(func, args, keywargs);
     }
 
     static Compare convertCompare(const Expr &left,
@@ -93,6 +89,9 @@ class AstTransformer {
         return std::make_shared<ReturnNode>(value);
     }
 };
+
+TypePtr ArgTypeConversionHelper(py::handle &arg);
+TypePtr BasicTypeConversionHelper(py::handle &arg);
 
 void initAST(py::module_ &m);
 

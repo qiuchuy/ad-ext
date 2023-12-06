@@ -1,4 +1,5 @@
 #include "type_infer.h"
+#include "literal.h"
 #include "symbol.h"
 #include "utils.h"
 
@@ -185,7 +186,6 @@ void TypeInfer::initLibraryOperatorTypeContract() {
 }
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
                      const std::vector<TypePtr> &types) {
-
     assert(args.size() == types.size());
     initLibraryOperatorTypeContract();
     size_t len = args.size();
@@ -213,9 +213,14 @@ void TypeInfer::visitCall(CallNode *node) {
         // This is a library function call
         std::string libraryFunction = (funcName.substr(lastNamespace + 1));
         std::vector<Expr> callArgs = node->getCallArgs();
+        std::unordered_map<std::string, Expr> kwArgs = node->getKeyWordArgs();
         std::vector<TypePtr> argTypes;
         for (const auto &arg : callArgs) {
             argTypes.push_back(arg->getType());
+        }
+        for (const auto& kwarg: kwArgs) {
+            TypePtr kwargType = env->lookup(kwarg.first)->getType();
+            argTypes.push_back(kwargType);
         }
         TypePtr returnType =
             contract.resolveContract(libraryFunction, argTypes);
@@ -233,12 +238,12 @@ void TypeInfer::visitCall(CallNode *node) {
 void TypeInfer::visitConstant(ConstantNode *node) {
     std::string value = node->getValue();
     // [TODO] A naive method, improve this
-    if (value.find('.') != std::string::npos) {
-        node->setType(FloatTypePtr::get());
-    } else if (value == "True" || value == "False") {
-        node->setType(BoolTypePtr::get());
+    if (node->isFloat()) {
+        node->setType(LiteralType::create(Literal::create(node->getFloatValue())));
+    } else if (node->isBool()) {
+        node->setType(LiteralType::create(Literal::create(node->getBoolValue())));
     } else {
-        node->setType(IntTypePtr::get());
+        node->setType(LiteralType::create(Literal::create(node->getIntValue())));
     }
 }
 

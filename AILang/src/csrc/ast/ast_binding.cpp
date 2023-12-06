@@ -5,6 +5,39 @@
 #include "type_infer.h"
 #include "utils.h"
 
+TypePtr BasicTypeConversionHelper(py::handle &arg) {
+    std::string value = py::str(arg);
+    if (py::isinstance<py::int_>(arg)) {
+        return LiteralType::create(Literal::create(std::stoi(value)));
+    }
+    if (py::isinstance<py::float_>(arg)) {
+        return LiteralType::create(Literal::create(std::stof(value)));
+    }
+    if (py::isinstance<py::bool_>(arg)) {
+        if (value == "True") {
+            return LiteralType::create(Literal::create(true));
+        } else {
+            return LiteralType::create(Literal::create(false));
+        }
+    }
+    throw AINLError("Illegal basic type when when converting argument types.");
+}
+
+TypePtr ArgTypeConversionHelper(py::handle arg) {
+    if (py::isinstance<py::tuple>(arg)) {
+        std::vector<TypePtr> types;
+        for (const auto &innerArg : arg) {
+            types.push_back(ArgTypeConversionHelper(innerArg));
+        }
+        return TupleType::createUnnamedTuple(types);
+    }
+    if (arg.cast<TensorPtr>()) {
+        return arg.cast<TensorPtr>()->getType();
+    } else {
+        return BasicTypeConversionHelper(arg);
+    }
+}
+
 void initAST(py::module_ &m) {
     py::class_<ASTNode, std::shared_ptr<ASTNode>>(m, "ASTNode",
                                                   py::dynamic_attr())
@@ -29,21 +62,7 @@ void initAST(py::module_ &m) {
                 assert(args.size() == argNames.size());
                 std::vector<TypePtr> argTypes;
                 for (size_t i = 0; i < argNames.size(); i++) {
-                    if (args[i].cast<TensorPtr>()) {
-                        auto tensor = args[i].cast<TensorPtr>();
-                        argTypes.push_back(tensor->getType());
-                    }
-                    if (py::isinstance<py::int_>(args[i])) {
-                        argTypes.push_back(LiteralType::create(
-                            Literal::create(std::stoi(argNames[i]))));
-                    }
-                    if (py::isinstance<py::float_>(args[i])) {
-                        argTypes.push_back(LiteralType::create(
-                            Literal::create(std::stof(argNames[i]))));
-                    }
-                    if (py::isinstance<py::tuple>(args[i])) {
-                    }
-                    // [TODO] Add Bool
+                    argTypes.push_back(ArgTypeConversionHelper(args[i]));
                 }
                 auto visitor = std::make_unique<TypeInfer>(argNames, argTypes);
                 auto clonedModule = std::make_shared<ModuleNode>(*self);
@@ -160,7 +179,11 @@ void initAST(py::module_ &m) {
         m, "CallNode", py::dynamic_attr())
         .def(py::init<>())
         .def(py::init<Expr, std::vector<Expr>>())
-        .def(py::init<Expr, std::vector<Expr>, TypePtr>());
+        .def(py::init<Expr, std::vector<Expr>,
+                      std::unordered_map<std::string, Expr>>())
+        .def(py::init<Expr, std::vector<Expr>, TypePtr>())
+        .def(py::init<Expr, std::vector<Expr>,
+                      std::unordered_map<std::string, Expr>, TypePtr>());
 
     py::class_<AstTransformer>(m, "AstTransformer")
         .def(py::init<>())

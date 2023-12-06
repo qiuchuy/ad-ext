@@ -132,6 +132,45 @@ class TestBind:
         )
         assert ast.match(ref_ast)
 
+    def test_call_keywargs(self):
+        code_str = "x = f(a, b=c)"
+        ast = parse_pycallable(code_str)
+        ref_ast = ModuleNode(
+            [
+                BindNode(
+                    [VarDefNode("x")],
+                    CallNode(VarNode("f"), [VarNode("a")], {"b":VarNode("c")}),
+                )
+            ]
+        )
+        assert ast.match(ref_ast) 
+
+    def test_call_keywargs_constant(self):
+        code_str = "x = f(a, b=1)"
+        ast = parse_pycallable(code_str)
+        ref_ast = ModuleNode(
+            [
+                BindNode(
+                    [VarDefNode("x")],
+                    CallNode(VarNode("f"), [VarNode("a")], {"b":ConstantNode("1")}),
+                )
+            ]
+        )
+        assert ast.match(ref_ast) 
+
+    def test_call_keywargs_tuple(self):
+        code_str = "x = f(a, b=(1, 2))"
+        ast = parse_pycallable(code_str)
+        ref_ast = ModuleNode(
+            [
+                BindNode(
+                    [VarDefNode("x")],
+                    CallNode(VarNode("f"), [VarNode("a")], {"b":TupleNode([ConstantNode("1"), ConstantNode("2")])}),
+                )
+            ]
+        )
+        assert ast.match(ref_ast) 
+
     def test_compare_lt(self):
         code_str = "z = x < y"
         ast = parse_pycallable(code_str)
@@ -197,3 +236,5 @@ class TestFunctionDef:
             ]
         )
         assert ast.match(ref_ast)
+
+        

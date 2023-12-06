@@ -78,9 +78,6 @@ class Node : public Value {
     // They are actually not created by the constructor
     // Created by Graph
     SignaturePtr signature{};
-    // GraphPtr graph;
-    // Created when creating a new local scope
-    // BlockPtr block;
 };
 
 NODE_PTR_TYPE_DECL(Param)

@@ -39,6 +39,7 @@ void IRBuilder::visitCall(CallNode *node) {
         for (size_t i = 0; i < callArgs.size(); i++) {
             argValues.push_back(getTOSValue());
         }
+        std::reverse(argValues.begin(), argValues.end());
         ValuePtr callResult = contract.resolveContract(
             libraryFunction, module->getGraph(), node->getType(), argValues);
         valueStack.push(callResult);

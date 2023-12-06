@@ -174,7 +174,7 @@ class TransformerVisitor(gast.NodeVisitor):
 
     def visit_keyword(self, node):
         value = node.value
-        method_name = "visit_" + arg.__class__.__name__
+        method_name = "visit_" + value.__class__.__name__
         return getattr(self, method_name)(value)
 
     def visit_Attribute(self, node):
