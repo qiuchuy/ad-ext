@@ -7,6 +7,10 @@ b = al.tensor((2, 3), "Float")
 def f(x, y):
     return al.matmul(x, y)
 
+def f1(x):
+    return al.relu(a)
 
 ir = al.compile_ir(f, a, b)
+ir = al.compile_ir(f1, a)
+
 print(ir)

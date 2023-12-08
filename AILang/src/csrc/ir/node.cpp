@@ -103,3 +103,12 @@ Matmul::operator std::string() const {
     return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
            getRHS()->getName() + "): " + std::string(*signature);
 }
+
+Relu::Relu(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType, createTypePtrForValues({inValue})) {
+    this->inValue = inValue;
+}
+Relu::operator std::string() const {
+    return getName() + " = ailang::relu(" + getValue()->getName() +
+           "):" + std::string(*signature);
+}

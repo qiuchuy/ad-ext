@@ -1,5 +1,4 @@
 #include "type_infer.h"
-#include "literal.h"
 #include "symbol.h"
 #include "utils.h"
 
@@ -84,6 +83,8 @@ TypePtr reluTypeContract(const TypePtr &inType) {
 }
 
 TypePtr maxpool2dTypeContract(const TypePtr &inType) {
+    // IR写完再来补参数
+
     // Union[int, Tuple[int, int]]
 
     // input size (N,C,H,W) out (N,C,H_out,W_out)
@@ -109,10 +110,11 @@ TypePtr maxpool2dTypeContract(const TypePtr &inType) {
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
-    if (inTensorShape.size() != 4) {
+    std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+    if (inConcreateShape.size() != 4) {
         throw AINLError("expected 4d, input dim is not matched.");
     }
-    /*
+
     int padding_h = 0;
     int dilation_h = 1;
     int kernel_size_h = 3;
@@ -123,19 +125,21 @@ TypePtr maxpool2dTypeContract(const TypePtr &inType) {
     int kernel_size_w = 3;
     int stride_w = 2;
 
-    ValuePtr W = inTensorShape[2];
-    ValuePtr H = inTensorShape[3];
-    ValuePtr H_out =
-        (*H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
-    ValuePtr W_out =
-        (*W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
+    int W = inConcreateShape[2];
+    int H = inConcreateShape[3];
+    int H_out =
+        (H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
+    int W_out =
+        (W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
+    inConcreateShape[2] = H_out;
+    inConcreateShape[3] = W_out;
 
-    inTensorShape.assign(2, H_out);
-    inTensorShape.assign(3, W_out);
-    */
-    std::reverse(inTensorShape.begin(), inTensorShape.end());
+    std::vector<ValuePtr> outTensorShape;
+    for (const auto &dim : inConcreateShape) {
+        outTensorShape.push_back(Literal::create(dim));
+    }
     TypePtr elementType = inTensorType->getElementType();
-    return TensorType::create(elementType, inTensorShape);
+    return TensorType::create(elementType, outTensorShape);
 }
 
 void TypeInfer::initLibraryOperatorTypeContract() {
@@ -176,7 +180,8 @@ void TypeInfer::initLibraryOperatorTypeContract() {
     // True, will return the max indices along with the outputs. Useful for
     // torch.nn.MaxUnpool2d later ceil_mode (bool) – when True, will use ceil
     // instead of floor to compute the output shape
-    // 先假设我们的maxpool的参数是固定，动态后面再看看思路
+    // 先假设我们的maxpool的参数是固定，动态后面再看看框架改动
+
     contract.registerContract("maxpool2d", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
             throw AINLError("Invalid argument number for operator maxpool2d");
@@ -186,6 +191,7 @@ void TypeInfer::initLibraryOperatorTypeContract() {
 }
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
                      const std::vector<TypePtr> &types) {
+
     assert(args.size() == types.size());
     initLibraryOperatorTypeContract();
     size_t len = args.size();
@@ -213,14 +219,9 @@ void TypeInfer::visitCall(CallNode *node) {
         // This is a library function call
         std::string libraryFunction = (funcName.substr(lastNamespace + 1));
         std::vector<Expr> callArgs = node->getCallArgs();
-        std::unordered_map<std::string, Expr> kwArgs = node->getKeyWordArgs();
         std::vector<TypePtr> argTypes;
         for (const auto &arg : callArgs) {
             argTypes.push_back(arg->getType());
-        }
-        for (const auto& kwarg: kwArgs) {
-            TypePtr kwargType = env->lookup(kwarg.first)->getType();
-            argTypes.push_back(kwargType);
         }
         TypePtr returnType =
             contract.resolveContract(libraryFunction, argTypes);
@@ -238,12 +239,12 @@ void TypeInfer::visitCall(CallNode *node) {
 void TypeInfer::visitConstant(ConstantNode *node) {
     std::string value = node->getValue();
     // [TODO] A naive method, improve this
-    if (node->isFloat()) {
-        node->setType(LiteralType::create(Literal::create(node->getFloatValue())));
-    } else if (node->isBool()) {
-        node->setType(LiteralType::create(Literal::create(node->getBoolValue())));
+    if (value.find('.') != std::string::npos) {
+        node->setType(FloatTypePtr::get());
+    } else if (value == "True" || value == "False") {
+        node->setType(BoolTypePtr::get());
     } else {
-        node->setType(LiteralType::create(Literal::create(node->getIntValue())));
+        node->setType(IntTypePtr::get());
     }
 }
 

@@ -120,7 +120,7 @@ class TestBind:
             ]
         )
         assert typed_ast.match(ref_ast)
-    
+
     def test_transpose(self):
         def f(x):
             return al.transpose(x)
@@ -198,6 +198,33 @@ class TestBind:
                                         VarNode("x", TensorType((1, 2), "Float")),
                                     ],
                                     TensorType((1, 2), "Float"),
+                                )
+                            )
+                        ],
+                    )
+                ]
+            )
+        assert typed_ast.match(ref_ast)
+    
+    
+    def test_maxpool2d(self): 
+        def f(x):
+            return al.maxpool2d(x)
+        a = al.tensor((1,3,224,224), "Float") 
+        typed_ast = compile_ast(f, a)
+        ref_ast = ModuleNode(
+                [
+                    FunctionDefNode(
+                        "f",
+                        ["x"],
+                        [
+                            ReturnNode(
+                                CallNode(
+                                    VarNode("al::maxpool2d"),
+                                    [
+                                        VarNode("x", TensorType((1,3,224,224), "Float")),
+                                    ],
+                                    TensorType((1, 3, 112,112), "Float"),
                                 )
                             )
                         ],

@@ -1,12 +1,12 @@
 #ifndef AINL_SRC_INCLUDE_TYPE_INFER_H
 #define AINL_SRC_INCLUDE_TYPE_INFER_H
 
+#include "literal.h"
+#include "visitor.h"
 #include <any>
 #include <functional>
 #include <map>
 #include <utility>
-
-#include "visitor.h"
 
 class TypeContract {
   public:

@@ -38,7 +38,7 @@ template <typename T> class SingletonTypePtr {
 // Type: Basic class in Type hierarchy
 class Type;
 using TypePtr = std::shared_ptr<Type>;
-class Type : public std::enable_shared_from_this<Type> {
+class   Type : public std::enable_shared_from_this<Type> {
   public:
     enum class TypeKind {
         // Basic Types, they are ranked in partial order

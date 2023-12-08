@@ -1,6 +1,14 @@
 #include "ir_building.h"
 #include "graph.h"
 
+ValuePtr reluNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                          const ValuePtr &inValue) {
+    if (!inValue->getType()->isTensorType()) {
+        throw AINLError("relu operator only applies to tensors.");
+    }
+    return graph->create<Relu>(nodeType, inValue);
+}
+
 ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                             const ValuePtr &lhs, const ValuePtr &rhs) {
     // Type Checking
@@ -19,6 +27,15 @@ void IRBuilder::initLibraryOperatorNodeContract() {
             throw AINLError("Invalid argument number for operator matmul");
         }
         return matmulNodeContract(graph, nodeType, (args[0]), (args[1]));
+    });
+
+    contract.registerContract("relu", [](const GraphPtr &graph,
+                                         const TypePtr &nodeType,
+                                         std::vector<ValuePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator relu");
+        }
+        return reluNodeContract(graph, nodeType, (args[0]));
     });
 }
 
@@ -39,7 +56,6 @@ void IRBuilder::visitCall(CallNode *node) {
         for (size_t i = 0; i < callArgs.size(); i++) {
             argValues.push_back(getTOSValue());
         }
-        std::reverse(argValues.begin(), argValues.end());
         ValuePtr callResult = contract.resolveContract(
             libraryFunction, module->getGraph(), node->getType(), argValues);
         valueStack.push(callResult);

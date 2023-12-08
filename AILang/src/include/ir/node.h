@@ -47,6 +47,7 @@ class Node : public Value {
         RETURN,
         MAKETUPLE,
         UNZIPPING,
+        RELU,
         UNKNOWN,
     };
 
@@ -78,6 +79,9 @@ class Node : public Value {
     // They are actually not created by the constructor
     // Created by Graph
     SignaturePtr signature{};
+    // GraphPtr graph;
+    // Created when creating a new local scope
+    // BlockPtr block;
 };
 
 NODE_PTR_TYPE_DECL(Param)
@@ -175,6 +179,19 @@ class Matmul : public Node {
   private:
     ValuePtr lhs;
     ValuePtr rhs;
+};
+
+NODE_PTR_TYPE_DECL(Relu)
+class Relu : public Node {
+  public:
+    Relu(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::RELU; }
+    explicit operator std::string() const override;
+    // 在需要将 Relu 类的对象转换为字符串类型时使用。
+    ValuePtr getValue() const { return inValue; }
+
+  private:
+    ValuePtr inValue;
 };
 
 #endif // AINL_SRC_INCLUDE_Node_H
