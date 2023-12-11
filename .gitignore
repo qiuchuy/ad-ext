@@ -2,6 +2,9 @@
 build/
 build-*/
 
+# third-party
+third-party/
+
 # Local-only config options
 version_info.json
 CMakeUserPresets.json
