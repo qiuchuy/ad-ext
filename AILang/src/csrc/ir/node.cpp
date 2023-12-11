@@ -92,7 +92,7 @@ ReturnOp::ReturnOp(const ValuePtr &value)
     : Node(VoidTypePtr::get(), value->getType()) {
     this->value = value;
 }
-
+// Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType, createTypePtrForValues({lhs, rhs})) {
     this->lhs = lhs;
@@ -103,12 +103,31 @@ Matmul::operator std::string() const {
     return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
            getRHS()->getName() + "): " + std::string(*signature);
 }
-
+// Relu
 Relu::Relu(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType, createTypePtrForValues({inValue})) {
     this->inValue = inValue;
 }
 Relu::operator std::string() const {
     return getName() + " = ailang::relu(" + getValue()->getName() +
+           "):" + std::string(*signature);
+}
+
+// Transpose
+Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType, createTypePtrForValues({inValue})) {
+    this->inValue = inValue;
+}
+Transpose::operator std::string() const {
+    return getName() + " = ailang::transpose(" + getValue()->getName() +
+           "):" + std::string(*signature);
+}
+// Maxpool2d
+Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType, createTypePtrForValues({inValue})) {
+    this->inValue = inValue;
+}
+Maxpool2d::operator std::string() const {
+    return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
            "):" + std::string(*signature);
 }

@@ -28,6 +28,7 @@ class NodeContract {
         return functions[name](std::move(graph), std::move(nodeType),
                                std::move(args));
     }
+    
 
   private:
     std::map<std::string, AnyFunction> functions;

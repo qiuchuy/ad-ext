@@ -48,6 +48,8 @@ class Node : public Value {
         MAKETUPLE,
         UNZIPPING,
         RELU,
+        TRANSPOSE,
+        MAXPOOL2D,
         UNKNOWN,
     };
 
@@ -188,6 +190,32 @@ class Relu : public Node {
     NodeKind kind() override { return Node::NodeKind::RELU; }
     explicit operator std::string() const override;
     // 在需要将 Relu 类的对象转换为字符串类型时使用。
+    ValuePtr getValue() const { return inValue; }
+
+  private:
+    ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Transpose)
+class Transpose : public Node {
+  public:
+    // 似乎有同名类
+    Transpose(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::TRANSPOSE; }
+    explicit operator std::string() const override;
+    // 在需要将 Transpsoe 类的对象转换为字符串类型时使用。
+    ValuePtr getValue() const { return inValue; }
+
+  private:
+    ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Maxpool2d)
+class Maxpool2d : public Node {
+  public:
+    Maxpool2d(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
+    explicit operator std::string() const override;
     ValuePtr getValue() const { return inValue; }
 
   private:

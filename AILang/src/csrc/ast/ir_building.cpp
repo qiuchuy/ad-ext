@@ -9,6 +9,13 @@ ValuePtr reluNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
     return graph->create<Relu>(nodeType, inValue);
 }
 
+ValuePtr transposeNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                               const ValuePtr &inValue) {
+    if (!inValue->getType()->isTensorType()) {
+        throw AINLError("transpose operator only applies to tensors.");
+    }
+    return graph->create<Transpose>(nodeType, inValue);
+}
 ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                             const ValuePtr &lhs, const ValuePtr &rhs) {
     // Type Checking
@@ -17,6 +24,14 @@ ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
     }
     // Construct the Result Node
     return graph->create<Matmul>(nodeType, lhs, rhs);
+}
+
+ValuePtr maxpool2dNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                               const ValuePtr &inValue) {
+    if (!inValue->getType()->isTensorType()) {
+        throw AINLError("maxpool2d operator only applies to tensors.");
+    }
+    return graph->create<Maxpool2d>(nodeType, inValue);
 }
 
 void IRBuilder::initLibraryOperatorNodeContract() {
@@ -28,7 +43,6 @@ void IRBuilder::initLibraryOperatorNodeContract() {
         }
         return matmulNodeContract(graph, nodeType, (args[0]), (args[1]));
     });
-
     contract.registerContract("relu", [](const GraphPtr &graph,
                                          const TypePtr &nodeType,
                                          std::vector<ValuePtr> args) {
@@ -36,6 +50,22 @@ void IRBuilder::initLibraryOperatorNodeContract() {
             throw AINLError("Invalid argument number for operator relu");
         }
         return reluNodeContract(graph, nodeType, (args[0]));
+    });
+    contract.registerContract("transpose", [](const GraphPtr &graph,
+                                              const TypePtr &nodeType,
+                                              std::vector<ValuePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator transpose");
+        }
+        return transposeNodeContract(graph, nodeType, (args[0]));
+    });
+    contract.registerContract("maxpool2d", [](const GraphPtr &graph,
+                                              const TypePtr &nodeType,
+                                              std::vector<ValuePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator maxpool2d");
+        }
+        return maxpool2dNodeContract(graph, nodeType, (args[0]));
     });
 }
 
@@ -75,7 +105,7 @@ void IRBuilder::visitReturn(ReturnNode *node) {
 
 void IRBuilder::visitExpr(ExprNode *node) {}
 void IRBuilder::visitModule(ModuleNode *node) {
-    // module = std::make_shared<ALModule>();
+    // module = std:    :make_shared<ALModule>();
 }
 void IRBuilder::visitVar(VarNode *node) {
     ValuePtr value = env->lookup(node->getName())->getValue();
