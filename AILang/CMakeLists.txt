@@ -5,9 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # find python --- Note that python3 being used here should be consistent with the following python environment
-execute_process(COMMAND python3-coofig --prefix
+execute_process(COMMAND python3-config --prefix
         OUTPUT_VARIABLE Python_ROOT_DIR)
-find_package(Python COMPONENTS Development Interpreter REQUIRED)
+find_package(Python 3.11 COMPONENTS Development Interpreter REQUIRED)
 include_directories(${Python_INCLUDE_DIRS})
 
 # find pybind11
