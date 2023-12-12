@@ -50,6 +50,7 @@ class Node : public Value {
         RELU,
         TRANSPOSE,
         MAXPOOL2D,
+        CONVOLUTION,
         UNKNOWN,
     };
 
@@ -222,4 +223,15 @@ class Maxpool2d : public Node {
     ValuePtr inValue;
 };
 
+NODE_PTR_TYPE_DECL(Convolution)
+class Convolution : public Node {
+  public:
+    Convolution(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::CONVOLUTION; }
+    explicit operator std::string() const override;
+    ValuePtr getValue() const { return inValue; }
+
+  private:
+    ValuePtr inValue;
+};
 #endif // AINL_SRC_INCLUDE_Node_H

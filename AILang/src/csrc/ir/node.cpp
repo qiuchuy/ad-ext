@@ -131,3 +131,12 @@ Maxpool2d::operator std::string() const {
     return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
            "):" + std::string(*signature);
 }
+// Convolution
+Convolution::Convolution(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType, createTypePtrForValues({inValue})) {
+    this->inValue = inValue;
+}
+Convolution::operator std::string() const {
+    return getName() + " = ailang::convolution(" + getValue()->getName() +
+           "):" + std::string(*signature);
+}

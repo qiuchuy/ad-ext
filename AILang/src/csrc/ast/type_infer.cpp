@@ -83,6 +83,7 @@ TypePtr reluTypeContract(const TypePtr &inType) {
 }
 
 TypePtr maxpool2dTypeContract(const TypePtr &inType) {
+
     // IR写完再来补参数
 
     // Union[int, Tuple[int, int]]
@@ -111,28 +112,84 @@ TypePtr maxpool2dTypeContract(const TypePtr &inType) {
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
     std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
-    if (inConcreateShape.size() != 4) {
-        throw AINLError("expected 4d, input dim is not matched.");
+    if (inConcreateShape.size() != 4 && inConcreateShape.size() != 3) {
+        throw AINLError(
+            "expected 4d (N,C,H,W) or 3d (C,H,W), input dim is not matched.");
     }
 
-    int padding_h = 0;
-    int dilation_h = 1;
-    int kernel_size_h = 3;
-    int stride_h = 2;
+    uint32_t padding_h = 0;
+    uint32_t dilation_h = 1;
+    uint32_t kernel_size_h = 3;
+    uint32_t stride_h = 2;
 
-    int padding_w = 0;
-    int dilation_w = 1;
-    int kernel_size_w = 3;
-    int stride_w = 2;
+    uint32_t padding_w = 0;
+    uint32_t dilation_w = 1;
+    uint32_t kernel_size_w = 3;
+    uint32_t stride_w = 2;
 
-    int W = inConcreateShape[2];
-    int H = inConcreateShape[3];
-    int H_out =
+    uint32_t shapeSize = inConcreateShape.size();
+    uint32_t W = inConcreateShape[shapeSize - 2];
+    uint32_t H = inConcreateShape[shapeSize - 1];
+    uint32_t H_out =
         (H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
-    int W_out =
+    uint32_t W_out =
         (W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
-    inConcreateShape[2] = H_out;
-    inConcreateShape[3] = W_out;
+
+    inConcreateShape[shapeSize - 2] = H_out;
+    inConcreateShape[shapeSize - 1] = W_out;
+
+    std::vector<ValuePtr> outTensorShape;
+    for (const auto &dim : inConcreateShape) {
+        outTensorShape.push_back(Literal::create(dim));
+    }
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, outTensorShape);
+}
+
+TypePtr convolutionTypeContract(const TypePtr &inType) {
+    if (!inType->isTensorType()) {
+        throw AINLError("convolution operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+    std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+    if (inConcreateShape.size() != 4 && inConcreateShape.size() != 3) {
+        throw AINLError(
+            "expected 4d (N,C,H,W) or 3d (C,H,W), input dim is not matched.");
+    }
+    /*
+    in_channels (int) – Number of channels in the input image
+    out_channels (int) – Number of channels produced by the convolution
+    kernel_size (int or tuple) – Size of the convolving kernel
+    stride (int or tuple, optional) – Stride of the convolution. Default: 1
+    padding (int, tuple or str, optional) – Padding added to all four sides of
+    the input. Default: 0 padding_mode (str, optional) – 'zeros', 'reflect',
+    'replicate' or 'circular'. Default: 'zeros' dilation (int or tuple,
+    optional) – Spacing between kernel elements. Default: 1 groups (int,
+    optional) – Number of blocked connections from input channels to output
+    channels. Default: 1 bias (bool, optional) – If True, adds a learnable bias
+    to the output. Default: True
+    */
+    uint32_t padding_h = 0;
+    uint32_t dilation_h = 1;
+    uint32_t kernel_size_h = 3;
+    uint32_t stride_h = 2;
+
+    uint32_t padding_w = 0;
+    uint32_t dilation_w = 1;
+    uint32_t kernel_size_w = 3;
+    uint32_t stride_w = 2;
+
+    uint32_t shapeSize = inConcreateShape.size();
+    uint32_t W = inConcreateShape[shapeSize - 2];
+    uint32_t H = inConcreateShape[shapeSize - 1];
+    uint32_t H_out =
+        (H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
+    uint32_t W_out =
+        (W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
+
+    inConcreateShape[shapeSize - 2] = H_out;
+    inConcreateShape[shapeSize - 1] = W_out;
 
     std::vector<ValuePtr> outTensorShape;
     for (const auto &dim : inConcreateShape) {
@@ -187,6 +244,12 @@ void TypeInfer::initLibraryOperatorTypeContract() {
             throw AINLError("Invalid argument number for operator maxpool2d");
         }
         return maxpool2dTypeContract((args[0]));
+    });
+    contract.registerContract("convolution", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator convolution");
+        }
+        return convolutionTypeContract((args[0]));
     });
 }
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
