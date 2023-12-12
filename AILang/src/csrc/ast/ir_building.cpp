@@ -33,8 +33,15 @@ ValuePtr maxpool2dNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
     }
     return graph->create<Maxpool2d>(nodeType, inValue);
 }
+ValuePtr convolutionNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                                 const ValuePtr &inValue){
+    if (!inValue->getType()->isTensorType()) {
+        throw AINLError("convolution operator only applies to tensors.");
+    }
+    return graph->create<Convolution>(nodeType, inValue);
+}
 
-void IRBuilder::initLibraryOperatorNodeContract() {
+    void IRBuilder::initLibraryOperatorNodeContract() {
     contract.registerContract("matmul", [](const GraphPtr &graph,
                                            const TypePtr &nodeType,
                                            std::vector<ValuePtr> args) {
@@ -66,6 +73,14 @@ void IRBuilder::initLibraryOperatorNodeContract() {
             throw AINLError("Invalid argument number for operator maxpool2d");
         }
         return maxpool2dNodeContract(graph, nodeType, (args[0]));
+    });
+    contract.registerContract("convolution", [](const GraphPtr &graph,
+                                                const TypePtr &nodeType,
+                                                std::vector<ValuePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator convolution");
+        }
+        return convolutionNodeContract(graph, nodeType, (args[0]));
     });
 }
 
