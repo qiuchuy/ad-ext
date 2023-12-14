@@ -40,15 +40,15 @@ ValuePtr convolutionNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
     }
     return graph->create<Convolution>(nodeType, inValue);
 }
-ValuePtr batchnorm2dNodeContract(const GraphPtr &graph,const TypePtr &nodeType, const ValuePtr &inValue){
-    if(!inValue->getType()->isTensorType()){
+ValuePtr batchnorm2dNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
+                                 const ValuePtr &inValue) {
+    if (!inValue->getType()->isTensorType()) {
         throw AINLError("batchnorm2d operator only applies to tensors.");
     }
     return graph->create<BatchNorm2d>(nodeType, inValue);
 }
 
-    void
-    IRBuilder::initLibraryOperatorNodeContract() {
+void IRBuilder::initLibraryOperatorNodeContract() {
     contract.registerContract("matmul", [](const GraphPtr &graph,
                                            const TypePtr &nodeType,
                                            std::vector<ValuePtr> args) {
