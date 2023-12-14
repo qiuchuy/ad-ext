@@ -51,6 +51,7 @@ class Node : public Value {
         TRANSPOSE,
         MAXPOOL2D,
         CONVOLUTION,
+        BATCHNORM2d,
         UNKNOWN,
     };
 
@@ -234,4 +235,17 @@ class Convolution : public Node {
   private:
     ValuePtr inValue;
 };
+
+NODE_PTR_TYPE_DECL(BatchNorm2d)
+class BatchNorm2d : public Node {
+  public:
+    BatchNorm2d(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::BATCHNORM2d; }
+    explicit operator std::string() const override;
+    ValuePtr getValue() const { return inValue; }
+
+  private:
+    ValuePtr inValue;
+};
+
 #endif // AINL_SRC_INCLUDE_Node_H

@@ -140,3 +140,12 @@ Convolution::operator std::string() const {
     return getName() + " = ailang::convolution(" + getValue()->getName() +
            "):" + std::string(*signature);
 }
+// BatchNorm2d
+BatchNorm2d::BatchNorm2d(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType, createTypePtrForValues({inValue})) {
+    this->inValue = inValue;
+}
+BatchNorm2d::operator std::string() const {
+    return getName() + " = ailang::batchnorm2d(" + getValue()->getName() +
+           "):" + std::string(*signature);
+}

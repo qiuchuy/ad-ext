@@ -199,6 +199,20 @@ TypePtr convolutionTypeContract(const TypePtr &inType) {
     return TensorType::create(elementType, outTensorShape);
 }
 
+TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
+    if (!inType->isTensorType()) {
+        throw AINLError("batchnorm2d operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+    std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+    if (inConcreateShape.size() != 4) {
+        throw AINLError("expected 4d (N,C,H,W) input dim is not matched.");
+    }
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, inTensorShape);
+}
+
 void TypeInfer::initLibraryOperatorTypeContract() {
     contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
@@ -250,6 +264,12 @@ void TypeInfer::initLibraryOperatorTypeContract() {
             throw AINLError("Invalid argument number for operator convolution");
         }
         return convolutionTypeContract((args[0]));
+    });
+    contract.registerContract("batchnorm2d", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw AINLError("Invalid argument number for operator bacthnorm2d");
+        }
+        return batchnorm2dTypeContract((args[0]));
     });
 }
 TypeInfer::TypeInfer(const std::vector<std::string> &args,
