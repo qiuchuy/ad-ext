@@ -257,8 +257,31 @@ class TestBind:
                 ]
             )
         assert typed_ast.match(ref_ast) 
-        
-        
-        
-    # 还有batch_norm, conv
+   
+    def test_batchnorm(self): 
+        def f(x):
+            return al.batchnorm2d(x)
+        a = al.tensor((1,3,224,224), "Float")  # (1,3,224,224)
+        typed_ast = compile_ast(f, a)
+        ref_ast = ModuleNode(
+                [
+                    FunctionDefNode(
+                        "f",
+                        ["x"],
+                        [
+                            ReturnNode(
+                                CallNode(
+                                    VarNode("al::batchnorm2d"),
+                                    [
+                                        VarNode("x", TensorType((1,3,224,224), "Float")),
+                                    ],
+                                    TensorType((1,3, 224,224), "Float"),
+                                )
+                            )
+                        ],
+                    )
+                ]
+            )
+        assert typed_ast.match(ref_ast) 
+    # 还有batch_norm
     

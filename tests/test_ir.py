@@ -10,7 +10,6 @@ def f_matmul(x, y):
 def f_relu(x):
     return al.relu(x)
 
-
 def f_maxcpool2d(x):
     return al.maxpool2d(x)
 
@@ -20,6 +19,8 @@ def f_convolution(x):
 def f_transpose(x):
     return al.transpose(x)
 
+def f_batchnorm2d(x):
+    return al.batchnorm2d(x)
 
 print(al.compile_ir(f_matmul, a, b))
 # ir = al.compile_ast(f,a,b)
@@ -30,3 +31,5 @@ print(al.compile_ir(f_maxcpool2d,c))
 print(al.compile_ir(f_convolution,c))
 
 print(al.compile_ir(f_transpose,a))
+
+print(al.compile_ir(f_batchnorm2d,c))
