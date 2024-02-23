@@ -75,6 +75,7 @@ class TransformerVisitor(gast.NodeVisitor):
             stmt_node = getattr(self, method_name)(stmt)
             stmt_list.append(stmt_node)
         module = self.transformer.convert_Module(stmt_list)
+        
         module.stmts = stmt_list
         self.root = module
         return module
@@ -183,7 +184,7 @@ class TransformerVisitor(gast.NodeVisitor):
         return self.transformer.convert_Attribute(namespace + "::" + attr)
 
     def visit_Expr(self, node):
-        value_method = "visit_" + node.value.__class__.__name__
+        value_method = "visit_" + node.value.__class__.__name__ 
         return getattr(self, value_method)(node.value)
 
     def visit_Compare(self, node):
@@ -238,3 +239,19 @@ def parse_pycallable(source: Union[str, Callable], verbose: bool = False):
     transformer = TransformerVisitor()
     ast = transformer.transform(tree)
     return ast
+
+def fx(x):
+    y = x
+    z = x +1 
+    return y+z
+
+if __name__ == "__main__":
+    tree = parse_pycallable(fx)
+    # for stmt in tree.body:
+    #     method_name = "visit_" + stmt.__class__.__name__
+    #     print(method_name)
+    # for stmt in tree.body:
+    #     method_name = "visit_" + stmt.__class__.__name__
+    #     print(method_name)
+
+    # print(gast.dump(tree, indent=4))
