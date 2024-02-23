@@ -35,8 +35,8 @@ class ModuleNode : public StmtNode {
         size_t seed = 0;
         std::hash<std::string> stringHash;
         // Combine the hash of the node's fields
-        seed ^= stringHash("Module") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        // Recursively hash the child nodes (subtrees)
+          seed ^= stringHash("Module") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        // Recursively hash the child nodes (subtrees)  
         for (const Stmt &stmt : stmts) {
             seed ^= stmt->hash();
         }

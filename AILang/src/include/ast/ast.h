@@ -53,9 +53,9 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
     ASTNODE_TYPE(While)
     ASTNODE_TYPE(If)
     ASTNODE_TYPE(Call)
-    ASTNODE_TYPE(Tuple)
+    ASTNODE_TYPE(Tuple) 
 
-    std::string getName() const { return str(); }
+    std::string getName() const { return str(); }       
     bool match(const ASTNode &other) const {
         return this->hash() == other.hash();
     }
@@ -75,7 +75,7 @@ class ASTNode : public std::enable_shared_from_this<ASTNode> {
         return seed;
     }
 };
-
+  
 using AST = std::shared_ptr<ASTNode>;
 
 class ExprNode : public ASTNode {
@@ -84,7 +84,7 @@ class ExprNode : public ASTNode {
     explicit ExprNode(TypePtr type) : type(std::move(type)) {}
     TypePtr getType() { return type; }
     void setType(TypePtr inType) { this->type = std::move(inType); }
-    ASTNodeKind kind() const override { return ASTNodeKind::Expr; }
+    ASTNodeKind kind() cons t override { return ASTNodeKind::Expr; }
     std::string str() const override { return ""; }
     void accept(Visitor *visitor) override;
     bool isExprNode() override { return true; }
