@@ -10,7 +10,8 @@ all:
 
 format:
 	python3 -m black ./AILang
-	clang-format -i $(SRCS) $(HDRS)
+	clang-format -i --style=llvm $(SRCS) $(HDRS)
+
 
 clean:
 	rm -rf build AILang/python/ailang/ffi/*.so

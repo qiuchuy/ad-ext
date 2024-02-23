@@ -11,22 +11,22 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
     : data_(std::make_shared<Data>(buffer, deleter)), dtype_(dtype) {}
 
 template <typename T> Array::Array(T val, Dtype dtype) : dtype_(dtype) {
-    auto buffer = allocator::malloc(sizeof(T));
-    *static_cast<T *>(buffer.ptr()) = val;
-    data_ = std::make_shared<Data>(
-        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+  auto buffer = allocator::malloc(sizeof(T));
+  *static_cast<T *>(buffer.ptr()) = val;
+  data_ = std::make_shared<Data>(
+      buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
 }
 
 template <typename T>
 Array::Array(std::initializer_list<T> list, Dtype dtype) : dtype_(dtype) {
-    auto buffer = allocator::malloc(sizeof(T) * list.size());
-    auto ptr = static_cast<T *>(buffer.ptr());
-    for (auto &val : list) {
-        *ptr = val;
-        ptr++;
-    }
-    data_ = std::make_shared<Data>(
-        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+  auto buffer = allocator::malloc(sizeof(T) * list.size());
+  auto ptr = static_cast<T *>(buffer.ptr());
+  for (auto &val : list) {
+    *ptr = val;
+    ptr++;
+  }
+  data_ = std::make_shared<Data>(
+      buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
 }
 
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
@@ -34,33 +34,33 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
     : info_(std::make_shared<MetaData>(prim, inputs)), dtype_(dtype) {}
 
 void Array::eval() {
-    auto trace = getTopTrace();
-    std::function<void(Array &)> recursion = [&](Array &arr) -> void {
-        if (evaluated()) {
-            return;
-        } else {
-            for (auto &input : arr.inputs()) {
-                recursion(input);
-            }
-            trace->process(arr.primitive(), arr.inputs(), arr);
-        }
-    };
-    recursion(*this);
+  auto trace = getTopTrace();
+  std::function<void(Array &)> recursion = [&](Array &arr) -> void {
+    if (evaluated()) {
+      return;
+    } else {
+      for (auto &input : arr.inputs()) {
+        recursion(input);
+      }
+      trace->process(arr.primitive(), arr.inputs(), arr);
+    }
+  };
+  recursion(*this);
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)
     : arr(arr), idx(idx) {
-    // if (arr.ndim() == 0) {
-    //     throw std::invalid_argument("Cannot iterate over 0-d array.");
-    // }
+  // if (arr.ndim() == 0) {
+  //     throw std::invalid_argument("Cannot iterate over 0-d array.");
+  // }
 }
 
 Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
-    auto shape = arr.shape();
-    shape.erase(shape.begin());
-    int start = idx;
-    int end = idx + 1;
-    return reshape(slice(arr, start, end, 1), shape);
+  auto shape = arr.shape();
+  shape.erase(shape.begin());
+  int start = idx;
+  int end = idx + 1;
+  return reshape(slice(arr, start, end, 1), shape);
 };
 
 // ConcreteArray::ConcreteArray(const Array &tracer) : Array(tracer) {

@@ -7,14 +7,14 @@
 namespace ainl::ir {
 
 void initAINL(py::module_ &m) {
-    initAST(m);
-    initIR(m);
-    initTensor(m);
-    ainl::ffi::initPyTensor(m);
+  initAST(m);
+  initIR(m);
+  initTensor(m);
+  ainl::ffi::initPyTensor(m);
 }
 
 PYBIND11_MODULE(libailang, m) {
-    m.attr("__version__") = "0.1";
-    initAINL(m);
+  m.attr("__version__") = "0.1";
+  initAINL(m);
 }
 } // namespace ainl::ir
