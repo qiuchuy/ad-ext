@@ -1,7 +1,8 @@
-#ifndef AINL_SRC_INCLUDE_VISITOR_H
-#define AINL_SRC_INCLUDE_VISITOR_H
+#pragma once
 
-#include "ast_node.h"
+#include "ast/ast_node.h"
+
+namespace ainl::ir {
 
 #define AST_PTR_TYPE_DECL(name) class name##Node;
 
@@ -41,5 +42,4 @@ class Visitor {
     virtual void visitCompare(CompareNode *node) = 0;
     virtual void visitIf(IfNode *node) = 0;
 };
-
-#endif
+}// namespace ainl::ir

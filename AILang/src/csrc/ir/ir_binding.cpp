@@ -1,9 +1,10 @@
-#include "ir_binding.h"
-#include "function.h"
-#include "literal.h"
-#include "tensor.h"
-#include "type.h"
+#include "ir/ir_binding.h"
+#include "ir/function.h"
+#include "ir/literal.h"
+#include "ir/tensor.h"
+#include "ir/type.h"
 
+namespace ainl::ir {
 void initIR(py::module_ &m) {
     py::class_<Type, std::shared_ptr<Type>>(m, "Type").def(py::init<>());
 
@@ -29,3 +30,4 @@ void initIR(py::module_ &m) {
         .def(py::init<>())
         .def("__str__", &ALModule::str);
 }
+} // namespace ainl::ir

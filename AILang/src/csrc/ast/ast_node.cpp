@@ -1,6 +1,8 @@
-#include "ast_node.h"
-#include "type_infer.h"
-#include "visitor.h"
+#include "ast/ast_node.h"
+#include "ast/type_infer.h"
+#include "ast/visitor.h"
+
+namespace ainl::ir {
 
 std::array<std::string, 4> UnaryOpString = {"+", "-", "~", "!"};
 std::array<std::string, 13> BinaryOpString = {
@@ -92,4 +94,5 @@ void IfNode::accept(Visitor *visitor) {
         stmt->accept(visitor);
     }
     visitor->visitIf(this);
+}
 }

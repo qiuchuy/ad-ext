@@ -1,8 +1,10 @@
 #include <utility>
 
-#include "graph.h"
-#include "node.h"
-#include "value.h"
+#include "ir/graph.h"
+#include "ir/node.h"
+#include "ir/value.h"
+
+namespace ainl::ir {
 
 Graph::Graph(std::string name) : name(std::move(name)) {
     this->beginBlock = new Block();
@@ -15,8 +17,8 @@ void Graph::insertNodeAtEnd(NodePtr Node) {
     if (this->endBlock->prev != this->beginBlock) {
         ((BlockPtr)(this->endBlock->prev))->insertNodeAtEnd(Node);
     } else {
-        throw AINLError(
-            "Attempting to add a node without first creating a block.");
+        // throw AINLError(
+            // "Attempting to add a node without first creating a block.");
     }
 }
 
@@ -42,3 +44,4 @@ Graph::GraphParam::GraphParam(TypePtr type, int idx) : idx(idx) {
     this->prefix = LOCAL_PREFIX;
     this->name = FPARAM_NAME_PREFIX + std::to_string(FPARAM_COUNT++);
 }
+} // namespace ainl::ir

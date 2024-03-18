@@ -1,13 +1,19 @@
-
-
-#ifndef AINL_SRC_INCLUDE_TENSOR_H
-#define AINL_SRC_INCLUDE_TENSOR_H
+#pragma once
 
 #include <algorithm>
+#include <string>
 
-#include "literal.h"
-#include "logger.h"
-#include "type.h"
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+
+#include "ir/literal.h"
+#include "ir/type.h"
+
+namespace py = pybind11;
+
+namespace ainl::ir {
 
 class Tensor;
 using TensorPtr = Tensor *;
@@ -35,8 +41,8 @@ class Tensor {
             }
             return concreteShape;
         } else {
-            throw AINLError(
-                "Attempting to get concrete shape of a fully symbolic tensor.");
+            // throw AINLError(
+                // "Attempting to get concrete shape of a fully symbolic tensor.");
         }
     }
     std::vector<ValuePtr> getShape() { return type->getShape(); }
@@ -47,26 +53,19 @@ class Tensor {
     TensorTypePtr type;
 };
 
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
 #define DISPATCH_TYPE(type)                                                    \
     if (tensorType == #type)                                                   \
         return SingletonTypePtr<type##Type>::get();
 
 class TensorConvertHelper {
-  public:
-    static TypePtr typeConvert(std::string tensorType) {
-        DISPATCH_TYPE(Int)
-        DISPATCH_TYPE(Float)
-        DISPATCH_TYPE(Bool)
-        throw AINLError("Unsupported frontend tensor type parsing.");
-    }
+    public:
+        static TypePtr typeConvert(std::string tensorType) {
+                DISPATCH_TYPE(Int)
+                DISPATCH_TYPE(Float)
+                DISPATCH_TYPE(Bool)
+                // throw AINLError("Unsupported frontend tensor type parsing.");
+        }
 };
 
 void initTensor(py::module_ &m);
-
-#endif // AINL_SRC_INCLUDE_TENSOR_H
+} // namespace ainl::ir

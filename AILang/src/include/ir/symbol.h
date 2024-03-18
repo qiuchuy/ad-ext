@@ -1,12 +1,13 @@
-#ifndef AINL_SRC_INCLUDE_SYMBOL_H
-#define AINL_SRC_INCLUDE_SYMBOL_H
+#pragma once
 
 #include <algorithm>
 #include <map>
 #include <utility>
 
-#include "type.h"
-#include "value.h"
+#include "ir/type.h"
+#include "ir/value.h"
+
+namespace ainl::ir {
 
 class Symbol {
   public:
@@ -42,8 +43,8 @@ class SymbolTable {
         if (auto entry = lookup_(symbol)) {
             return entry;
         } else {
-            throw AINLError("symbol " + symbol +
-                            " is not found in the symbol table.");
+            // throw AINLError("symbol " + symbol +
+                            // " is not found in the symbol table.");
         }
     }
     void insertSymbol(const std::string &name) {
@@ -123,4 +124,4 @@ class Environment {
 
 extern Environment *env;
 
-#endif // AINL_SRC_INCLUDE_SYMBOL_H
+} // namespace ainl::ir

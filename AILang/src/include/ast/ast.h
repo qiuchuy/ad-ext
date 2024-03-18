@@ -1,10 +1,11 @@
-#ifndef AINL_SRC_INCLUDE_AST_H
-#define AINL_SRC_INCLUDE_AST_H
+#pragma once
 
 #include <memory>
 #include <utility>
 
-#include "type.h"
+#include "ir/type.h"
+
+namespace ainl::ir {
 
 class Visitor;
 
@@ -103,5 +104,4 @@ class StmtNode : public ASTNode {
     bool isStmtNode() override { return true; }
 };
 using Stmt = std::shared_ptr<StmtNode>;
-
-#endif // AINL_SRC_INCLUDE_AST_H
+} // namespace ainl::ir

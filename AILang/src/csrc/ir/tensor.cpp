@@ -1,5 +1,6 @@
-#include "tensor.h"
+#include "ir/tensor.h"
 
+namespace ainl::ir {
 void initTensor(py::module_ &m) {
     py::class_<Tensor>(m, "Tensor", py::dynamic_attr())
         .def(py::init<>())
@@ -44,3 +45,4 @@ void initTensor(py::module_ &m) {
         },
         py::return_value_policy::take_ownership);
 }
+} // namespace ainl::ir

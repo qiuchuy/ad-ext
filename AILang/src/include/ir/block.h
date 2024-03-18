@@ -1,9 +1,9 @@
-#ifndef AINL_SRC_INCLUDE_BLOCK_H
-#define AINL_SRC_INCLUDE_BLOCK_H
+#pragma once
 
-#include "node.h"
-#include "value.h"
+#include "ir/node.h"
+#include "ir/value.h"
 
+namespace ainl::ir {
 class Node;
 using NodePtr = Node *;
 class Param;
@@ -41,5 +41,5 @@ class Block : public Value {
     // label
     std::string label;
 };
+} // namespace ainl::ir
 
-#endif // AINL_SRC_INCLUDE_BLOCK_H

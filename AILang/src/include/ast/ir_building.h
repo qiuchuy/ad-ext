@@ -1,14 +1,15 @@
-#ifndef AINL_SRC_INCLUDE_IR_BUILDING_H
-#define AINL_SRC_INCLUDE_IR_BUILDING_H
+#pragma once
 
 #include <stack>
 #include <utility>
 
-#include "function.h"
-#include "graph.h"
-#include "symbol.h"
-#include "utils.h"
-#include "visitor.h"
+#include "ir/function.h"
+#include "ir/graph.h"
+#include "ir/symbol.h"
+#include "utils/utils.h"
+#include "ast/visitor.h"
+
+namespace ainl::ir {
 
 class NodeContract {
   public:
@@ -22,13 +23,12 @@ class NodeContract {
     ValuePtr resolveContract(const std::string &name, GraphPtr graph,
                              TypePtr nodeType, std::vector<ValuePtr> args) {
         if (functions.find(name) == functions.end()) {
-            throw AINLError(
-                "This operator has not been registered into the library yet.");
+            // throw AINLError(
+                // "This operator has not been registered into the library yet.");
         }
         return functions[name](std::move(graph), std::move(nodeType),
                                std::move(args));
     }
-    
 
   private:
     std::map<std::string, AnyFunction> functions;
@@ -73,4 +73,4 @@ class IRBuilder : public Visitor {
     NodeContract contract;
 };
 
-#endif // AINL_SRC_INCLUDE_IR_BUILDING_H
+}

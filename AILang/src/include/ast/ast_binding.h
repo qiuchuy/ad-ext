@@ -1,5 +1,4 @@
-#ifndef AINL_SRC_INCLUDE_AST_BINDING_H
-#define AINL_SRC_INCLUDE_AST_BINDING_H
+#pragma once
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -10,11 +9,12 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "ast.h"
-#include "ast_node.h"
-#include "logger.h"
-#include "utils.h"
+#include "ast/ast.h"
+#include "ast/ast_node.h"
+#include "utils/logger.h"
+#include "utils/utils.h"
 
+namespace ainl::ir {
 namespace py = pybind11;
 
 class AstTransformer {
@@ -59,11 +59,11 @@ class AstTransformer {
 
     static BinaryOp convertBinaryOp(const std::string &op, const Expr &op1,
                                     const Expr &op2) {
-        return std::make_shared<BinaryOpNode>(BinaryOpASTHelper(op), op1, op2);
+        return std::make_shared<BinaryOpNode>(ainl::core::BinaryOpASTHelper(op), op1, op2);
     }
 
     static UnaryOp convertUnaryOp(const std::string &op, const Expr &value) {
-        return std::make_shared<UnaryOpNode>(UnaryOpASTHelper(op), value);
+        return std::make_shared<UnaryOpNode>(ainl::core::UnaryOpASTHelper(op), value);
     }
 
     static Call
@@ -77,7 +77,7 @@ class AstTransformer {
                                   const std::vector<Expr> &comparators) {
         std::vector<CompareNode::CompareOpKind> iops;
         for (const auto &op : ops)
-            iops.push_back(CompareOpASTHelper(op));
+            iops.push_back(ainl::core::CompareOpASTHelper(op));
         return std::make_shared<CompareNode>(left, iops, comparators);
     }
 
@@ -94,5 +94,4 @@ TypePtr ArgTypeConversionHelper(py::handle &arg);
 TypePtr BasicTypeConversionHelper(py::handle &arg);
 
 void initAST(py::module_ &m);
-
-#endif // AINL_SRC_INCLUDE_AST_BINDING_H
+} // namespace ainl::ir

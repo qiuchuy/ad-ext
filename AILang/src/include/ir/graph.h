@@ -1,12 +1,13 @@
-#ifndef AINL_SRC_INCLUDE_GRAPH_H
-#define AINL_SRC_INCLUDE_GRAPH_H
+#pragma once
 
 #include <list>
 #include <memory>
 
-#include "block.h"
-#include "function.h"
-#include "node.h"
+#include "ir/block.h"
+#include "ir/function.h"
+#include "ir/node.h"
+
+namespace ainl::ir {
 
 class Node;
 class Block;
@@ -56,5 +57,4 @@ class Graph : public std::enable_shared_from_this<Graph>, public Value {
     std::string name;
 };
 using GraphPtr = std::shared_ptr<Graph>;
-
-#endif // AINL_SRC_INCLUDE_GRAPH_H
+}// namespace ainl::ir

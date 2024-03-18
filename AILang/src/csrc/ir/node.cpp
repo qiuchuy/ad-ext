@@ -1,9 +1,11 @@
 #include <memory>
 #include <utility>
 
-#include "block.h"
-#include "function.h"
-#include "node.h"
+#include "ir/block.h"
+#include "ir/function.h"
+#include "ir/node.h"
+
+namespace ainl::ir {
 
 int Node::LOCAL_COUNT = 0;
 
@@ -149,3 +151,4 @@ BatchNorm2d::operator std::string() const {
     return getName() + " = ailang::batchnorm2d(" + getValue()->getName() +
            "):" + std::string(*signature);
 }
+} // namespace ainl::ir

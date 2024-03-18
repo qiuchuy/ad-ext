@@ -1,7 +1,7 @@
-#ifndef AINL_SRC_INCLUDE_LINKLIST_H
-#define AINL_SRC_INCLUDE_LINKLIST_H
+#pragma once
 
 #include <string>
+namespace ainl::ir {
 
 class ILinkNode {
   public:
@@ -34,5 +34,4 @@ class ILinkNode {
 
     bool operator<(const ILinkNode &other) const;
 };
-
-#endif // AINL_SRC_INCLUDE_LINKLIST_H
+} // namespace ainl::ir

@@ -1,13 +1,14 @@
-#ifndef AINL_SRC_INCLUDE_TYPE_INFER_H
-#define AINL_SRC_INCLUDE_TYPE_INFER_H
+#pragma once
 
-#include "literal.h"
-#include "visitor.h"
 #include <any>
 #include <functional>
 #include <map>
 #include <utility>
 
+#include "ir/literal.h"
+#include "ast/visitor.h"
+
+namespace ainl::ir{
 class TypeContract {
   public:
     using AnyFunction = std::function<TypePtr(std::vector<TypePtr>)>;
@@ -19,8 +20,8 @@ class TypeContract {
     TypePtr resolveContract(const std::string &name,
                             std::vector<TypePtr> args) {
         if (functions.find(name) == functions.end()) {
-            throw AINLError(
-                "This operator has not been registered into the library yet.");
+            // throw AINLError(
+                // "This operator has not been registered into the library yet.");
         }
         return functions[name](std::move(args));
     }
@@ -59,4 +60,4 @@ class TypeInfer : public Visitor {
     TypeContract contract;
 };
 
-#endif
+}

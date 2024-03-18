@@ -1,16 +1,16 @@
-#ifndef AINL_SRC_INCLUDE_FUNCTION_H
-#define AINL_SRC_INCLUDE_FUNCTION_H
+#pragma once
 
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <utility>
 
-#include "graph.h"
-#include "type.h"
+#include "ir/graph.h"
+#include "ir/type.h"
 
 // class Graph;
 // using GraphPtr = std::shared_ptr<Graph>;
+namespace ainl::ir {
 
 class Signature {
   public:
@@ -60,5 +60,5 @@ class ALModule : public std::enable_shared_from_this<ALModule> {
     GraphPtr graph;
     std::string name;
 };
+} // namespace ainl::ir
 
-#endif // AINL_SRC_INCLUDE_FUNCTION_H

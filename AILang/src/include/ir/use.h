@@ -1,10 +1,11 @@
 
 
-#ifndef AINL_SRC_INCLUDE_USE_H
-#define AINL_SRC_INCLUDE_USE_H
+#pragma once
 
-#include "linklist.h"
-#include "value.h"
+#include "ir/linklist.h"
+#include "ir/value.h"
+
+namespace ainl::ir {
 
 class Value;
 using ValuePtr = Value *;
@@ -34,5 +35,4 @@ class Use : public ILinkNode {
 
     explicit operator std::string() const override;
 };
-
-#endif // AINL_SRC_INCLUDE_USE_H
+} // namespace ainl::ir

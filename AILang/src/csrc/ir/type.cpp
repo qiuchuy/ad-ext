@@ -1,5 +1,7 @@
-#include "type.h"
-#include "literal.h"
+#include "ir/type.h"
+#include "ir/literal.h"
+
+namespace ainl::ir {
 
 template <typename T> std::shared_ptr<T> SingletonTypePtr<T>::ptr = nullptr;
 
@@ -18,7 +20,8 @@ std::string TensorType::str() {
 bool Type::compare(Type &other) {
     if (this->kind() > TypeKind::TensorType ||
         other.kind() > TypeKind::TensorType)
-        throw AINLError("Illegal type comparison.");
+        // throw AINLError("Illegal type comparison.");
+        ;
     TypePtr rhsPtr = other.getTypePtr();
     if (this->isTensorType() && rhsPtr->isTensorType()) {
         TypePtr thisBaseType =
@@ -51,8 +54,8 @@ std::vector<int> TensorType::getConcreteShape() {
         }
         return concreteShape;
     } else {
-        throw AINLError(
-            "Attempting to get concrete shape of a fully symbolic tensor.");
+        // throw AINLError(
+            // "Attempting to get concrete shape of a fully symbolic tensor.");
     }
 }
 
@@ -74,3 +77,5 @@ LiteralType::LiteralType(const ValuePtr &value) { this->value = value; }
 std::string LiteralType::str() { return value->getType()->getName(); }
 
 ValuePtr LiteralType::getValue() { return value; }
+
+} // namespace ainl::ir

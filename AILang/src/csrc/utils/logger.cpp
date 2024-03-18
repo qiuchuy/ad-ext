@@ -1,5 +1,6 @@
-#include "logger.h"
+#include "utils/logger.h"
 
+namespace ainl::core {
 std::string logLevelToString(LogLevel level) {
     static std::unordered_map<LogLevel, std::string> levelStrings = {
         {LogLevel::DEBUG, "DEBUG"},
@@ -14,3 +15,4 @@ std::string logLevelToString(LogLevel level) {
         return "UNKNOWN";
     }
 }
+} // namespace ainl::core
