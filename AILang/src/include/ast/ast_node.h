@@ -613,4 +613,4 @@ class CallNode : public ExprNode {
     std::unordered_map<std::string, Expr> kwargs;
 };
 using Call = std::shared_ptr<CallNode>;
-}
+} // namespace ainl::ir

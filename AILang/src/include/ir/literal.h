@@ -35,9 +35,7 @@ class Literal : public Value {
         assert(type->isIntType());
         return std::get<(size_t)LiteralType::Int>(value);
     }
-    float getFloatConcreteValue() {
-        assert(type->isFloatType());
-    }
+    float getFloatConcreteValue() { assert(type->isFloatType()); }
     bool getBoolConcreteValue() {
         assert(type->isBoolType());
         return std::get<(size_t)LiteralType::Bool>(value);
@@ -54,4 +52,4 @@ class Literal : public Value {
   private:
     std::variant<int, float, bool> value;
 };
-} //namespace ainl::ir
+} // namespace ainl::ir

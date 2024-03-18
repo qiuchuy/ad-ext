@@ -1,8 +1,8 @@
 
 #include <utility>
 
-#include "ir/value.h"
 #include "ir/use.h"
+#include "ir/value.h"
 
 namespace ainl::ir {
 

@@ -26,6 +26,5 @@ struct Device {
 static constexpr Device cpu = Device(Device::DeviceType::cpu);
 static constexpr Device gpu = Device(Device::DeviceType::gpu);
 
-
 const Device &getDefaultDevice();
 } // namespace ainl::core

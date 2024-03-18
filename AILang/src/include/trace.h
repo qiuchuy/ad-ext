@@ -64,7 +64,4 @@ class TraceManager {
 TraceManager &traceManager();
 std::shared_ptr<BaseTrace> getTopTrace();
 
-
-
-
 } // namespace ainl::core

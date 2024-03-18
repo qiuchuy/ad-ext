@@ -5,11 +5,9 @@ namespace ainl::core {
 
 EvaluationTrace::EvaluationTrace() {}
 
-void EvaluationTrace::pack(Array &array) {
-}
+void EvaluationTrace::pack(Array &array) {}
 
-void EvaluationTrace::unpack(Array &array) {
-}
+void EvaluationTrace::unpack(Array &array) {}
 
 void EvaluationTrace::process(const std::shared_ptr<Primitive> &prim,
                               std::vector<Array> &inputs, Array &output) {
@@ -22,11 +20,9 @@ void EvaluationTrace::process(const std::shared_ptr<Primitive> &prim,
     }
 }
 
-void JITTrace::pack(Array &array) {
-}
+void JITTrace::pack(Array &array) {}
 
-void JITTrace::unpack(Array &array) {
-}
+void JITTrace::unpack(Array &array) {}
 
 void JITTrace::process(const std::shared_ptr<Primitive> &prim,
                        std::vector<Array> &inputs, Array &output) {

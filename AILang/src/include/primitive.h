@@ -53,13 +53,9 @@ class FillPrimitive : public Primitive {
 
 class SlicePrimitive : public Primitive {
   public:
-    explicit SlicePrimitive(int begin,
-                            int end)
-        : begin_(begin), end_(end), stride_(1) {
-    }
-    explicit SlicePrimitive(int begin,
-                            int end,
-                            int stride)
+    explicit SlicePrimitive(int begin, int end)
+        : begin_(begin), end_(end), stride_(1) {}
+    explicit SlicePrimitive(int begin, int end, int stride)
         : begin_(begin), end_(end), stride_(stride) {}
     void eval(const std::shared_ptr<BaseTrace> &trace,
               const std::vector<Array> &inputs, Array &output) override;

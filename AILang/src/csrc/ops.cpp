@@ -14,8 +14,7 @@ Array slice(const Array &input, int start, int end) {
     return Array(Float, std::make_shared<SlicePrimitive>(start, end), {input});
 }
 
-Array slice(const Array &input, int start,
-            int end, int stride) {
+Array slice(const Array &input, int start, int end, int stride) {
     return Array(Float, std::make_shared<SlicePrimitive>(start, end, stride),
                  {input});
 }

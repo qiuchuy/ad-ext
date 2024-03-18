@@ -27,18 +27,21 @@ void SlicePrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
 }
 
 void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-    // Numpy style slice, see: https://numpy.org/doc/stable/user/basics.indexing.html
-    // [TODO] high dimensional slicing
+    // Numpy style slice, see:
+    // https://numpy.org/doc/stable/user/basics.indexing.html [TODO] high
+    // dimensional slicing
     if (inputs.size() != 1) {
-        throw std::invalid_argument("[SlicePrimitive::evalCPU] expects exactly one input array.");
+        throw std::invalid_argument(
+            "[SlicePrimitive::evalCPU] expects exactly one input array.");
     }
 
-    const Array& input = inputs[0];
+    const Array &input = inputs[0];
     std::vector<int> input_shape = input.shape();
     size_t input_ndim = input.ndim();
 
     if (input_ndim == 0) {
-        throw std::invalid_argument("[SlicePrimitive::evalCPU] Input array must have at least one dimension.");
+        throw std::invalid_argument("[SlicePrimitive::evalCPU] Input array "
+                                    "must have at least one dimension.");
     }
 
     int start = begin_;

@@ -6,9 +6,9 @@
 #include <utility>
 
 #include "ir/linklist.h"
-#include "utils/logger.h"
 #include "ir/type.h"
 #include "ir/use.h"
+#include "utils/logger.h"
 
 namespace ainl::ir {
 

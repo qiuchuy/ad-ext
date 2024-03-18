@@ -59,11 +59,13 @@ class AstTransformer {
 
     static BinaryOp convertBinaryOp(const std::string &op, const Expr &op1,
                                     const Expr &op2) {
-        return std::make_shared<BinaryOpNode>(ainl::core::BinaryOpASTHelper(op), op1, op2);
+        return std::make_shared<BinaryOpNode>(ainl::core::BinaryOpASTHelper(op),
+                                              op1, op2);
     }
 
     static UnaryOp convertUnaryOp(const std::string &op, const Expr &value) {
-        return std::make_shared<UnaryOpNode>(ainl::core::UnaryOpASTHelper(op), value);
+        return std::make_shared<UnaryOpNode>(ainl::core::UnaryOpASTHelper(op),
+                                             value);
     }
 
     static Call

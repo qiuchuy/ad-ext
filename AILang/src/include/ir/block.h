@@ -42,4 +42,3 @@ class Block : public Value {
     std::string label;
 };
 } // namespace ainl::ir
-

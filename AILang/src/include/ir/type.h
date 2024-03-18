@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "utils/logger.h"
 #include "ir/value.h"
+#include "utils/logger.h"
 
 namespace ainl::ir {
 

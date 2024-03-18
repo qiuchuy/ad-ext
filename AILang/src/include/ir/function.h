@@ -61,4 +61,3 @@ class ALModule : public std::enable_shared_from_this<ALModule> {
     std::string name;
 };
 } // namespace ainl::ir
-

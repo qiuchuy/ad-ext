@@ -1,7 +1,7 @@
 #include <cstdlib>
 
-#include "utils/logger.h"
 #include "allocator.h"
+#include "utils/logger.h"
 
 namespace ainl::core::allocator {
 Buffer malloc(size_t size) {

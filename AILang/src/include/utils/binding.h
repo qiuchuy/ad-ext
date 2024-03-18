@@ -13,4 +13,4 @@ namespace ainl::ir {
 namespace py = pybind11;
 
 void initAINL(py::module_ &m);
-}
+} // namespace ainl::ir

@@ -57,4 +57,4 @@ class Graph : public std::enable_shared_from_this<Graph>, public Value {
     std::string name;
 };
 using GraphPtr = std::shared_ptr<Graph>;
-}// namespace ainl::ir
+} // namespace ainl::ir

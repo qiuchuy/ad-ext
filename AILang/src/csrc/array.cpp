@@ -1,8 +1,8 @@
-#include "utils/logger.h"
 #include "array.h"
 #include "graph.h"
 #include "ops.h"
 #include "trace.h"
+#include "utils/logger.h"
 
 namespace ainl::core {
 

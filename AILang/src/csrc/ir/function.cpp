@@ -1,5 +1,5 @@
-#include <utility>
 #include "ir/function.h"
+#include <utility>
 
 namespace ainl::ir {
 

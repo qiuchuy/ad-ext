@@ -5,10 +5,10 @@
 #include <map>
 #include <utility>
 
-#include "ir/literal.h"
 #include "ast/visitor.h"
+#include "ir/literal.h"
 
-namespace ainl::ir{
+namespace ainl::ir {
 class TypeContract {
   public:
     using AnyFunction = std::function<TypePtr(std::vector<TypePtr>)>;
@@ -21,7 +21,7 @@ class TypeContract {
                             std::vector<TypePtr> args) {
         if (functions.find(name) == functions.end()) {
             // throw AINLError(
-                // "This operator has not been registered into the library yet.");
+            // "This operator has not been registered into the library yet.");
         }
         return functions[name](std::move(args));
     }
@@ -60,4 +60,4 @@ class TypeInfer : public Visitor {
     TypeContract contract;
 };
 
-}
+} // namespace ainl::ir

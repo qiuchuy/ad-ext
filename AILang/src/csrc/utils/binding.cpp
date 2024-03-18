@@ -1,8 +1,8 @@
 #include "utils/binding.h"
 #include "ast/ast_binding.h"
 #include "ffi/pytensor.h"
-#include "ir/tensor.h"
 #include "ir/ir_binding.h"
+#include "ir/tensor.h"
 
 namespace ainl::ir {
 
@@ -17,4 +17,4 @@ PYBIND11_MODULE(libailang, m) {
     m.attr("__version__") = "0.1";
     initAINL(m);
 }
-}
+} // namespace ainl::ir

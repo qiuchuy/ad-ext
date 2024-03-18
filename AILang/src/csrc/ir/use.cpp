@@ -26,4 +26,4 @@ Use::operator std::string() const {
     ss << used->getName() << "@[" << std::string(*user) << "]";
     return ss.str();
 }
-}
+} // namespace ainl::ir

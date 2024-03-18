@@ -42,4 +42,4 @@ class Visitor {
     virtual void visitCompare(CompareNode *node) = 0;
     virtual void visitIf(IfNode *node) = 0;
 };
-}// namespace ainl::ir
+} // namespace ainl::ir

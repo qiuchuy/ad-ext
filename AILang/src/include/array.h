@@ -56,7 +56,7 @@ class Array {
         Data(const allocator::Buffer &buffer,
              std::function<void(allocator::Buffer)> deleter)
             : buffer(buffer), deleter(deleter) {}
-        void *ptr() {return buffer.ptr();}
+        void *ptr() { return buffer.ptr(); }
         ~Data() { deleter(buffer); }
     };
 
@@ -64,7 +64,7 @@ class Array {
 
     bool evaluated() const { return data_->buffer.ptr() != nullptr; }
 
-    void copyBySharing(const Array& array, size_t size, size_t offset);
+    void copyBySharing(const Array &array, size_t size, size_t offset);
 
     struct ArrayIterator {
         using iterator_category = std::random_access_iterator_tag;
@@ -106,7 +106,7 @@ class Array {
     std::vector<Array> &inputs() { return info_->inputs_; }
 
     std::vector<int> shape() const { return *(shape_); }
-    Dtype dtype() const {return dtype_;}
+    Dtype dtype() const { return dtype_; }
     size_t ndim() const { return shape_->size(); }
 
   protected:

@@ -1,10 +1,6 @@
 #include "ir/type.h"
 
-#include "transformation.h"
 #include "trace.h"
+#include "transformation.h"
 
-namespace ainl::core {
-
-
-
-} // ainl::core
+namespace ainl::core {} // namespace ainl::core

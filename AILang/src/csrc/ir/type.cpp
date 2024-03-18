@@ -55,7 +55,7 @@ std::vector<int> TensorType::getConcreteShape() {
         return concreteShape;
     } else {
         // throw AINLError(
-            // "Attempting to get concrete shape of a fully symbolic tensor.");
+        // "Attempting to get concrete shape of a fully symbolic tensor.");
     }
 }
 

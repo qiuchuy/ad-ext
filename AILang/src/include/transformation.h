@@ -1,6 +1,3 @@
 #include "ir/function.h"
 
-namespace ainl::core {
-
-
-} // ainl::core
+namespace ainl::core {} // namespace ainl::core

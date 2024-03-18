@@ -44,7 +44,7 @@ class SymbolTable {
             return entry;
         } else {
             // throw AINLError("symbol " + symbol +
-                            // " is not found in the symbol table.");
+            // " is not found in the symbol table.");
         }
     }
     void insertSymbol(const std::string &name) {

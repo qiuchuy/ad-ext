@@ -3,11 +3,11 @@
 #include <stack>
 #include <utility>
 
+#include "ast/visitor.h"
 #include "ir/function.h"
 #include "ir/graph.h"
 #include "ir/symbol.h"
 #include "utils/utils.h"
-#include "ast/visitor.h"
 
 namespace ainl::ir {
 
@@ -24,7 +24,7 @@ class NodeContract {
                              TypePtr nodeType, std::vector<ValuePtr> args) {
         if (functions.find(name) == functions.end()) {
             // throw AINLError(
-                // "This operator has not been registered into the library yet.");
+            // "This operator has not been registered into the library yet.");
         }
         return functions[name](std::move(graph), std::move(nodeType),
                                std::move(args));
@@ -73,4 +73,4 @@ class IRBuilder : public Visitor {
     NodeContract contract;
 };
 
-}
+} // namespace ainl::ir

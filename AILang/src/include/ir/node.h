@@ -8,7 +8,6 @@
 
 namespace ainl::ir {
 
-
 #define NODE_PTR_TYPE_DECL(name)                                               \
     class name;                                                                \
     using name##Ptr = name *;

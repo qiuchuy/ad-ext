@@ -19,4 +19,4 @@ ainl::ir::CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
 
 std::string trim(const std::string &str);
 int caseInsensitiveStrcmp(const std::string &str1, const std::string &str2);
-}
+} // namespace ainl::core

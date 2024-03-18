@@ -18,7 +18,7 @@ void Graph::insertNodeAtEnd(NodePtr Node) {
         ((BlockPtr)(this->endBlock->prev))->insertNodeAtEnd(Node);
     } else {
         // throw AINLError(
-            // "Attempting to add a node without first creating a block.");
+        // "Attempting to add a node without first creating a block.");
     }
 }
 

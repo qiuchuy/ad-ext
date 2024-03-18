@@ -95,4 +95,4 @@ void IfNode::accept(Visitor *visitor) {
     }
     visitor->visitIf(this);
 }
-}
+} // namespace ainl::ir

@@ -7,7 +7,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-
 #include "ir/literal.h"
 #include "ir/type.h"
 
@@ -42,7 +41,7 @@ class Tensor {
             return concreteShape;
         } else {
             // throw AINLError(
-                // "Attempting to get concrete shape of a fully symbolic tensor.");
+            // "Attempting to get concrete shape of a fully symbolic tensor.");
         }
     }
     std::vector<ValuePtr> getShape() { return type->getShape(); }
@@ -58,13 +57,13 @@ class Tensor {
         return SingletonTypePtr<type##Type>::get();
 
 class TensorConvertHelper {
-    public:
-        static TypePtr typeConvert(std::string tensorType) {
-                DISPATCH_TYPE(Int)
-                DISPATCH_TYPE(Float)
-                DISPATCH_TYPE(Bool)
-                // throw AINLError("Unsupported frontend tensor type parsing.");
-        }
+  public:
+    static TypePtr typeConvert(std::string tensorType) {
+        DISPATCH_TYPE(Int)
+        DISPATCH_TYPE(Float)
+        DISPATCH_TYPE(Bool)
+        // throw AINLError("Unsupported frontend tensor type parsing.");
+    }
 };
 
 void initTensor(py::module_ &m);
