@@ -18,103 +18,103 @@ class Array;
 class Primitive;
 
 class MetaData {
-  public:
-    MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
-        : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
-    virtual ~MetaData() = default;
-    friend class Array;
+public:
+  MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
+      : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
+  virtual ~MetaData() = default;
+  friend class Array;
 
-  private:
-    std::shared_ptr<Primitive> prim_;
-    std::vector<Array> inputs_;
-    std::shared_ptr<Array> tracer_;
+private:
+  std::shared_ptr<Primitive> prim_;
+  std::vector<Array> inputs_;
+  std::shared_ptr<Array> tracer_;
 };
 
 class Array {
-  public:
-    /* Construct a scalar array*/
-    template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>());
+public:
+  /* Construct a scalar array*/
+  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>());
 
-    /* Construct an array from python list/ tuple*/
-    template <typename T>
-    Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>());
+  /* Construct an array from python list/ tuple*/
+  template <typename T>
+  Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>());
 
-    /* Construct an array from buffer*/
-    Array(const allocator::Buffer &buffer, Dtype dtype,
-          std::function<void(allocator::Buffer)> deleter);
+  /* Construct an array from buffer*/
+  Array(const allocator::Buffer &buffer, Dtype dtype,
+        std::function<void(allocator::Buffer)> deleter);
 
-    /* Construct an array by copy*/
-    Array(const Array &other) = default;
+  /* Construct an array by copy*/
+  Array(const Array &other) = default;
 
-    /* Construct an array in the computational graph*/
-    Array(Dtype dtype, std::shared_ptr<Primitive> prim,
-          std::vector<Array> inputs);
+  /* Construct an array in the computational graph*/
+  Array(Dtype dtype, std::shared_ptr<Primitive> prim,
+        std::vector<Array> inputs);
 
-    struct Data {
-        allocator::Buffer buffer;
-        std::function<void(allocator::Buffer)> deleter;
-        Data(const allocator::Buffer &buffer,
-             std::function<void(allocator::Buffer)> deleter)
-            : buffer(buffer), deleter(deleter) {}
-        void *ptr() { return buffer.ptr(); }
-        ~Data() { deleter(buffer); }
+  struct Data {
+    allocator::Buffer buffer;
+    std::function<void(allocator::Buffer)> deleter;
+    Data(const allocator::Buffer &buffer,
+         std::function<void(allocator::Buffer)> deleter)
+        : buffer(buffer), deleter(deleter) {}
+    void *ptr() { return buffer.ptr(); }
+    ~Data() { deleter(buffer); }
+  };
+
+  void eval();
+
+  bool evaluated() const { return data_->buffer.ptr() != nullptr; }
+
+  void copyBySharing(const Array &array, size_t size, size_t offset);
+
+  struct ArrayIterator {
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = const Array;
+    using reference = value_type;
+
+    explicit ArrayIterator(const Array &arr, int idx = 0);
+
+    reference operator*() const;
+
+    ArrayIterator &operator+(difference_type diff) {
+      idx += diff;
+      return *this;
+    }
+
+    ArrayIterator &operator++() {
+      idx++;
+      return *this;
+    }
+
+    friend bool operator==(const ArrayIterator &a, const ArrayIterator &b) {
+      return a.idx == b.idx;
+    };
+    friend bool operator!=(const ArrayIterator &a, const ArrayIterator &b) {
+      return !(a == b);
     };
 
-    void eval();
+  private:
+    const Array &arr;
+    int idx;
+  };
 
-    bool evaluated() const { return data_->buffer.ptr() != nullptr; }
+  ArrayIterator begin() const { return ArrayIterator(*this); }
+  ArrayIterator end() const { return ArrayIterator(*this); }
 
-    void copyBySharing(const Array &array, size_t size, size_t offset);
+  std::shared_ptr<Array> tracer() { return info_->tracer_; }
+  std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
+  std::vector<Array> &inputs() { return info_->inputs_; }
 
-    struct ArrayIterator {
-        using iterator_category = std::random_access_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = const Array;
-        using reference = value_type;
+  std::vector<int> shape() const { return *(shape_); }
+  Dtype dtype() const { return dtype_; }
+  size_t ndim() const { return shape_->size(); }
 
-        explicit ArrayIterator(const Array &arr, int idx = 0);
-
-        reference operator*() const;
-
-        ArrayIterator &operator+(difference_type diff) {
-            idx += diff;
-            return *this;
-        }
-
-        ArrayIterator &operator++() {
-            idx++;
-            return *this;
-        }
-
-        friend bool operator==(const ArrayIterator &a, const ArrayIterator &b) {
-            return a.idx == b.idx;
-        };
-        friend bool operator!=(const ArrayIterator &a, const ArrayIterator &b) {
-            return !(a == b);
-        };
-
-      private:
-        const Array &arr;
-        int idx;
-    };
-
-    ArrayIterator begin() const { return ArrayIterator(*this); }
-    ArrayIterator end() const { return ArrayIterator(*this); }
-
-    std::shared_ptr<Array> tracer() { return info_->tracer_; }
-    std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
-    std::vector<Array> &inputs() { return info_->inputs_; }
-
-    std::vector<int> shape() const { return *(shape_); }
-    Dtype dtype() const { return dtype_; }
-    size_t ndim() const { return shape_->size(); }
-
-  protected:
-    std::shared_ptr<Data> data_;
-    Dtype dtype_;
-    size_t size_;
-    std::shared_ptr<MetaData> info_;
-    std::shared_ptr<std::vector<int>> shape_;
+protected:
+  std::shared_ptr<Data> data_;
+  Dtype dtype_;
+  size_t size_;
+  std::shared_ptr<MetaData> info_;
+  std::shared_ptr<std::vector<int>> shape_;
 
 }; // namespace ainl::core
 

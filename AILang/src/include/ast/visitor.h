@@ -23,23 +23,23 @@ AST_PTR_TYPE_DECL(If)
 AST_PTR_TYPE_DECL(Compare)
 
 class Visitor {
-  public:
-    ~Visitor() = default;
-    virtual void visitModule(ModuleNode *node) = 0;
-    virtual void visitStmt(StmtNode *node) = 0;
-    virtual void visitExpr(ExprNode *node) = 0;
-    virtual void visitBind(BindNode *node) = 0;
-    virtual void visitVar(VarNode *node) = 0;
-    virtual void visitVarDef(VarDefNode *node) = 0;
-    virtual void visitTuple(TupleNode *node) = 0;
-    virtual void visitConstant(ConstantNode *node) = 0;
-    virtual void visitFunctionDef(FunctionDefNode *node) = 0;
-    virtual void visitBinaryOp(BinaryOpNode *node) = 0;
-    virtual void visitUnaryOp(UnaryOpNode *node) = 0;
-    virtual void visitCall(CallNode *node) = 0;
-    virtual void visitWhile(WhileNode *node) = 0;
-    virtual void visitReturn(ReturnNode *node) = 0;
-    virtual void visitCompare(CompareNode *node) = 0;
-    virtual void visitIf(IfNode *node) = 0;
+public:
+  ~Visitor() = default;
+  virtual void visitModule(ModuleNode *node) = 0;
+  virtual void visitStmt(StmtNode *node) = 0;
+  virtual void visitExpr(ExprNode *node) = 0;
+  virtual void visitBind(BindNode *node) = 0;
+  virtual void visitVar(VarNode *node) = 0;
+  virtual void visitVarDef(VarDefNode *node) = 0;
+  virtual void visitTuple(TupleNode *node) = 0;
+  virtual void visitConstant(ConstantNode *node) = 0;
+  virtual void visitFunctionDef(FunctionDefNode *node) = 0;
+  virtual void visitBinaryOp(BinaryOpNode *node) = 0;
+  virtual void visitUnaryOp(UnaryOpNode *node) = 0;
+  virtual void visitCall(CallNode *node) = 0;
+  virtual void visitWhile(WhileNode *node) = 0;
+  virtual void visitReturn(ReturnNode *node) = 0;
+  virtual void visitCompare(CompareNode *node) = 0;
+  virtual void visitIf(IfNode *node) = 0;
 };
 } // namespace ainl::ir
