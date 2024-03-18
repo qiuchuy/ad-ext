@@ -1,8 +1,10 @@
-#include "value.h"
 
 #include <utility>
 
-#include "use.h"
+#include "ir/use.h"
+#include "ir/value.h"
+
+namespace ainl::ir {
 
 int Value::valueNum = 0;
 std::string Value::LOCAL_PREFIX = "%";
@@ -62,3 +64,5 @@ TypePtr createTypePtrForValues(const std::vector<Value *> &values) {
         return values[0]->getType();
     return VoidTypePtr::get();
 }
+
+} // namespace ainl::ir

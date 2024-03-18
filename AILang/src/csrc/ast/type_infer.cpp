@@ -1,18 +1,23 @@
-#include "type_infer.h"
-#include "symbol.h"
-#include "utils.h"
+#include "ast/type_infer.h"
+#include "ir/symbol.h"
+#include "ir/type.h"
+#include "utils/utils.h"
+
+namespace ainl::ir {
 
 TypePtr matmulTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     // Type Checking
     if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
-        throw AINLError("matmul operator only applies to two tensors.");
+        throw ainl::core::AINLError(
+            "matmul operator only applies to two tensors.");
     }
     TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
     TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
     std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
     std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
     if (*lhsShape.back() != *rhsShape.front()) {
-        throw AINLError("tensor shapes are not matched for matmul.");
+        throw ainl::core::AINLError(
+            "tensor shapes are not matched for matmul.");
     }
 
     // Construct the result type
@@ -31,7 +36,8 @@ TypePtr matmulTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
 TypePtr transposeTypeContract(const TypePtr &inType) {
     // Type Checking
     if (!inType->isTensorType()) {
-        throw AINLError("transpose operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "transpose operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
@@ -44,7 +50,8 @@ TypePtr transposeTypeContract(const TypePtr &inType) {
 
 TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
-        throw AINLError("add operator only applies to two tensors.");
+        throw ainl::core::AINLError(
+            "add operator only applies to two tensors.");
     }
     TensorTypePtr lhsTensorType = SAFE_TYPE_DOWNCAST(lhsType, TensorType);
     TensorTypePtr rhsTensorType = SAFE_TYPE_DOWNCAST(rhsType, TensorType);
@@ -53,12 +60,13 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
     std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
     // std::vector<ValuePtr> addShape = std::move(lhsShape);
     if (lhsShape.size() != rhsShape.size()) {
-        throw AINLError("two tensor dont not have the same dim for add.");
+        throw ainl::core::AINLError(
+            "two tensor dont not have the same dim for add.");
     }
     if (!std::equal(
             lhsShape.begin(), lhsShape.end(), rhsShape.begin(),
             [](ValuePtr &lhs, ValuePtr &rhs) { return *lhs == *rhs; })) {
-        throw AINLError("tensor shapes are not matched for add.");
+        throw ainl::core::AINLError("tensor shapes are not matched for add.");
     }
     // TypePtr elementType = lhsTensorType->getElementType();
     TypePtr elementType;
@@ -74,7 +82,7 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
 
 TypePtr reluTypeContract(const TypePtr &inType) {
     if (!inType->isTensorType()) {
-        throw AINLError("relu operator only applies to tensors.");
+        throw ainl::core::AINLError("relu operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
@@ -107,13 +115,14 @@ TypePtr maxpool2dTypeContract(const TypePtr &inType) {
       1}{\text{stride[1]}} + 1\right\rfloor
     */
     if (!inType->isTensorType()) {
-        throw AINLError("maxpool2d operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "maxpool2d operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
     std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
     if (inConcreateShape.size() != 4 && inConcreateShape.size() != 3) {
-        throw AINLError(
+        throw ainl::core::AINLError(
             "expected 4d (N,C,H,W) or 3d (C,H,W), input dim is not matched.");
     }
 
@@ -148,13 +157,14 @@ TypePtr maxpool2dTypeContract(const TypePtr &inType) {
 
 TypePtr convolutionTypeContract(const TypePtr &inType) {
     if (!inType->isTensorType()) {
-        throw AINLError("convolution operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "convolution operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
     std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
     if (inConcreateShape.size() != 4 && inConcreateShape.size() != 3) {
-        throw AINLError(
+        throw ainl::core::AINLError(
             "expected 4d (N,C,H,W) or 3d (C,H,W), input dim is not matched.");
     }
     /*
@@ -201,13 +211,15 @@ TypePtr convolutionTypeContract(const TypePtr &inType) {
 
 TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
     if (!inType->isTensorType()) {
-        throw AINLError("batchnorm2d operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "batchnorm2d operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
     std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
     if (inConcreateShape.size() != 4) {
-        throw AINLError("expected 4d (N,C,H,W) input dim is not matched.");
+        throw ainl::core::AINLError(
+            "expected 4d (N,C,H,W) input dim is not matched.");
     }
     TypePtr elementType = inTensorType->getElementType();
     return TensorType::create(elementType, inTensorShape);
@@ -216,28 +228,32 @@ TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
 void TypeInfer::initLibraryOperatorTypeContract() {
     contract.registerContract("matmul", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
-            throw AINLError("Invalid argument number for operator matmul");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator matmul");
         }
         return matmulTypeContract((args[0]), (args[1]));
     });
 
     contract.registerContract("transpose", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator transpose");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator transpose");
         }
         return transposeTypeContract((args[0]));
     });
 
     contract.registerContract("add", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {
-            throw AINLError("Invalid argument number for operator add");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator add");
         }
         return addTypeContract((args[0]), (args[1]));
     });
 
     contract.registerContract("relu", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator relu");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator relu");
         }
         return reluTypeContract((args[0]));
     });
@@ -255,19 +271,22 @@ void TypeInfer::initLibraryOperatorTypeContract() {
 
     contract.registerContract("maxpool2d", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator maxpool2d");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator maxpool2d");
         }
         return maxpool2dTypeContract((args[0]));
     });
     contract.registerContract("convolution", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator convolution");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator convolution");
         }
         return convolutionTypeContract((args[0]));
     });
     contract.registerContract("batchnorm2d", [](std::vector<TypePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator bacthnorm2d");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator bacthnorm2d");
         }
         return batchnorm2dTypeContract((args[0]));
     });
@@ -384,7 +403,7 @@ void TypeInfer::visitBind(BindNode *node) {
     auto targets = node->getTargets();
     size_t targetSize = targets.size();
     if (targetSize == 0)
-        throw AINLError("Illegal Bind statement.");
+        throw ainl::core::AINLError("Illegal Bind statement.");
     if (targetSize > 1) {
         for (auto &target : targets) {
             target->setType(sourceType);
@@ -415,3 +434,4 @@ void TypeInfer::visitBind(BindNode *node) {
 void TypeInfer::visitWhile(WhileNode *node) {}
 
 void TypeInfer::visitIf(IfNode *node) {}
+} // namespace ainl::ir

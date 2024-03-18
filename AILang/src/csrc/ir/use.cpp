@@ -1,9 +1,11 @@
-#include "use.h"
 
 #include <cassert>
 #include <sstream>
 #include <string>
 
+#include "ir/use.h"
+
+namespace ainl::ir {
 int Use::use_num = 0;
 
 bool operator==(const Use &first, const Use &second) {
@@ -24,3 +26,4 @@ Use::operator std::string() const {
     ss << used->getName() << "@[" << std::string(*user) << "]";
     return ss.str();
 }
+} // namespace ainl::ir

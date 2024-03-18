@@ -1,7 +1,6 @@
-//
-// Created by kom on 23-9-14.
-//
-#include "linklist.h"
+#include "ir/linklist.h"
+
+namespace ainl::ir {
 
 int ILinkNode::id_num = 0;
 
@@ -51,3 +50,4 @@ bool ILinkNode::operator!=(const ILinkNode &other) const {
 bool ILinkNode::operator<(const ILinkNode &other) const {
     return id < other.id;
 }
+} // namespace ainl::ir

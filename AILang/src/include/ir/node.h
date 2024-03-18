@@ -1,11 +1,12 @@
-#ifndef AINL_SRC_INCLUDE_Node_H
-#define AINL_SRC_INCLUDE_Node_H
+#pragma once
 
 #include <utility>
 
-#include "block.h"
-#include "type.h"
-#include "value.h"
+#include "ir/block.h"
+#include "ir/type.h"
+#include "ir/value.h"
+
+namespace ainl::ir {
 
 #define NODE_PTR_TYPE_DECL(name)                                               \
     class name;                                                                \
@@ -247,5 +248,4 @@ class BatchNorm2d : public Node {
   private:
     ValuePtr inValue;
 };
-
-#endif // AINL_SRC_INCLUDE_Node_H
+} // namespace ainl::ir

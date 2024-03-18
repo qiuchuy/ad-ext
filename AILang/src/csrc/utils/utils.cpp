@@ -1,6 +1,8 @@
-#include "utils.h"
+#include "utils/utils.h"
 
-BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind) {
+namespace ainl::core {
+
+ainl::ir::BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind) {
     DISPATCH_BINARYOP(Add)
     DISPATCH_BINARYOP(Sub)
     DISPATCH_BINARYOP(Mul)
@@ -17,7 +19,7 @@ BinaryOpNode::BinaryOpKind BinaryOpASTHelper(std::string OpKind) {
     throw AINLError("Unsupported BinaryOpNode when transforming AST.");
 }
 
-UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind) {
+ainl::ir::UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind) {
     DISPATCH_UNARYOP(UAdd)
     DISPATCH_UNARYOP(USub)
     DISPATCH_UNARYOP(Not)
@@ -25,7 +27,7 @@ UnaryOpNode::UnaryOpKind UnaryOpASTHelper(std::string OpKind) {
     throw AINLError("Unsupported UnaryOpNode when transforming AST.");
 }
 
-CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind) {
+ainl::ir::CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind) {
     DISPATCH_COMPAREOP(Eq)
     DISPATCH_COMPAREOP(NotEq)
     DISPATCH_COMPAREOP(Lt)
@@ -68,3 +70,4 @@ int caseInsensitiveStrcmp(const std::string &str1, const std::string &str2) {
 
     return 0; // Strings are equal
 }
+} // namespace ainl::core

@@ -1,15 +1,16 @@
-#ifndef AINL_SRC_INCLUDE_VALUE_H
-#define AINL_SRC_INCLUDE_VALUE_H
+#pragma once
 
 #include <memory>
 #include <sstream>
 #include <tuple>
 #include <utility>
 
-#include "linklist.h"
-#include "logger.h"
-#include "type.h"
-#include "use.h"
+#include "ir/linklist.h"
+#include "ir/type.h"
+#include "ir/use.h"
+#include "utils/logger.h"
+
+namespace ainl::ir {
 
 #define SAFE_VALUE_DOWNCAST(value, derived_type)                               \
     dynamic_cast<derived_type *>(value)
@@ -165,5 +166,4 @@ class Value : public ILinkNode {
 };
 
 TypePtr createTypePtrForValues(const std::vector<ValuePtr> &values);
-
-#endif // AINL_SRC_INCLUDE_VALUE_H
+} // namespace ainl::ir

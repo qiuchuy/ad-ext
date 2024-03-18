@@ -1,6 +1,7 @@
-#include "function.h"
-
+#include "ir/function.h"
 #include <utility>
+
+namespace ainl::ir {
 
 ALModule::ALModule(std::string name, const TypePtr &inputType,
                    const TypePtr &returnType) {
@@ -49,3 +50,4 @@ std::string ALModule::str() {
     str.append("}\n");
     return str;
 }
+} // namespace ainl::ir

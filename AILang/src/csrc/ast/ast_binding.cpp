@@ -1,9 +1,11 @@
-#include "ast_binding.h"
-#include "ir_building.h"
-#include "literal.h"
-#include "tensor.h"
-#include "type_infer.h"
-#include "utils.h"
+#include "ast/ast_binding.h"
+#include "ast/ir_building.h"
+#include "ast/type_infer.h"
+#include "ir/literal.h"
+#include "ir/tensor.h"
+#include "utils/utils.h"
+
+namespace ainl::ir {
 
 TypePtr BasicTypeConversionHelper(py::handle &arg) {
     std::string value = py::str(arg);
@@ -20,7 +22,8 @@ TypePtr BasicTypeConversionHelper(py::handle &arg) {
             return LiteralType::create(Literal::create(false));
         }
     }
-    throw AINLError("Illegal basic type when when converting argument types.");
+    // throw AINLError("Illegal basic type when when converting argument
+    // types.");
 }
 
 TypePtr ArgTypeConversionHelper(py::handle arg) {
@@ -114,20 +117,21 @@ void initAST(py::module_ &m) {
         .def(py::init<>())
         .def(py::init(
             [](const std::string &op, const Expr &op1, const Expr &op2) {
-                return std::make_shared<BinaryOpNode>(BinaryOpASTHelper(op),
-                                                      op1, op2);
+                return std::make_shared<BinaryOpNode>(
+                    ainl::core::BinaryOpASTHelper(op), op1, op2);
             }))
         .def(py::init([](const std::string &op, const Expr &op1,
                          const Expr &op2, const TypePtr &type) {
-            return std::make_shared<BinaryOpNode>(BinaryOpASTHelper(op), op1,
-                                                  op2, type);
+            return std::make_shared<BinaryOpNode>(
+                ainl::core::BinaryOpASTHelper(op), op1, op2, type);
         }));
 
     py::class_<UnaryOpNode, ExprNode, std::shared_ptr<UnaryOpNode>>(
         m, "UnaryOpNode", py::dynamic_attr())
         .def(py::init<>())
         .def(py::init([](const std::string &op, const Expr &value) {
-            return std::make_shared<UnaryOpNode>(UnaryOpASTHelper(op), value);
+            return std::make_shared<UnaryOpNode>(
+                ainl::core::UnaryOpASTHelper(op), value);
         }));
 
     py::class_<VarNode, ExprNode, std::shared_ptr<VarNode>>(m, "VarNode")
@@ -162,7 +166,7 @@ void initAST(py::module_ &m) {
                          const std::vector<Expr> &comparators) {
             std::vector<CompareNode::CompareOpKind> iops;
             for (const auto &op : ops)
-                iops.push_back(CompareOpASTHelper(op));
+                iops.push_back(ainl::core::CompareOpASTHelper(op));
             return std::make_shared<CompareNode>(left, iops, comparators);
         }));
 
@@ -216,3 +220,5 @@ void initAST(py::module_ &m) {
         .def_static("convert_Return", &AstTransformer::convertReturn,
                     py::return_value_policy::reference);
 }
+
+}; // namespace ainl::ir

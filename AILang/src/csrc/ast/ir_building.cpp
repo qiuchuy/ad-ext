@@ -1,10 +1,12 @@
-#include "ir_building.h"
-#include "graph.h"
+#include "ast/ir_building.h"
+#include "ir/graph.h"
+
+namespace ainl::ir {
 
 ValuePtr reluNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                           const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
-        throw AINLError("relu operator only applies to tensors.");
+        throw ainl::core::AINLError("relu operator only applies to tensors.");
     }
     return graph->create<Relu>(nodeType, inValue);
 }
@@ -12,7 +14,8 @@ ValuePtr reluNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
 ValuePtr transposeNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                                const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
-        throw AINLError("transpose operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "transpose operator only applies to tensors.");
     }
     return graph->create<Transpose>(nodeType, inValue);
 }
@@ -20,7 +23,8 @@ ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                             const ValuePtr &lhs, const ValuePtr &rhs) {
     // Type Checking
     if (!lhs->getType()->isTensorType() || !rhs->getType()->isTensorType()) {
-        throw AINLError("matmul operator only applies to two tensors.");
+        throw ainl::core::AINLError(
+            "matmul operator only applies to two tensors.");
     }
     // Construct the Result Node
     return graph->create<Matmul>(nodeType, lhs, rhs);
@@ -29,21 +33,24 @@ ValuePtr matmulNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
 ValuePtr maxpool2dNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                                const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
-        throw AINLError("maxpool2d operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "maxpool2d operator only applies to tensors.");
     }
     return graph->create<Maxpool2d>(nodeType, inValue);
 }
 ValuePtr convolutionNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                                  const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
-        throw AINLError("convolution operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "convolution operator only applies to tensors.");
     }
     return graph->create<Convolution>(nodeType, inValue);
 }
 ValuePtr batchnorm2dNodeContract(const GraphPtr &graph, const TypePtr &nodeType,
                                  const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
-        throw AINLError("batchnorm2d operator only applies to tensors.");
+        throw ainl::core::AINLError(
+            "batchnorm2d operator only applies to tensors.");
     }
     return graph->create<BatchNorm2d>(nodeType, inValue);
 }
@@ -53,7 +60,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                            const TypePtr &nodeType,
                                            std::vector<ValuePtr> args) {
         if (args.size() != 2) {
-            throw AINLError("Invalid argument number for operator matmul");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator matmul");
         }
         return matmulNodeContract(graph, nodeType, (args[0]), (args[1]));
     });
@@ -61,7 +69,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                          const TypePtr &nodeType,
                                          std::vector<ValuePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator relu");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator relu");
         }
         return reluNodeContract(graph, nodeType, (args[0]));
     });
@@ -69,7 +78,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                               const TypePtr &nodeType,
                                               std::vector<ValuePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator transpose");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator transpose");
         }
         return transposeNodeContract(graph, nodeType, (args[0]));
     });
@@ -77,7 +87,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                               const TypePtr &nodeType,
                                               std::vector<ValuePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator maxpool2d");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator maxpool2d");
         }
         return maxpool2dNodeContract(graph, nodeType, (args[0]));
     });
@@ -85,7 +96,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                                 const TypePtr &nodeType,
                                                 std::vector<ValuePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator convolution");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator convolution");
         }
         return convolutionNodeContract(graph, nodeType, (args[0]));
     });
@@ -93,7 +105,8 @@ void IRBuilder::initLibraryOperatorNodeContract() {
                                                 const TypePtr &nodeType,
                                                 std::vector<ValuePtr> args) {
         if (args.size() != 1) {
-            throw AINLError("Invalid argument number for operator batchnorm2d");
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator batchnorm2d");
         }
         return batchnorm2dNodeContract(graph, nodeType, (args[0]));
     });
@@ -156,8 +169,9 @@ void IRBuilder::visitFunctionDef(FunctionDefNode *node) {
             env->lookup(params[idx])->setValue(paramValues[idx]);
         }
     } else {
-        throw AINLError("function " + funcName +
-                        " is not been assigned to FunctionType.");
+        // throw AINLError("function " + funcName +
+        // " is not been assigned to FunctionType.");
     }
 }
 void IRBuilder::visitBinaryOp(BinaryOpNode *node) {}
+} // namespace ainl::ir

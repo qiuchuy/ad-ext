@@ -1,9 +1,9 @@
-#ifndef AINL_SRC_INCLUDE_LITERAL_H
-#define AINL_SRC_INCLUDE_LITERAL_H
+#pragma once
 
 #include <variant>
 
-#include "value.h"
+#include "ir/value.h"
+namespace ainl::ir {
 
 class Literal;
 using LiteralPtr = Literal *;
@@ -35,11 +35,7 @@ class Literal : public Value {
         assert(type->isIntType());
         return std::get<(size_t)LiteralType::Int>(value);
     }
-    float getFloatConcreteValue() {
-        assert(type->isFloatType());
-        throw AINLError(
-            "Attempting to get a concrete float value from an int Literal.");
-    }
+    float getFloatConcreteValue() { assert(type->isFloatType()); }
     bool getBoolConcreteValue() {
         assert(type->isBoolType());
         return std::get<(size_t)LiteralType::Bool>(value);
@@ -51,11 +47,9 @@ class Literal : public Value {
             return std::to_string(std::get<(size_t)LiteralType::Float>(value));
         if (type->isBoolType())
             return std::to_string(std::get<(size_t)LiteralType::Bool>(value));
-        throw AINLError("Unknown literal type.");
     }
 
   private:
     std::variant<int, float, bool> value;
 };
-
-#endif // AINL_SRC_INCLUDE_LITERAL_H
+} // namespace ainl::ir

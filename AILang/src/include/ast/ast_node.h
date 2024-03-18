@@ -1,12 +1,12 @@
-#ifndef AINL_SRC_INCLUDE_AST_NODE_H
-#define AINL_SRC_INCLUDE_AST_NODE_H
+#pragma once
 
 #include <sstream>
 #include <utility>
 
-#include "ast.h"
-#include "logger.h"
+#include "ast/ast.h"
+#include "utils/logger.h"
 
+namespace ainl::ir {
 class Visitor;
 class ModuleNode;
 using Module = std::shared_ptr<ModuleNode>;
@@ -198,23 +198,18 @@ class ConstantNode : public ExprNode {
     std::string getValue() { return value; }
     void accept(Visitor *visitor) override;
     bool isConstantNode() override { return true; }
-    bool isFloat() {
-        return value.find('.') != std::string::npos;
-    }
-    bool isBool() {
-        return value == "True" || value == "False";
-    }
-    bool isInt() {
-      return !isFloat() && ~isBool();
-    }
-    int getIntValue() {return std::stoi(value);}
-    float getFloatValue() {return std::stof(value);}
+    bool isFloat() { return value.find('.') != std::string::npos; }
+    bool isBool() { return value == "True" || value == "False"; }
+    bool isInt() { return !isFloat() && ~isBool(); }
+    int getIntValue() { return std::stoi(value); }
+    float getFloatValue() { return std::stof(value); }
     bool getBoolValue() {
-      if (value == "True")
-        return true;
-      else 
-        return false;
+        if (value == "True")
+            return true;
+        else
+            return false;
     }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -589,9 +584,8 @@ class CallNode : public ExprNode {
     bool isCallNode() override { return true; }
     Expr getCallFunction() { return func; }
     std::vector<Expr> getCallArgs() { return args; }
-    std::unordered_map<std::string, Expr> getKeyWordArgs() {
-      return kwargs;
-    }
+    std::unordered_map<std::string, Expr> getKeyWordArgs() { return kwargs; }
+
   private:
     size_t hash() const override {
         size_t seed = 0;
@@ -603,7 +597,7 @@ class CallNode : public ExprNode {
         for (const Expr &arg : args) {
             seed ^= arg->hash();
         }
-        for (const auto & kwarg: kwargs) {
+        for (const auto &kwarg : kwargs) {
             seed ^= stringHash(kwarg.first);
             seed ^= kwarg.second->hash();
         }
@@ -619,5 +613,4 @@ class CallNode : public ExprNode {
     std::unordered_map<std::string, Expr> kwargs;
 };
 using Call = std::shared_ptr<CallNode>;
-
-#endif // AINL_SRC_INCLUDE_AST_NODE_H
+} // namespace ainl::ir

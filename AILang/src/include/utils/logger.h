@@ -1,10 +1,11 @@
-#ifndef AINL_SRC_INCLUDE_LOGGER_H
-#define AINL_SRC_INCLUDE_LOGGER_H
+#pragma once
 
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
+
+namespace ainl::core {
 
 enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
 constexpr LogLevel currentLogLevel = LogLevel::DEBUG;
@@ -33,5 +34,4 @@ class AINLError : public std::exception {
   private:
     std::string _message;
 };
-
-#endif // AINL_SRC_INCLUDE_LOGGER_H
+} // namespace ainl::core

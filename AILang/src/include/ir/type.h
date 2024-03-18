@@ -1,5 +1,4 @@
-#ifndef AINL_SRC_INCLUDE_TYPE_H
-#define AINL_SRC_INCLUDE_TYPE_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -9,8 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "logger.h"
-#include "value.h"
+#include "ir/value.h"
+#include "utils/logger.h"
+
+namespace ainl::ir {
 
 class Value;
 using ValuePtr = Value *;
@@ -38,7 +39,7 @@ template <typename T> class SingletonTypePtr {
 // Type: Basic class in Type hierarchy
 class Type;
 using TypePtr = std::shared_ptr<Type>;
-class   Type : public std::enable_shared_from_this<Type> {
+class Type : public std::enable_shared_from_this<Type> {
   public:
     enum class TypeKind {
         // Basic Types, they are ranked in partial order
@@ -388,4 +389,4 @@ class LinearType : public Type {
 };
 using LinearTypePtr = SingletonTypePtr<LinearType>;
 
-#endif // AINL_SRC_INCLUDE_TYPE_H
+} // namespace ainl::ir

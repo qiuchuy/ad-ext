@@ -1,5 +1,6 @@
-#include "block.h"
+#include "ir/block.h"
 
+namespace ainl::ir {
 int Block::blockCount = 0;
 
 Block::Block() {
@@ -38,3 +39,4 @@ Block::operator std::string() const {
     }
     return str;
 }
+} // namespace ainl::ir
