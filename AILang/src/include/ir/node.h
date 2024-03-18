@@ -187,6 +187,7 @@ private:
 
 NODE_PTR_TYPE_DECL(Relu)
 class Relu : public Node {
+<<<<<<< HEAD
 public:
   Relu(const TypePtr &nodeType, const ValuePtr &inValue);
   NodeKind kind() override { return Node::NodeKind::RELU; }
@@ -196,6 +197,17 @@ public:
 
 private:
   ValuePtr inValue;
+=======
+public:
+  Relu(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::RELU; }
+  explicit operator std::string() const override;
+  // 在需要将 Relu 类的对象转换为字符串类型时使用。
+  ValuePtr getValue() const { return inValue; }
+
+private:
+  ValuePtr inValue;
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
 };
 
 NODE_PTR_TYPE_DECL(Transpose)

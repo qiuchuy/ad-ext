@@ -121,6 +121,8 @@ func.func @simple_mul(%lhs: tensor<4xf32>, %rhs: tensor<4xf32>) -> tensor<4xf32>
   %result = arith.mulf %lhs, %rhs : tensor<4xf32>\n \
   return %result : tensor<4xf32>\n \
 }";
+<<<<<<< HEAD
+=======
   error = ireeCompilerSourceWrapBuffer(s.session, "simple_mul", simple_mul_mlir,
                                        strlen(simple_mul_mlir) + 1,
                                        /*isNullTerminated=*/true, &s.source);
@@ -144,6 +146,79 @@ func.func @simple_mul(%lhs: tensor<4xf32>, %rhs: tensor<4xf32>) -> tensor<4xf32>
 
   if (!ireeCompilerInvocationParseSource(inv, s.source)) {
     fprintf(stderr, "Error parsing input source into invocation\n");
+    cleanup_compiler_state(s);
+    return 1;
+  }
+
+  // Compile up to the 'flow' dialect phase.
+  // Typically a compiler tool would compile to 'end' and either output to a
+  // .vmfb file for later usage in a deployed application or output to memory
+  // for immediate usage in a JIT scenario.
+  ireeCompilerInvocationSetCompileToPhase(inv, "flow");
+
+  // Run the compiler invocation pipeline.
+  if (!ireeCompilerInvocationPipeline(inv, IREE_COMPILER_PIPELINE_STD)) {
+    fprintf(stderr, "Error running compiler invocation\n");
+    cleanup_compiler_state(s);
+    return 1;
+  }
+  fprintf(stdout, "Compilation successful, output:\n\n");
+
+  // Create a compiler 'output' piped to the 'stdout' file descriptor.
+  // A file or memory buffer could be opened instead using
+  // |ireeCompilerOutputOpenFile| or |ireeCompilerOutputOpenMembuffer|.
+  fflush(stdout);
+  error = ireeCompilerOutputOpenFD(fileno(stdout), &s.output);
+  if (error) {
+    fprintf(stderr, "Error opening output file descriptor\n");
+    handle_compiler_error(error);
+    cleanup_compiler_state(s);
+    return 1;
+  }
+
+  // Print IR to the output stream.
+  // When compiling to the 'end' phase, a compiler tool would typically use
+  // either |ireeCompilerInvocationOutputVMBytecode| or
+  // |ireeCompilerInvocationOutputVMCSource|.
+  error = ireeCompilerInvocationOutputIR(inv, s.output);
+  if (error) {
+    handle_compiler_error(error);
+    cleanup_compiler_state(s);
+    return 1;
+  }
+}
+"; 
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
+  error = ireeCompilerSourceWrapBuffer(s.session, "simple_mul", simple_mul_mlir,
+                                       strlen(simple_mul_mlir) + 1,
+                                       /*isNullTerminated=*/true, &s.source);
+  if (error) {
+    fprintf(stderr, "Error wrapping source buffer\n");
+    handle_compiler_error(error);
+    cleanup_compiler_state(s);
+    return 1;
+  }
+  fprintf(stdout, "Wrapped simple_mul buffer as compiler source\n");
+
+<<<<<<< HEAD
+  // ------------------------------------------------------------------------
+  // // Inputs and outputs are prepared, ready to run an invocation pipeline.
+  // //
+  // ------------------------------------------------------------------------
+  // //
+
+  // Use an invocation to compile from the input source to the output stream.
+  iree_compiler_invocation_t *inv = ireeCompilerInvocationCreate(s.session);
+  ireeCompilerInvocationEnableConsoleDiagnostics(inv);
+
+  if (!ireeCompilerInvocationParseSource(inv, s.source)) {
+    fprintf(stderr, "Error parsing input source into invocation\n");
+=======
+// ------------------------------------------------------------------------ //
+// Inputs and outputs are prepared, ready to run an invocation pipeline.    //
+// ------------------------------------------------------------------------ //
+
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
     cleanup_compiler_state(s);
     return 1;
   }

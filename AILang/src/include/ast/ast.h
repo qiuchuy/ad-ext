@@ -40,6 +40,7 @@ public:
 
   ~ASTNode() = default;
 
+<<<<<<< HEAD
   ASTNODE_TYPE(Module)
   ASTNODE_TYPE(Expr)
   ASTNODE_TYPE(Stmt)
@@ -75,11 +76,49 @@ public:
     seed ^= stringHash(getName()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
+=======
+  ASTNODE_TYPE(Module)
+  ASTNODE_TYPE(Expr)
+  ASTNODE_TYPE(Stmt)
+  ASTNODE_TYPE(Var)
+  ASTNODE_TYPE(Bind)
+  ASTNODE_TYPE(Constant)
+  ASTNODE_TYPE(UnaryOp)
+  ASTNODE_TYPE(BinaryOp)
+  ASTNODE_TYPE(FunctionDef)
+  ASTNODE_TYPE(Return)
+  ASTNODE_TYPE(Compare)
+  ASTNODE_TYPE(While)
+  ASTNODE_TYPE(If)
+  ASTNODE_TYPE(Call)
+  ASTNODE_TYPE(Tuple)
+
+  std::string getName() const { return str(); }
+  bool match(const ASTNode &other) const {
+    return this->hash() == other.hash();
+  }
+  virtual ASTNodeKind kind() const { return ASTNodeKind::NumNodes; }
+  virtual std::string str() const { return ""; }
+  virtual void accept(Visitor *visitor);
+  bool operator==(const ASTNode &other) const {
+    return this->hash() == other.hash();
+  }
+  bool operator!=(const ASTNode &other) const {
+    return this->hash() != other.hash();
+  }
+  virtual size_t hash() const {
+    size_t seed = 0;
+    std::hash<std::string> stringHash;
+    seed ^= stringHash(getName()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  }
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
 };
 
 using AST = std::shared_ptr<ASTNode>;
 
 class ExprNode : public ASTNode {
+<<<<<<< HEAD
 public:
   ExprNode() = default;
   explicit ExprNode(TypePtr type) : type(std::move(type)) {}
@@ -89,6 +128,17 @@ public:
   std::string str() const override { return ""; }
   void accept(Visitor *visitor) override;
   bool isExprNode() override { return true; }
+=======
+public:
+  ExprNode() = default;
+  explicit ExprNode(TypePtr type) : type(std::move(type)) {}
+  TypePtr getType() { return type; }
+  void setType(TypePtr inType) { this->type = std::move(inType); }
+  ASTNodeKind kind() cons t override { return ASTNodeKind::Expr; }
+  std::string str() const override { return ""; }
+  void accept(Visitor *visitor) override;
+  bool isExprNode() override { return true; }
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
 
 protected:
   TypePtr type;

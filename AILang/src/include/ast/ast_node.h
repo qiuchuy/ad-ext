@@ -23,6 +23,7 @@ public:
     for (const auto &stmt : stmts) {
       ssm << "\t" << stmt->getName() << "\n";
     }
+<<<<<<< HEAD
     ssm << "]"
         << "\n";
     return ssm.str();
@@ -39,6 +40,22 @@ private:
     // Recursively hash the child nodes (subtrees)
     for (const Stmt &stmt : stmts) {
       seed ^= stmt->hash();
+=======
+    void accept(Visitor * visitor) override;
+    bool isModuleNode() override { return true; }
+
+  private:
+    size_t hash() const override {
+      size_t seed = 0;
+      std::hash<std::string> stringHash;
+      // Combine the hash of the node's fields
+      seed ^= stringHash("Module") + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      // Recursively hash the child nodes (subtrees)
+      for (const Stmt &stmt : stmts) {
+        seed ^= stmt->hash();
+      }
+      return seed;
+>>>>>>> d0ef82f354fe0c2fd0d0e1a6dd94b18da43aef75
     }
     return seed;
   }
