@@ -185,6 +185,21 @@ func.func @simple_mul(%lhs: tensor<4xf32>, %rhs: tensor<4xf32>) -> tensor<4xf32>
         cleanup_compiler_state(s);
         return 1;
     }
+}"; 
+  error = ireeCompilerSourceWrapBuffer(s.session, "simple_mul", simple_mul_mlir,
+                                       strlen(simple_mul_mlir) + 1,
+                                       /*isNullTerminated=*/true, &s.source);
+  if (error) {
+    fprintf(stderr, "Error wrapping source buffer\n");
+    handle_compiler_error(error);
+    cleanup_compiler_state(s);
+    return 1;
+  }
+  fprintf(stdout, "Wrapped simple_mul buffer as compiler source\n");
+
+  // ------------------------------------------------------------------------ //
+  // Inputs and outputs are prepared, ready to run an invocation pipeline.    //
+  // ------------------------------------------------------------------------ //
 
     cleanup_compiler_state(s);
     return 0;

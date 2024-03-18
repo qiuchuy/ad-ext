@@ -189,6 +189,7 @@ class Matmul : public Node {
 NODE_PTR_TYPE_DECL(Relu)
 class Relu : public Node {
   public:
+      
     Relu(const TypePtr &nodeType, const ValuePtr &inValue);
     NodeKind kind() override { return Node::NodeKind::RELU; }
     explicit operator std::string() const override;
