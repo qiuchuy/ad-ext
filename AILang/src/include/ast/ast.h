@@ -76,7 +76,7 @@ public:
     return seed;
   }
 };
-  
+
 using AST = std::shared_ptr<ASTNode>;
 
 class ExprNode : public ASTNode {

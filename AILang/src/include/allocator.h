@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include "utils/logger.h"
+
 namespace ainl::core::allocator {
 class Buffer {
 private:
@@ -9,10 +11,7 @@ private:
 
 public:
   Buffer(void *ptr) : ptr_(ptr){};
-
-  void *getRawPtr() { return ptr_; }
-
-  void *ptr() const { return ptr_; }
+  void *&ptr() { return ptr_; }
 };
 
 Buffer malloc(size_t size);

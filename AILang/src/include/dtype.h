@@ -11,6 +11,7 @@ struct Dtype {
     FloatType,
   };
   DataType type;
+  Dtype() = default;
   constexpr explicit Dtype(DataType type) : type(type) {}
   bool operator<(const Dtype &other) const;
 };

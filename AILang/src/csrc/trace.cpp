@@ -37,7 +37,7 @@ void JITTrace::process(const std::shared_ptr<Primitive> &prim,
 
 TraceManager::TraceManager() {
   auto evalTrace = std::make_shared<EvaluationTrace>();
-  traceStack.push(std::dynamic_pointer_cast<BaseTrace>(evalTrace));
+  traceQueue.push(std::dynamic_pointer_cast<BaseTrace>(evalTrace));
 }
 
 TraceManager &traceManager() {
@@ -45,8 +45,14 @@ TraceManager &traceManager() {
   return manager;
 }
 
-std::shared_ptr<BaseTrace> getTopTrace() {
-  return traceManager().getTopTrace();
+std::shared_ptr<BaseTrace> popLastTrace() {
+  return traceManager().popLastTrace();
 }
+
+std::shared_ptr<BaseTrace> getCurrentTrace() {
+  return traceManager().getCurrentTrace();
+}
+
+bool hasRemainingTrace() { return !traceManager().hasRemainingTrace(); }
 
 } // namespace ainl::core

@@ -3,7 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <stack>
+#include <queue>
 
 #include "array.h"
 #include "primitive.h"
@@ -51,17 +51,21 @@ public:
 class TraceManager {
 public:
   TraceManager();
-  std::shared_ptr<BaseTrace> getTopTrace() {
-    auto trace = traceStack.top();
-    traceStack.pop();
+  std::shared_ptr<BaseTrace> popLastTrace() {
+    auto trace = traceQueue.front();
+    traceQueue.pop();
     return trace;
   }
+  std::shared_ptr<BaseTrace> getCurrentTrace() { return traceQueue.front(); }
+  bool hasRemainingTrace() { return !traceQueue.empty(); }
 
 private:
-  std::stack<std::shared_ptr<BaseTrace>> traceStack;
+  std::queue<std::shared_ptr<BaseTrace>> traceQueue;
 };
 
 TraceManager &traceManager();
-std::shared_ptr<BaseTrace> getTopTrace();
+std::shared_ptr<BaseTrace> popLastTrace();
+std::shared_ptr<BaseTrace> getCurrentTrace();
+bool hasRemainingTrace();
 
 } // namespace ainl::core

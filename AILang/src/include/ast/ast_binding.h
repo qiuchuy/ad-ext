@@ -14,8 +14,9 @@
 #include "utils/logger.h"
 #include "utils/utils.h"
 
-namespace ainl::ir {
 namespace py = pybind11;
+
+namespace ainl::ir {
 
 class AstTransformer {
 public:

@@ -19,6 +19,7 @@ class Primitive;
 
 class MetaData {
 public:
+  MetaData() = default;
   MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
       : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
   virtual ~MetaData() = default;
@@ -33,11 +34,27 @@ private:
 class Array {
 public:
   /* Construct a scalar array*/
-  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>());
+  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>()) {
+    data_ =
+        std::make_shared<Data>(allocator::malloc(sizeof(T)), allocator::free);
+    dtype_ = dtype;
+    size_ = sizeof(T);
+    shape_ = std::make_shared<std::vector<int>>(std::vector<int>{1});
+    info_ = std::make_shared<MetaData>();
+    *reinterpret_cast<T *>(data_->ptr()) = val;
+  }
 
   /* Construct an array from python list/ tuple*/
   template <typename T>
-  Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>());
+  Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>()) {
+    data_ = std::make_shared<Data>(allocator::malloc(list.size() * sizeof(T)),
+                                   allocator::free);
+    dtype_ = dtype;
+    size_ = list.size() * sizeof(T);
+    shape_ = std::make_shared<std::vector<int>>(std::vector<int>{list.size()});
+    info_ = std::make_shared<MetaData>();
+    std::copy(list.begin(), list.end(), reinterpret_cast<T *>(data_->ptr()));
+  }
 
   /* Construct an array from buffer*/
   Array(const allocator::Buffer &buffer, Dtype dtype,
@@ -56,7 +73,7 @@ public:
     Data(const allocator::Buffer &buffer,
          std::function<void(allocator::Buffer)> deleter)
         : buffer(buffer), deleter(deleter) {}
-    void *ptr() { return buffer.ptr(); }
+    void *&ptr() { return buffer.ptr(); }
     ~Data() { deleter(buffer); }
   };
 
@@ -64,7 +81,8 @@ public:
 
   bool evaluated() const { return data_->buffer.ptr() != nullptr; }
 
-  void copyBySharing(const Array &array, size_t size, size_t offset);
+  void copyBySharing(const Array &array, size_t size, size_t offset,
+                     const std::vector<int> &shape);
 
   struct ArrayIterator {
     using iterator_category = std::random_access_iterator_tag;
@@ -108,6 +126,9 @@ public:
   std::vector<int> shape() const { return *(shape_); }
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
+
+  friend std::ostream &operator<<(std::ostream &os, Array &arr);
+  void print(std::ostream &os, size_t offset, size_t dim);
 
 protected:
   std::shared_ptr<Data> data_;
@@ -156,6 +177,5 @@ class ConcreteArrayMetaData : public MetaData {
     size_t ndim_;
 };
 */
-Array makeArrayFromScalar(int val);
 
 } // namespace ainl::core
