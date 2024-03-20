@@ -35,30 +35,38 @@ class Array {
 public:
   /* Construct a scalar array*/
   template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>()) {
-    data_ =
-        std::make_shared<Data>(allocator::malloc(sizeof(T)), allocator::free);
+    auto buffer = allocator::malloc(sizeof(T));
+    data_ = std::make_shared<Data>(
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
     dtype_ = dtype;
     size_ = sizeof(T);
-    shape_ = std::make_shared<std::vector<int>>(std::vector<int>{1});
+    shape_ = std::make_shared<std::vector<int>>();
     info_ = std::make_shared<MetaData>();
-    *reinterpret_cast<T *>(data_->ptr()) = val;
+    *(reinterpret_cast<T *>(data_->ptr())) = val;
+    stride_ = std::make_shared<std::vector<int>>();
+    DEBUG("[malloc] Fill address " +
+          std::to_string(reinterpret_cast<uintptr_t>(data_->ptr())) +
+          " with value: " + std::to_string(val))
   }
 
-  /* Construct an array from python list/ tuple*/
   template <typename T>
-  Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>()) {
-    data_ = std::make_shared<Data>(allocator::malloc(list.size() * sizeof(T)),
-                                   allocator::free);
+  /* Construct an array from a flattened vector*/
+  Array(const std::vector<T> &vec, const std::vector<int> &shape,
+        Dtype dtype = TypeToDtype<T>())
+      : shape_(shape) {
+    auto buffer = allocator::malloc(sizeof(T) * vec.size());
+    data_ = std::make_shared<Data>(
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
     dtype_ = dtype;
-    size_ = list.size() * sizeof(T);
-    shape_ = std::make_shared<std::vector<int>>(std::vector<int>{list.size()});
+    size_ = vec.size() * sizeof(T);
     info_ = std::make_shared<MetaData>();
-    std::copy(list.begin(), list.end(), reinterpret_cast<T *>(data_->ptr()));
+    stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
+    std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(data_->ptr()));
   }
 
   /* Construct an array from buffer*/
   Array(const allocator::Buffer &buffer, Dtype dtype,
-        std::function<void(allocator::Buffer)> deleter);
+        const std::vector<int> &shape, const std::vector<int> &stride);
 
   /* Construct an array by copy*/
   Array(const Array &other) = default;
@@ -121,9 +129,11 @@ public:
 
   std::shared_ptr<Array> tracer() { return info_->tracer_; }
   std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
+  std::shared_ptr<Data> data() { return data_; }
   std::vector<Array> &inputs() { return info_->inputs_; }
-
   std::vector<int> shape() const { return *(shape_); }
+  std::vector<int> strides() const { return *(stride_); }
+  size_t size() const { return size_; }
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
 
@@ -136,6 +146,7 @@ protected:
   size_t size_;
   std::shared_ptr<MetaData> info_;
   std::shared_ptr<std::vector<int>> shape_;
+  std::shared_ptr<std::vector<int>> stride_;
 
 }; // namespace ainl::core
 
