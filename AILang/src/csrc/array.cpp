@@ -1,5 +1,3 @@
-#include <numeric>
-
 #include "array.h"
 #include "graph.h"
 #include "ops.h"
@@ -20,7 +18,7 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
       stride_(std::make_shared<std::vector<int>>(stride)) {
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
-      sizeof(dtype);
+      dtypeSize(dtype);
 }
 
 void Array::eval() {
@@ -70,44 +68,33 @@ Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
   return reshape(slice(arr, start, end, stride), shape);
 };
 
-void Array::print(std::ostream &os, size_t offset, size_t dim) {
-  DEBUG("[print] Printing array at " +
-        std::to_string(reinterpret_cast<uintptr_t>(data_->ptr())) +
-        " with offset: " + std::to_string(offset))
-  if (ndim() == 0) {
-    os << *reinterpret_cast<uintptr_t *>(data_->ptr());
-    return;
-  }
-  os << "Array[";
-  if (dim == ndim() - 1) {
-    // os << *reinterpret_cast<uintptr_t *>(data_->ptr() + offset);
-    for (size_t i = 0; i < shape_->at(dim); i++) {
-      os << *reinterpret_cast<uintptr_t *>(data_->ptr() + offset +
-                                           i * sizeof(double));
-      if (i != shape_->at(dim) - 1) {
-        os << ", ";
-      }
-    }
-  } else {
-    os << "[";
-    for (size_t i = 0; i < shape_->at(dim); i++) {
-      auto dimOffset = std::accumulate(shape_->begin() + dim + 1, shape_->end(),
-                                       1, std::multiplies<int>());
-      print(os, offset + i * dimOffset, dim + 1);
-      if (i != shape_->at(dim) - 1) {
-        os << ", ";
-      }
-    }
-    os << "]";
-  }
-  os << "]";
-}
-
 std::ostream &operator<<(std::ostream &os, Array &arr) {
   if (!arr.evaluated()) {
     arr.eval();
   }
-  arr.print(os, 0, 0);
+  switch (arr.dtype().type) {
+  case Dtype::DataType::BoolType:
+    arr.print<bool>(os, 0, 0);
+    break;
+  case Dtype::DataType::Int8Type:
+    arr.print<int8_t>(os, 0, 0);
+    break;
+  case Dtype::DataType::Int16Type:
+    arr.print<int16_t>(os, 0, 0);
+    break;
+  case Dtype::DataType::Int32Type:
+    arr.print<int32_t>(os, 0, 0);
+    break;
+  case Dtype::DataType::Int64Type:
+    arr.print<int64_t>(os, 0, 0);
+    break;
+  case Dtype::DataType::Float32Type:
+    arr.print<float>(os, 0, 0);
+    break;
+  case Dtype::DataType::Float64Type:
+    arr.print<double>(os, 0, 0);
+    break;
+  }
   return os;
 }
 

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <numeric>
 #include <variant>
 #include <vector>
 
@@ -129,16 +130,52 @@ public:
 
   std::shared_ptr<Array> tracer() { return info_->tracer_; }
   std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
-  std::shared_ptr<Data> data() { return data_; }
   std::vector<Array> &inputs() { return info_->inputs_; }
   std::vector<int> shape() const { return *(shape_); }
   std::vector<int> strides() const { return *(stride_); }
   size_t size() const { return size_; }
+  size_t itemsize() const { return dtypeSize(dtype_); }
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
 
+  template <typename T> T *data() { return static_cast<T *>(data_->ptr()); };
+
+  template <typename T> const T *data() const {
+    return static_cast<T *>(data_->ptr());
+  };
+
   friend std::ostream &operator<<(std::ostream &os, Array &arr);
-  void print(std::ostream &os, size_t offset, size_t dim);
+
+  template <typename T>
+  void print(std::ostream &os, size_t offset, size_t dim) {
+    if (ndim() == 0) {
+      os << *reinterpret_cast<uintptr_t *>(data_->ptr() + offset / itemsize());
+      return;
+    }
+    os << "[";
+    if (dim == ndim() - 1) {
+      DEBUG("[print] Printing array at " +
+            std::to_string(reinterpret_cast<uintptr_t>(data_->ptr())) +
+            " with offset: " + std::to_string(offset))
+      for (size_t i = 0; i < shape_->at(dim); i++) {
+        os << (*(data<T>() + offset / itemsize() + i));
+        if (i != shape_->at(dim) - 1) {
+          os << ", ";
+        }
+      }
+    } else {
+      for (size_t i = 0; i < shape_->at(dim); i++) {
+        auto dimOffset =
+            std::accumulate(shape_->begin() + dim + 1, shape_->end(), 1,
+                            std::multiplies<int>());
+        print<T>(os, offset + i * dimOffset * itemsize(), dim + 1);
+        if (i != shape_->at(dim) - 1) {
+          os << ", ";
+        }
+      }
+    }
+    os << "]";
+  }
 
 protected:
   std::shared_ptr<Data> data_;

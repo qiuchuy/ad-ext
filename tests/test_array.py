@@ -1,8 +1,11 @@
 import ailang as al
 import numpy as np
 
-a = np.array([1, 2])
-b = al.from_numpy(a)
-print(b)
-print(b.ndim)
-print(b.shape)
+class TestArray:
+    def test_from_numpy(self):
+        a = np.random.randn(10, 10)
+        b = al.from_numpy(a)
+        assert a.shape == b.shape
+        assert a.strides == b.strides
+        assert a.tolist() == b.tolist()
+

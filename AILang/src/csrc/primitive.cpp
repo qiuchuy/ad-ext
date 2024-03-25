@@ -83,7 +83,7 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
   }
 
   for (const auto &s : end_) {
-    if (s < -inputShape[0] || s > inputShape[0]) {
+    if (s < -inputShape[0] || s >= inputShape[0]) {
       throw std::invalid_argument("[SlicePrimitive::evalCPU] Illegal slice "
                                   "range for input array.");
     }
