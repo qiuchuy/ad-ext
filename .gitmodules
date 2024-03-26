@@ -2,6 +2,3 @@
 	path = third_party/iree
 	url = https://github.com/openxla/iree.git
 
-[submodule "third_party/glog"]
-	path = third_party/glog
-	url = https://github.com/google/glog.git
