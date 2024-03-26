@@ -9,3 +9,8 @@ class TestArray:
         assert a.strides == b.strides
         assert a.tolist() == b.tolist()
 
+        c = np.random.randint(0, 10, (3, 4, 5), dtype=np.int16)
+        d = al.from_numpy(c) 
+        assert c.shape == d.shape
+        assert c.strides == d.strides
+        assert c.tolist() == d.tolist()
