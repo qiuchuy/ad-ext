@@ -25,9 +25,7 @@ def tree_map(fn, tree, *rest, is_leaf=None):
 
 
 def tree_flatten(tree, prefix="", is_leaf=None):
-    """Flattens a python tree to a list of key, value tuples.
-
-    """
+    """Flattens a python tree to a list of key, value tuples."""
     flat_tree = []
 
     if is_leaf is None or not is_leaf(tree):
@@ -44,8 +42,7 @@ def tree_flatten(tree, prefix="", is_leaf=None):
 
 
 def tree_unflatten(tree):
-    """Recreate a python tree from its flat representation.
-    """
+    """Recreate a python tree from its flat representation."""
     if len(tree) == 1 and tree[0][0] == "":
         return tree[0][1]
 

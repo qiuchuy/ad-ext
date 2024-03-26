@@ -20,5 +20,5 @@ def sigmoid(x):
     .. math::
         \text{Sigmoid}(x) = \sigma(x) = \frac{1}{1 + \exp(-x)}
     """
-    
+
     return al.sigmoid(x)

@@ -20,7 +20,7 @@ def compile(f: Union[Callable]):
         return mlir_module(*args)
 
     return compiled_f
-    
+
 
 def compile_ast(f: Callable, *args: Union[Tuple[Tensor], Tensor]) -> ModuleNode:
     """

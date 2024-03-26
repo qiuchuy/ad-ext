@@ -18,7 +18,7 @@ CPUAllocator::CPUAllocator() {
   allocateStrategy_ = [](size_t size) {
     return Buffer(static_cast<void *>(std::malloc(size)));
   };
-  freeStrategy_ = [](Buffer buffer) { std::free(buffer.getRawPtr()); };
+  freeStrategy_ = [](Buffer buffer) { std::free(buffer.ptr()); };
 }
 
 Buffer CPUAllocator::malloc(size_t size) {

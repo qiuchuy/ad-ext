@@ -1,5 +1,5 @@
 import ailang as al
-import math 
+import math
 from ailang.nn.layers.base import Module
 from typing import Union
 
@@ -21,35 +21,39 @@ from typing import Union
         bias (bool, optional): If ``True`` add a learnable bias to the
             output. Default: ``True``
 """
+
+
 class Conv2d(Module):
-    def __init__(self,
-                in_channels,
-                out_channels,
-                kernel_size: Union[int, tuple],
-                stride: Union[int , tuple] = 1,
-                padding:Union[int, tuple] = 0,
-                dilation : int = 1,
-                bias : bool = False,
-                ):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size: Union[int, tuple],
+        stride: Union[int, tuple] = 1,
+        padding: Union[int, tuple] = 0,
+        dilation: int = 1,
+        bias: bool = False,
+    ):
         super().__init__()
 
-        kernel_size,stride,padding = map(lambda x : (x,x) if isinstance(x, int) else x,
-                                        (kernel_size,stride,padding))
+        kernel_size, stride, padding = map(
+            lambda x: (x, x) if isinstance(x, int) else x,
+            (kernel_size, stride, padding),
+        )
         if bias:
             raise NotImplementedError()
-        self.weight = al.tensor((out_channels,*kernel_size,in_channels),"Float")
+        self.weight = al.tensor((out_channels, *kernel_size, in_channels), "Float")
         self.padding = padding
-        self.stride =stride
+        self.stride = stride
         # print("type", type(self.weight))
 
-    def __call__(self,x):
+    def __call__(self, x):
         def f_conv(x):
             return al.convolution(x)
+
         return f_conv
         pass
         y = al.convolution(x)
         if "bias" in self:
             y = y + self.bias
         return y
-
-

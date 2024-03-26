@@ -8,9 +8,9 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace ainl::ir {
-
 namespace py = pybind11;
+
+namespace ainl::ir {
 
 void initAINL(py::module_ &m);
 } // namespace ainl::ir

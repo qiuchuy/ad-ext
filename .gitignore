@@ -36,3 +36,4 @@ __pycache__/
 .vscode/
 cmake-build-debug/
 ailang.egg-info/
+log.txt

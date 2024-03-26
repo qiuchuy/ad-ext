@@ -1,8 +1,8 @@
 from typing import Any
 from ailang.nn.layers.base import Module
 
-class Sequential(Module):
 
+class Sequential(Module):
     def __init__(self, *modules):
         super().__init__()
         self.layers = list(modules)

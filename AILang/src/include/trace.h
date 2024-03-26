@@ -51,17 +51,21 @@ public:
 class TraceManager {
 public:
   TraceManager();
-  std::shared_ptr<BaseTrace> getTopTrace() {
+  std::shared_ptr<BaseTrace> popLastTrace() {
     auto trace = traceStack.top();
     traceStack.pop();
     return trace;
   }
+  std::shared_ptr<BaseTrace> getCurrentTrace() { return traceStack.top(); }
+  bool hasRemainingTrace() { return !traceStack.empty(); }
 
 private:
   std::stack<std::shared_ptr<BaseTrace>> traceStack;
 };
 
 TraceManager &traceManager();
-std::shared_ptr<BaseTrace> getTopTrace();
+std::shared_ptr<BaseTrace> popLastTrace();
+std::shared_ptr<BaseTrace> getCurrentTrace();
+bool hasRemainingTrace();
 
 } // namespace ainl::core

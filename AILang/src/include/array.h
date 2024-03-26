@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <numeric>
 #include <variant>
 #include <vector>
 
@@ -19,6 +20,7 @@ class Primitive;
 
 class MetaData {
 public:
+  MetaData() = default;
   MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
       : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
   virtual ~MetaData() = default;
@@ -33,15 +35,38 @@ private:
 class Array {
 public:
   /* Construct a scalar array*/
-  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>());
+  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>()) {
+    auto buffer = allocator::malloc(sizeof(T));
+    data_ = std::make_shared<Data>(
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+    dtype_ = dtype;
+    size_ = sizeof(T);
+    shape_ = std::make_shared<std::vector<int>>();
+    info_ = std::make_shared<MetaData>();
+    *(reinterpret_cast<T *>(data_->ptr())) = val;
+    stride_ = std::make_shared<std::vector<int>>();
+    LOG_DEBUG("[malloc] Fill address %d with value: %d",
+              reinterpret_cast<uintptr_t>(data_->ptr()), val);
+  }
 
-  /* Construct an array from python list/ tuple*/
   template <typename T>
-  Array(std::initializer_list<T> list, Dtype dtype = TypeToDtype<T>());
+  /* Construct an array from a flattened vector*/
+  Array(const std::vector<T> &vec, const std::vector<int> &shape,
+        Dtype dtype = TypeToDtype<T>())
+      : shape_(shape) {
+    auto buffer = allocator::malloc(sizeof(T) * vec.size());
+    data_ = std::make_shared<Data>(
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+    dtype_ = dtype;
+    size_ = vec.size() * sizeof(T);
+    info_ = std::make_shared<MetaData>();
+    stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
+    std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(data_->ptr()));
+  }
 
   /* Construct an array from buffer*/
   Array(const allocator::Buffer &buffer, Dtype dtype,
-        std::function<void(allocator::Buffer)> deleter);
+        const std::vector<int> &shape, const std::vector<int> &stride);
 
   /* Construct an array by copy*/
   Array(const Array &other) = default;
@@ -56,15 +81,18 @@ public:
     Data(const allocator::Buffer &buffer,
          std::function<void(allocator::Buffer)> deleter)
         : buffer(buffer), deleter(deleter) {}
-    void *ptr() { return buffer.ptr(); }
+    void *&ptr() { return buffer.ptr(); }
     ~Data() { deleter(buffer); }
   };
 
   void eval();
 
-  bool evaluated() const { return data_->buffer.ptr() != nullptr; }
+  bool evaluated() const { return data_ != nullptr; }
 
-  void copyBySharing(const Array &array, size_t size, size_t offset);
+  bool isLeaf() const { return info_->inputs_.empty(); }
+
+  void copyBySharing(const Array &array, size_t size, size_t offset,
+                     const std::vector<int> &shape);
 
   struct ArrayIterator {
     using iterator_category = std::random_access_iterator_tag;
@@ -104,10 +132,51 @@ public:
   std::shared_ptr<Array> tracer() { return info_->tracer_; }
   std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
   std::vector<Array> &inputs() { return info_->inputs_; }
-
   std::vector<int> shape() const { return *(shape_); }
+  std::vector<int> strides() const { return *(stride_); }
+  size_t size() const { return size_; }
+  size_t itemsize() const { return dtypeSize(dtype_); }
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
+
+  template <typename T> T *data() { return static_cast<T *>(data_->ptr()); };
+
+  template <typename T> const T *data() const {
+    return static_cast<T *>(data_->ptr());
+  };
+
+  friend std::ostream &operator<<(std::ostream &os, Array &arr);
+
+  template <typename T>
+  void print(std::ostream &os, size_t offset, size_t dim) {
+    if (ndim() == 0) {
+      os << *reinterpret_cast<uintptr_t *>(data_->ptr() + offset / itemsize());
+      return;
+    }
+    os << "[";
+    if (dim == ndim() - 1) {
+      LOG_DEBUG("[print] Printing array at %d with offset %d",
+                reinterpret_cast<uintptr_t>(data_->ptr()), offset);
+      for (size_t i = 0; i < shape_->at(dim); i++) {
+        os << (*(data<T>() + offset / itemsize() + i));
+        if (i != shape_->at(dim) - 1) {
+          os << ", ";
+        }
+      }
+
+    } else {
+      for (size_t i = 0; i < shape_->at(dim); i++) {
+        auto dimOffset =
+            std::accumulate(shape_->begin() + dim + 1, shape_->end(), 1,
+                            std::multiplies<int>());
+        print<T>(os, offset + i * dimOffset * itemsize(), dim + 1);
+        if (i != shape_->at(dim) - 1) {
+          os << "\n";
+        }
+      }
+    }
+    os << "]";
+  }
 
 protected:
   std::shared_ptr<Data> data_;
@@ -115,6 +184,7 @@ protected:
   size_t size_;
   std::shared_ptr<MetaData> info_;
   std::shared_ptr<std::vector<int>> shape_;
+  std::shared_ptr<std::vector<int>> stride_;
 
 }; // namespace ainl::core
 
@@ -156,6 +226,5 @@ class ConcreteArrayMetaData : public MetaData {
     size_t ndim_;
 };
 */
-Array makeArrayFromScalar(int val);
 
 } // namespace ainl::core

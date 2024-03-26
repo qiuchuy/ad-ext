@@ -45,8 +45,14 @@ TraceManager &traceManager() {
   return manager;
 }
 
-std::shared_ptr<BaseTrace> getTopTrace() {
-  return traceManager().getTopTrace();
+std::shared_ptr<BaseTrace> popLastTrace() {
+  return traceManager().popLastTrace();
 }
+
+std::shared_ptr<BaseTrace> getCurrentTrace() {
+  return traceManager().getCurrentTrace();
+}
+
+bool hasRemainingTrace() { return traceManager().hasRemainingTrace(); }
 
 } // namespace ainl::core
