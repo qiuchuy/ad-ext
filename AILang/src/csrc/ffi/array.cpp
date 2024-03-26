@@ -2,6 +2,7 @@
 
 #include "array.h"
 #include "ffi/array.h"
+#include "utils/logger.h"
 
 namespace ainl::ffi {
 
@@ -94,12 +95,20 @@ void initArray(py::module &_m) {
              assert(a.ndim() >= 1);
              return a.shape().at(0);
            })
-      .def_property_readonly(
-          "shape",
-          [](const ainl::core::Array &a) { return vector2Tuple(a.shape()); })
-      .def_property_readonly(
-          "strides",
-          [](const ainl::core::Array &a) { return vector2Tuple(a.strides()); })
+      .def_property_readonly("shape",
+                             [](ainl::core::Array &a) {
+                               if (!a.evaluated()) {
+                                 a.eval();
+                               }
+                               return vector2Tuple(a.shape());
+                             })
+      .def_property_readonly("strides",
+                             [](ainl::core::Array &a) {
+                               if (!a.evaluated()) {
+                                 a.eval();
+                               }
+                               return vector2Tuple(a.strides());
+                             })
       .def_property_readonly("data_size", &ainl::core::Array::size)
       .def_property_readonly("dtype", &ainl::core::Array::dtype)
       .def_property_readonly("ndim", &ainl::core::Array::ndim)

@@ -1,8 +1,11 @@
 import ailang as al
 import numpy as np
 
-a = np.random.randn(2, 2)
-b = al.from_numpy(a)
-c = al.flatten(b)
-print(b)
-print(c)
+
+class TestOp:
+    def test_flatten(self):
+        a = np.random.randn(2, 2)
+        b = al.from_numpy(a)
+        c = al.flatten(b)
+        assert c.shape == (4,)
+        assert c.strides == (8,)

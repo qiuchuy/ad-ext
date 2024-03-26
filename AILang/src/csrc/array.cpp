@@ -47,9 +47,16 @@ void Array::copyBySharing(const Array &other, size_t size, size_t offset,
   data_ = other.data_;
   data_->ptr() = other.data_->ptr() + offset;
   shape_ = std::make_shared<std::vector<int>>(shape);
+  dtype_ = other.dtype_;
   size_ = size;
   info_ = other.info_;
-  dtype_ = other.dtype_;
+  auto stride = std::vector<int>(shape.size(), dtypeSize(dtype_));
+  for (size_t i = 0; i < shape.size(); i++) {
+    for (size_t j = i + 1; j < shape.size(); j++) {
+      stride[i] *= shape[j] * dtypeSize(dtype_);
+    }
+  }
+  stride_ = std::make_shared<std::vector<int>>(stride);
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)
