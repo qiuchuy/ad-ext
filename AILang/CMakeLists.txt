@@ -72,9 +72,6 @@ include_directories(
 file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/csrc/*.cpp)
 file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/include/*.h)
 
-message("SOURCES: ${SOURCES}")
-message("HEADERS:${HEADERS}")
-
 # add IREE Compiler API
 set(_COMPILER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/iree/compiler")
 include_directories(${_COMPILER_ROOT}/bindings/c/iree/compiler)

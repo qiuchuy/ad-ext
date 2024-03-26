@@ -45,9 +45,8 @@ public:
     info_ = std::make_shared<MetaData>();
     *(reinterpret_cast<T *>(data_->ptr())) = val;
     stride_ = std::make_shared<std::vector<int>>();
-    DEBUG("[malloc] Fill address " +
-          std::to_string(reinterpret_cast<uintptr_t>(data_->ptr())) +
-          " with value: " + std::to_string(val))
+    LOG_DEBUG("[malloc] Fill address %d with value: %d",
+              reinterpret_cast<uintptr_t>(data_->ptr()), val);
   }
 
   template <typename T>
@@ -88,7 +87,9 @@ public:
 
   void eval();
 
-  bool evaluated() const { return data_->buffer.ptr() != nullptr; }
+  bool evaluated() const { return data_ != nullptr; }
+
+  bool isLeaf() const { return info_->inputs_.empty(); }
 
   void copyBySharing(const Array &array, size_t size, size_t offset,
                      const std::vector<int> &shape);
@@ -154,15 +155,15 @@ public:
     }
     os << "[";
     if (dim == ndim() - 1) {
-      DEBUG("[print] Printing array at " +
-            std::to_string(reinterpret_cast<uintptr_t>(data_->ptr())) +
-            " with offset: " + std::to_string(offset))
+      LOG_DEBUG("[print] Printing array at %d with offset %d",
+                reinterpret_cast<uintptr_t>(data_->ptr()), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
         os << (*(data<T>() + offset / itemsize() + i));
         if (i != shape_->at(dim) - 1) {
           os << ", ";
         }
       }
+
     } else {
       for (size_t i = 0; i < shape_->at(dim); i++) {
         auto dimOffset =
@@ -170,7 +171,7 @@ public:
                             std::multiplies<int>());
         print<T>(os, offset + i * dimOffset * itemsize(), dim + 1);
         if (i != shape_->at(dim) - 1) {
-          os << ", ";
+          os << "\n";
         }
       }
     }

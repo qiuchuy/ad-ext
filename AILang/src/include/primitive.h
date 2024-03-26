@@ -29,6 +29,7 @@ public:
 
   virtual TypePtr typeRalation(const std::vector<TypePtr> &inTypes) = 0;
   virtual std::string toString() const = 0;
+  operator std::string() const { return toString(); }
 
   friend std::ostream &operator<<(std::ostream &os, const Primitive &prim) {
     os << prim.toString();

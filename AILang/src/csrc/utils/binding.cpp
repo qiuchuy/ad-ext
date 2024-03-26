@@ -1,8 +1,10 @@
 #include "utils/binding.h"
 #include "ast/ast_binding.h"
 #include "ffi/array.h"
+#include "ffi/ops.h"
 #include "ir/ir_binding.h"
 #include "ir/tensor.h"
+#include "utils/logger.h"
 
 namespace ainl::ir {
 
@@ -11,6 +13,8 @@ void initAINL(py::module_ &m) {
   initIR(m);
   initTensor(m);
   ainl::ffi::initArray(m);
+  ainl::ffi::initOps(m);
+  ainl::core::Logger::enableFileOutput();
 }
 
 PYBIND11_MODULE(libailang, m) {

@@ -83,6 +83,17 @@ void initArray(py::module &_m) {
              oss << a;
              return oss.str();
            })
+      .def(
+          "__iter__",
+          [](ainl::core::Array &a) {
+            return py::make_iterator(a.begin(), a.end());
+          },
+          py::keep_alive<0, 1>())
+      .def("__len__",
+           [](ainl::core::Array &a) {
+             assert(a.ndim() >= 1);
+             return a.shape().at(0);
+           })
       .def_property_readonly(
           "shape",
           [](const ainl::core::Array &a) { return vector2Tuple(a.shape()); })

@@ -14,3 +14,9 @@ class TestArray:
         assert c.shape == d.shape
         assert c.strides == d.strides
         assert c.tolist() == d.tolist()
+    
+    def test_iterator(self):
+        a = np.random.randn(10, 10)
+        b = al.from_numpy(a)
+        for c in b:
+            print(c)

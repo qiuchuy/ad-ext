@@ -3,7 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <queue>
+#include <stack>
 
 #include "array.h"
 #include "primitive.h"
@@ -52,15 +52,15 @@ class TraceManager {
 public:
   TraceManager();
   std::shared_ptr<BaseTrace> popLastTrace() {
-    auto trace = traceQueue.front();
-    traceQueue.pop();
+    auto trace = traceStack.top();
+    traceStack.pop();
     return trace;
   }
-  std::shared_ptr<BaseTrace> getCurrentTrace() { return traceQueue.front(); }
-  bool hasRemainingTrace() { return !traceQueue.empty(); }
+  std::shared_ptr<BaseTrace> getCurrentTrace() { return traceStack.top(); }
+  bool hasRemainingTrace() { return !traceStack.empty(); }
 
 private:
-  std::queue<std::shared_ptr<BaseTrace>> traceQueue;
+  std::stack<std::shared_ptr<BaseTrace>> traceStack;
 };
 
 TraceManager &traceManager();

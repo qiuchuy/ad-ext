@@ -19,10 +19,11 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
+  info_ = std::make_shared<MetaData>();
 }
 
 void Array::eval() {
-  DEBUG("[eval] Start evaluating array.")
+  LOG_DEBUG("%s", "[eval] Start evaluating array.");
   while (hasRemainingTrace()) {
     auto trace = popLastTrace();
     std::function<void(Array &)> recursion = [&](Array &arr) -> void {
@@ -32,9 +33,9 @@ void Array::eval() {
         for (auto &input : arr.inputs()) {
           recursion(input);
         }
-        DEBUG("[eval] Processing array with primitive" +
-              arr.primitive()->toString())
-        trace->process(arr.primitive(), arr.inputs(), arr);
+        if (!arr.isLeaf()) {
+          trace->process(arr.primitive(), arr.inputs(), arr);
+        }
       }
     };
     recursion(*this);
@@ -43,6 +44,7 @@ void Array::eval() {
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
+  data_ = other.data_;
   data_->ptr() = other.data_->ptr() + offset;
   shape_ = std::make_shared<std::vector<int>>(shape);
   size_ = size;
@@ -70,8 +72,10 @@ Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
 
 std::ostream &operator<<(std::ostream &os, Array &arr) {
   if (!arr.evaluated()) {
+    LOG_DEBUG("%s", "[print] Evaluating array before printing.");
     arr.eval();
   }
+  os << "Array(";
   switch (arr.dtype().type) {
   case Dtype::DataType::BoolType:
     arr.print<bool>(os, 0, 0);
@@ -95,6 +99,7 @@ std::ostream &operator<<(std::ostream &os, Array &arr) {
     arr.print<double>(os, 0, 0);
     break;
   }
+  os << ")";
   return os;
 }
 
