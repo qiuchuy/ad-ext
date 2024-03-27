@@ -67,6 +67,13 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
   const auto input = inputs[0];
   size_t inputNdim = input.ndim();
+  if (begin_.size() != inputNdim || end_.size() != inputNdim ||
+      stride_.size() != inputNdim) {
+    throw std::invalid_argument(
+        "[SlicePrimitive::evalCPU] begin, end and stride should have the same "
+        "size as the input array.");
+  }
+
   if (inputNdim == 0) {
     throw std::invalid_argument("[SlicePrimitive::evalCPU] Input array "
                                 "must have at least one dimension.");
@@ -113,7 +120,6 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     }
     outputShape.push_back(s);
   }
-
   auto size = std::accumulate(outputShape.begin(), outputShape.end(), 1,
                               std::multiplies<int>());
   auto offset = 1;

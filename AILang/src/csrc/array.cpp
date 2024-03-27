@@ -24,22 +24,22 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 
 void Array::eval() {
   LOG_DEBUG("%s", "[eval] Start evaluating array.");
-  while (hasRemainingTrace()) {
-    auto trace = popLastTrace();
-    std::function<void(Array &)> recursion = [&](Array &arr) -> void {
-      if (evaluated()) {
-        return;
-      } else {
-        for (auto &input : arr.inputs()) {
-          recursion(input);
-        }
-        if (!arr.isLeaf()) {
-          trace->process(arr.primitive(), arr.inputs(), arr);
-        }
+  auto trace = getCurrentTrace();
+  std::function<void(Array &)> recursion = [&](Array &arr) -> void {
+    if (evaluated()) {
+      return;
+    } else {
+      for (auto &input : arr.inputs()) {
+        recursion(input);
       }
-    };
-    recursion(*this);
-  }
+      if (!arr.isLeaf()) {
+        LOG_DEBUG("[eval] Evaluating array with primitive %s",
+                  arr.primitive()->toString().c_str());
+        trace->process(arr.primitive(), arr.inputs(), arr);
+      }
+    }
+  };
+  recursion(*this);
 }
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
@@ -50,10 +50,14 @@ void Array::copyBySharing(const Array &other, size_t size, size_t offset,
   dtype_ = other.dtype_;
   size_ = size;
   info_ = other.info_;
-  auto stride = std::vector<int>(shape.size(), dtypeSize(dtype_));
+  auto stride = std::vector<int>(shape.size(), 1);
   for (size_t i = 0; i < shape.size(); i++) {
-    for (size_t j = i + 1; j < shape.size(); j++) {
-      stride[i] *= shape[j] * dtypeSize(dtype_);
+    if (i == shape.size() - 1) {
+      stride[i] = dtypeSize(dtype_);
+    } else {
+      for (size_t j = i + 1; j < shape.size(); j++) {
+        stride[i] *= shape[j] * dtypeSize(dtype_);
+      }
     }
   }
   stride_ = std::make_shared<std::vector<int>>(stride);
