@@ -2,6 +2,7 @@
 
 #include "array.h"
 #include "ffi/array.h"
+#include "utils/logger.h"
 
 namespace ainl::ffi {
 
@@ -27,8 +28,8 @@ py::list toPyListRec(ainl::core::Array &arr, size_t offset, size_t dim) {
   } else {
     for (size_t i = 0; i < arr.shape().at(dim); i++) {
       int dimOffset = 1;
-      for (size_t i = dim + 1; i < arr.shape().size(); i++) {
-        dimOffset *= arr.shape()[i];
+      for (size_t j = dim + 1; j < arr.shape().size(); j++) {
+        dimOffset *= arr.shape()[j];
       }
       // auto dimOffset =
       //     std::accumulate(arr.shape().begin() + dim, arr.shape().end(), 1,
@@ -79,6 +80,9 @@ void initArray(py::module &_m) {
       })
       .def("__repr__",
            [](ainl::core::Array &a) {
+             if (!a.evaluated()) {
+               a.eval();
+             }
              std::ostringstream oss;
              oss << a;
              return oss.str();
@@ -86,6 +90,9 @@ void initArray(py::module &_m) {
       .def(
           "__iter__",
           [](ainl::core::Array &a) {
+            if (!a.evaluated()) {
+              a.eval();
+            }
             return py::make_iterator(a.begin(), a.end());
           },
           py::keep_alive<0, 1>())
@@ -94,12 +101,31 @@ void initArray(py::module &_m) {
              assert(a.ndim() >= 1);
              return a.shape().at(0);
            })
-      .def_property_readonly(
-          "shape",
-          [](const ainl::core::Array &a) { return vector2Tuple(a.shape()); })
-      .def_property_readonly(
-          "strides",
-          [](const ainl::core::Array &a) { return vector2Tuple(a.strides()); })
+      .def("__getitem__",
+           [](ainl::core::Array &a, size_t index) {
+             if (!a.evaluated()) {
+               a.eval();
+             }
+             auto it = a.begin();
+             for (size_t i = 0; i < index; i++) {
+               it++;
+             }
+             return *it;
+           })
+      .def_property_readonly("shape",
+                             [](ainl::core::Array &a) {
+                               if (!a.evaluated()) {
+                                 a.eval();
+                               }
+                               return vector2Tuple(a.shape());
+                             })
+      .def_property_readonly("strides",
+                             [](ainl::core::Array &a) {
+                               if (!a.evaluated()) {
+                                 a.eval();
+                               }
+                               return vector2Tuple(a.strides());
+                             })
       .def_property_readonly("data_size", &ainl::core::Array::size)
       .def_property_readonly("dtype", &ainl::core::Array::dtype)
       .def_property_readonly("ndim", &ainl::core::Array::ndim)

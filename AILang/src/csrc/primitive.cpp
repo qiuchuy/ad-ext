@@ -67,6 +67,13 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
   const auto input = inputs[0];
   size_t inputNdim = input.ndim();
+  if (begin_.size() != inputNdim || end_.size() != inputNdim ||
+      stride_.size() != inputNdim) {
+    throw std::invalid_argument(
+        "[SlicePrimitive::evalCPU] begin, end and stride should have the same "
+        "size as the input array.");
+  }
+
   if (inputNdim == 0) {
     throw std::invalid_argument("[SlicePrimitive::evalCPU] Input array "
                                 "must have at least one dimension.");
@@ -74,16 +81,16 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
   auto inputShape = input.shape();
 
   // check input ranges: suppose input has shape (a, b, c)
-  // then illegal slice ranges should be: (-a, a), (-b, b), (-c, c)
-  for (const auto &s : begin_) {
-    if (s < -inputShape[0] || s >= inputShape[0]) {
+  // then illegal slice ranges should be: [-a, a], [-b, b], [-c, c]
+  for (size_t i = 0; i < inputNdim; i++) {
+    if (begin_[i] < -inputShape[i] || begin_[i] > inputShape[i]) {
       throw std::invalid_argument("[SlicePrimitive::evalCPU] Illegal slice "
                                   "range for input array.");
     }
   }
 
-  for (const auto &s : end_) {
-    if (s < -inputShape[0] || s >= inputShape[0]) {
+  for (size_t i = 0; i < inputNdim; i++) {
+    if (end_[i] < -inputShape[i] || end_[i] > inputShape[i]) {
       throw std::invalid_argument("[SlicePrimitive::evalCPU] Illegal slice "
                                   "range for input array.");
     }
@@ -96,7 +103,6 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
       begin[i] = inputShape[i] + begin[i];
     }
   }
-
   auto end = end_;
   for (size_t i = 0; i < end.size(); i++) {
     if (end[i] < 0) {
@@ -104,26 +110,20 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     }
   }
 
-  // calculate the offset, size and shape of the output array
-  auto outputShape = std::vector<int>();
-  for (size_t i = 0; i < inputNdim; i++) {
-    auto s = (end[i] - begin[i] + stride_[i] - 1) / stride_[i];
-    if (s < 0) {
-      s = 0;
+  // calculate the offset, size of the output array
+  size_t size = output.itemsize();
+  for (size_t i = 0; i < output.shape().size(); i++) {
+    size *= output.shape()[i];
+  }
+  auto offset = 0;
+  for (size_t i = 0; i < inputShape.size(); i++) {
+    auto dimOffset = 0;
+    for (size_t j = i + 1; j < inputShape.size(); j++) {
+      dimOffset += inputShape[j] * input.itemsize();
     }
-    outputShape.push_back(s);
+    offset += begin[i] * dimOffset;
   }
-
-  auto size = std::accumulate(outputShape.begin(), outputShape.end(), 1,
-                              std::multiplies<int>());
-  auto offset = 1;
-  for (size_t i = 0; i < inputNdim; i++) {
-    offset *=
-        begin[i] * std::accumulate(inputShape.begin() + i + 1, inputShape.end(),
-                                   1, std::multiplies<int>());
-  }
-
-  output.copyBySharing(input, size, offset, outputShape);
+  output.copyBySharing(input, size, offset, output.shape());
 }
 
 std::string SlicePrimitive::toString() const { return "Slice"; }
