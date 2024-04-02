@@ -9,7 +9,6 @@ all:
 	./build_tools/build.sh
 
 format:
-	python3 -m black ./AILang
 	clang-format -i --style=llvm $(SRCS) $(HDRS)
 
 

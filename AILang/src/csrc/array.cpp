@@ -7,8 +7,12 @@
 namespace ainl::core {
 
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
-             std::vector<Array> inputs)
-    : info_(std::make_shared<MetaData>(prim, inputs)), dtype_(dtype) {}
+             std::vector<Array> inputs, const std::vector<int> &shape,
+             const std::vector<int> &stride)
+    : info_(std::make_shared<MetaData>(prim, inputs)), dtype_(dtype) {
+  shape_ = std::make_shared<std::vector<int>>(shape);
+  stride_ = std::make_shared<std::vector<int>>(stride);
+}
 
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
              const std::vector<int> &shape, const std::vector<int> &stride)
@@ -16,6 +20,7 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
           buffer, [](allocator::Buffer buffer) { allocator::free(buffer); })),
       dtype_(dtype), shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
+  ptr_ = buffer.ptr();
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
@@ -45,7 +50,7 @@ void Array::eval() {
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
   data_ = other.data_;
-  data_->ptr() = other.data_->ptr() + offset;
+  ptr_ = other.ptr_ + offset;
   shape_ = std::make_shared<std::vector<int>>(shape);
   dtype_ = other.dtype_;
   size_ = size;
@@ -72,20 +77,16 @@ Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)
 
 Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
   auto shape = arr.shape();
+  auto stride = std::vector<int>(arr.shape().size(), 1);
   shape.erase(shape.begin());
-  auto stride = std::vector<int>(shape.size(), 1);
-  auto start = arr.shape();
+  auto start = std::vector<int>(arr.shape().size(), 0);
   start[0] = idx;
   auto end = arr.shape();
   end[0] = idx + 1;
   return reshape(slice(arr, start, end, stride), shape);
 };
 
-std::ostream &operator<<(std::ostream &os, Array &arr) {
-  if (!arr.evaluated()) {
-    LOG_DEBUG("%s", "[print] Evaluating array before printing.");
-    arr.eval();
-  }
+std::ostream &operator<<(std::ostream &os, const Array &arr) {
   os << "Array(";
   switch (arr.dtype().type) {
   case Dtype::DataType::BoolType:

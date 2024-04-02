@@ -16,7 +16,14 @@ class TestArray:
         assert c.tolist() == d.tolist()
     
     def test_iterator(self):
-        a = np.random.randn(10, 10)
+        a = np.random.randn(2, 2, 2)
         b = al.from_numpy(a)
+        i = 0
         for c in b:
-            print(c)
+            assert c.tolist() == a[i].tolist()
+            i = i + 1
+        
+        j = 0
+        for d in b[0]:
+            assert al.flatten(d).tolist() == a[0][j].tolist()
+            j = j + 1

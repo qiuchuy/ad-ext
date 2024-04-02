@@ -15,7 +15,7 @@ class TestOp:
         c = al.flatten(b)
         assert c.shape == (4,)
         assert c.strides == (8,)
-        assert self.numeric_check(c, a.flatten())
+        assert TestOp.numeric_check(c, a.flatten())
 
     def test_reshape(self):
         a = np.random.randn(3, 2)
@@ -23,12 +23,12 @@ class TestOp:
         c = al.reshape(b, (2, 3))
         assert c.shape == (2, 3)
         assert c.strides == (24, 8)
-        assert self.numeric_check(c, a.reshape((2, 3)))
+        assert TestOp.numeric_check(c, a.reshape((2, 3)))
 
         d = al.reshape(c, (3, 2))
         assert d.shape == (3, 2)
         assert d.strides == (16, 8)
-        assert self.numeric_check(d, a)
+        assert TestOp.numeric_check(d, a)
 
     def test_slice(self):
         a = np.random.randn(3, 2)
@@ -37,4 +37,4 @@ class TestOp:
 
         assert c.shape == (1, 2)
         assert c.strides == (16, 8)
-        assert self.numeric_check(c, a[0:1])
+        assert TestOp.numeric_check(c, a[0:1])

@@ -11,7 +11,8 @@ private:
 
 public:
   Buffer(void *ptr) : ptr_(ptr){};
-  void *&ptr() { return ptr_; }
+  void *ptr() { return ptr_; }
+  void *ptr() const { return ptr_; }
 };
 
 Buffer malloc(size_t size);

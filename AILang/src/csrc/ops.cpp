@@ -7,18 +7,30 @@ Array zeros(const std::vector<int> &shape, Dtype dtype) {
 }
 
 Array fill(const std::vector<int> &shape, const Array &value, Dtype dtype) {
-  return Array(dtype, std::make_shared<FillPrimitive>(), {value});
+  return Array(dtype, std::make_shared<FillPrimitive>(), {value}, value.shape(),
+               value.strides());
 }
 
 Array slice(const Array &input, const std::vector<int> &start,
             const std::vector<int> &end, const std::vector<int> &stride) {
+
+  auto outputShape = std::vector<int>();
+  for (size_t i = 0; i < input.ndim(); i++) {
+    auto s = (end[i] - start[i] + stride[i] - 1) / stride[i];
+    if (s < 0) {
+      s = 0;
+    }
+    outputShape.push_back(s);
+  }
+
   return Array(input.dtype(),
-               std::make_shared<SlicePrimitive>(start, end, stride), {input});
+               std::make_shared<SlicePrimitive>(start, end, stride), {input},
+               outputShape, getStridesFromShape(outputShape, input.itemsize()));
 }
 
 Array reshape(const Array &input, const std::vector<int> &shape) {
   return Array(input.dtype(), std::make_shared<ReshapePrimitive>(shape),
-               {input});
+               {input}, shape, getStridesFromShape(shape, input.itemsize()));
 }
 
 Array flatten(const Array &input) {
@@ -27,7 +39,21 @@ Array flatten(const Array &input) {
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
   std::vector<int> flattenShape = {totalShape};
   return Array(input.dtype(), std::make_shared<ReshapePrimitive>(flattenShape),
-               {input});
+               {input}, flattenShape,
+               getStridesFromShape(flattenShape, input.itemsize()));
+}
+
+std::vector<int> getStridesFromShape(const std::vector<int> &shape,
+                                     size_t itemsize) {
+  std::vector<int> strides;
+  for (size_t i = 0; i < shape.size(); i++) {
+    int stride = 1;
+    for (size_t j = i + 1; j < shape.size(); j++) {
+      stride *= shape[j];
+    }
+    strides.push_back(stride * itemsize);
+  }
+  return strides;
 }
 
 }; // namespace ainl::core
