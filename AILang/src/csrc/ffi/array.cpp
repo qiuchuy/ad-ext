@@ -2,6 +2,7 @@
 
 #include "array.h"
 #include "ffi/array.h"
+#include "ops.h"
 #include "utils/logger.h"
 
 namespace ainl::ffi {
@@ -69,6 +70,16 @@ py::object toPyList(ainl::core::Array &arr) {
   }
 }
 
+auto parseAttr = [](const py::object &obj) -> int {
+  if (py::isinstance<py::none>(obj)) {
+    return 1;
+  } else if (py::isinstance<py::int_>(obj)) {
+    return obj.cast<int>();
+  } else {
+    throw std::invalid_argument("Invalid slice indices");
+  }
+};
+
 void initArray(py::module &_m) {
   py::class_<ainl::core::Array>(_m, "array", py::buffer_protocol())
       .def(py::init<>([]() { return ainl::core::Array(1.0f); }))
@@ -102,15 +113,55 @@ void initArray(py::module &_m) {
              return a.shape().at(0);
            })
       .def("__getitem__",
-           [](ainl::core::Array &a, size_t index) {
+           [](ainl::core::Array &a, const py::object &object) {
              if (!a.evaluated()) {
                a.eval();
              }
-             auto it = a.begin();
-             for (size_t i = 0; i < index; i++) {
-               it++;
+             std::vector<int> start;
+             std::vector<int> end;
+             std::vector<int> stride;
+             if (py::isinstance<py::slice>(object)) {
+               auto slice_ = object.cast<py::slice>();
+               auto start_ = parseAttr(getattr(slice_, "start"));
+               auto stop_ = parseAttr((getattr(slice_, "stop")));
+               auto step_ = parseAttr(getattr(slice_, "step"));
+               start.push_back(start_);
+               end.push_back(stop_);
+               stride.push_back(step_);
+               for (size_t i = 1; i < a.ndim(); i++) {
+                 start.push_back(0);
+                 end.push_back(a.shape().at(i));
+                 stride.push_back(1);
+               }
+               return ainl::core::slice(a, start, end, stride);
+             } else if (py::isinstance<py::int_>(object)) {
+               auto index = object.cast<int>();
+               auto iter = a.begin();
+               for (size_t i = 0; i < index; i++) {
+                 iter++;
+               }
+               return *iter;
+             } else if (py::isinstance<py::tuple>(object)) {
+               auto sliceList = object.cast<py::list>();
+               size_t i = 0;
+               for (const auto &slice : sliceList) {
+                 auto start_ = parseAttr(getattr(slice, "start"));
+                 auto stop_ = parseAttr(getattr(slice, "stop"));
+                 auto step_ = parseAttr(getattr(slice, "step"));
+                 start.push_back(start_);
+                 end.push_back(stop_);
+                 stride.push_back(step_);
+                 i++;
+               }
+               for (; i < a.ndim(); i++) {
+                 start.push_back(0);
+                 end.push_back(a.shape().at(i));
+                 stride.push_back(1);
+               }
+               return ainl::core::slice(a, start, end, stride);
+             } else {
+               throw std::invalid_argument("Invalid indices");
              }
-             return *it;
            })
       .def_property_readonly("shape",
                              [](ainl::core::Array &a) {

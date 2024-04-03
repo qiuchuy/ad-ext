@@ -14,7 +14,21 @@ class TestArray:
         assert c.shape == d.shape
         assert c.strides == d.strides
         assert c.tolist() == d.tolist()
-    
+
+    def test_indexing(self): 
+        a = np.random.randn(2, 2)
+        b = al.from_numpy(a)
+        c = b[0:1]
+        assert c.shape == (1, 2)
+        assert c.strides == (16, 8)
+        assert al.flatten(c).tolist() == a[0].flatten().tolist()
+
+        d = b[0:1, 0:1]
+        assert d.shape == (1, 1)
+        assert d.strides == (8, 8)
+        assert al.flatten(d).tolist() == a[0][0].flatten().tolist()
+
+
     def test_iterator(self):
         a = np.random.randn(2, 2, 2)
         b = al.from_numpy(a)
