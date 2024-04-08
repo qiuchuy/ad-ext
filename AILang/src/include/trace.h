@@ -5,12 +5,12 @@
 #include <memory>
 #include <stack>
 
-#include "array.h"
 #include "primitive.h"
 
 namespace ainl::core {
 
 class Primitive;
+class Tracer;
 
 class BaseTrace {
 public:
@@ -24,37 +24,21 @@ public:
   BaseTrace &operator=(const BaseTrace &other) = delete;
   BaseTrace &operator=(BaseTrace &&other) = delete;
   virtual ~BaseTrace() = default;
-  virtual void pack(Array &inputs) = 0;
-  virtual void unpack(Array &outputs) = 0;
+  virtual void pack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;
+  virtual void unpack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;
   virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output) = 0;
+                       const std::vector<std::shared_ptr<Tracer>> &inputs,
+                       std::shared_ptr<Tracer> &output) = 0;
 };
 
 class EvaluationTrace : public BaseTrace {
 public:
   EvaluationTrace();
-  virtual void pack(Array &array);
-  virtual void unpack(Array &array);
+  virtual void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  virtual void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
   virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output);
-};
-
-class JITTrace : public BaseTrace {
-public:
-  JITTrace();
-  virtual void pack(Array &array);
-  virtual void unpack(Array &array);
-  virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output);
-};
-
-class JVPTrace : public BaseTrace {
-public:
-  JVPTrace();
-  virtual void pack(Array &array);
-  virtual void unpack(Array &array);
-  virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output);
+                       const std::vector<std::shared_ptr<Tracer>> &inputs,
+                       std::shared_ptr<Tracer> &output);
 };
 
 class TraceManager {

@@ -5,34 +5,21 @@ namespace ainl::core {
 
 EvaluationTrace::EvaluationTrace() {}
 
-void EvaluationTrace::pack(Array &array) {}
+void EvaluationTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 
-void EvaluationTrace::unpack(Array &array) {}
+void EvaluationTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 
-void EvaluationTrace::process(const std::shared_ptr<Primitive> &prim,
-                              std::vector<Array> &inputs, Array &output) {
-  for (auto &input : inputs) {
-    // pack(input);
+void EvaluationTrace::process(
+    const std::shared_ptr<Primitive> &prim,
+    const std::vector<std::shared_ptr<Tracer>> &inputs,
+    std::shared_ptr<Tracer> &output) {
+  auto arrayPointers = tracerAsArrays(inputs);
+  std::vector<Array> arrays;
+  for (auto &arrayPointer : arrayPointers) {
+    arrays.push_back(*arrayPointer);
   }
-  prim->eval(inputs, output);
-  for (auto &input : inputs) {
-    // unpack(input);
-  }
-}
-
-void JITTrace::pack(Array &array) {}
-
-void JITTrace::unpack(Array &array) {}
-
-void JITTrace::process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output) {
-  for (auto &input : inputs) {
-    // pack(input);
-  }
-  prim->eval(inputs, output);
-  for (auto &input : inputs) {
-    // unpack(input);
-  }
+  auto primOutput = std::dynamic_pointer_cast<Array>(output);
+  prim->evalCPU(arrays, *primOutput);
 }
 
 TraceManager::TraceManager() {

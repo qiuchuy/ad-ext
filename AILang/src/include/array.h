@@ -17,25 +17,31 @@ namespace ainl::core {
 
 class Array;
 class Primitive;
+class IdentityPrimitive;
 
-class MetaData {
+class Tracer : public std::enable_shared_from_this<Tracer> {
 public:
-  MetaData() = default;
-  MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
-      : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
-  virtual ~MetaData() = default;
-  friend class Array;
+  Tracer() = default;
+  virtual ~Tracer() = default;
+  Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
+         std::shared_ptr<Primitive> prim)
+      : inputs_(inputs), prim_(prim) {}
+  bool isLeaf() { return inputs_.empty(); }
+  std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
+  std::shared_ptr<Primitive> primitive() const { return prim_; }
+  void eval();
 
-private:
+protected:
+  std::vector<std::shared_ptr<Tracer>> inputs_;
   std::shared_ptr<Primitive> prim_;
-  std::vector<Array> inputs_;
-  std::shared_ptr<Array> tracer_;
 };
 
-class Array {
+class Array : public Tracer {
 public:
   /* Construct a scalar array*/
-  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>()) {
+  template <typename T>
+  explicit Array(T val, Dtype dtype = TypeToDtype<T>())
+      : Tracer({}, std::make_shared<IdentityPrimitive>()) {
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
@@ -43,7 +49,6 @@ public:
     dtype_ = dtype;
     size_ = sizeof(T);
     shape_ = std::make_shared<std::vector<int>>();
-    info_ = std::make_shared<MetaData>();
     *(reinterpret_cast<T *>(ptr_)) = val;
     stride_ = std::make_shared<std::vector<int>>();
     LOG_DEBUG("[malloc] Fill address %d with value: %d",
@@ -54,14 +59,13 @@ public:
   /* Construct an array from a flattened vector*/
   Array(const std::vector<T> &vec, const std::vector<int> &shape,
         Dtype dtype = TypeToDtype<T>())
-      : shape_(shape) {
+      : Tracer({}, std::make_shared<IdentityPrimitive>()), shape_(shape) {
     auto buffer = allocator::malloc(sizeof(T) * vec.size());
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
         buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
     dtype_ = dtype;
     size_ = vec.size() * sizeof(T);
-    info_ = std::make_shared<MetaData>();
     stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
     std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(ptr_));
   }
@@ -73,8 +77,9 @@ public:
   Array(const Array &other) = default;
 
   /* Construct an array in the computational graph*/
-  Array(Dtype dtype, std::shared_ptr<Primitive> prim, std::vector<Array> inputs,
-        const std::vector<int> &shape, const std::vector<int> &stride);
+  Array(Dtype dtype, std::shared_ptr<Primitive> prim,
+        const std::vector<Array> &inputs, const std::vector<int> &shape,
+        const std::vector<int> &stride);
 
   struct Data {
     allocator::Buffer buffer;
@@ -87,11 +92,7 @@ public:
     ~Data() { deleter(buffer); }
   };
 
-  void eval();
-
   bool evaluated() const { return data_ != nullptr; }
-
-  bool isLeaf() const { return info_->inputs_.empty(); }
 
   void copyBySharing(const Array &array, size_t size, size_t offset,
                      const std::vector<int> &shape);
@@ -139,9 +140,7 @@ public:
     return ArrayIterator(*this, this->shape_->at(0));
   }
 
-  std::shared_ptr<Array> tracer() { return info_->tracer_; }
-  std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
-  std::vector<Array> &inputs() { return info_->inputs_; }
+  std::shared_ptr<Primitive> primitive() const { return prim_; }
   std::vector<int> shape() const { return *(shape_); }
   std::vector<int> strides() const { return *(stride_); }
   size_t size() const { return size_; }
@@ -192,49 +191,13 @@ protected:
   std::shared_ptr<Data> data_;
   Dtype dtype_;
   size_t size_;
-  std::shared_ptr<MetaData> info_;
   std::shared_ptr<std::vector<int>> shape_;
   std::shared_ptr<std::vector<int>> stride_;
   void *ptr_;
-}; // namespace ainl::core
-
-/*
-class ConcreteArray : public Array {
-  public:
-    template <typename T>
-    explicit ConcreteArray(T val, Dtype dtype = TypeToDtype<T>())
-        : Array(val, dtype) {}
-
-    ConcreteArray(const allocator::Buffer &buffer, Dtype dtype,
-                  std::function<void(allocator::Buffer)> deleter)
-        : Array(buffer, dtype, deleter) {}
-
-    ConcreteArray(const Array &array);
-
-    ConcreteArray(const std::vector<int> &shape, const std::vector<int> &stride,
-                  int offset, int ndim, std::shared_ptr<Primitive> prim,
-                  std::vector<Array> inputs);
 };
 
-class ConcreteArrayMetaData : public MetaData {
-  public:
-    ConcreteArrayMetaData() = default;
-
-    std::vector<size_t> shape() const { return shape_; }
-    std::vector<size_t> stride() const { return stride_; }
-    size_t offset() const { return offset_; }
-    size_t ndim() const { return ndim_; }
-
-    MetaData::TraceMode getTraceMode() override {
-        return MetaData::TraceMode::eval;
-    }
-
-  private:
-    std::vector<size_t> shape_;
-    std::vector<size_t> stride_;
-    size_t offset_;
-    size_t ndim_;
-};
-*/
-
+std::vector<std::shared_ptr<Tracer>>
+arrayAsTracers(const std::vector<std::shared_ptr<Array>> &arrays);
+std::vector<std::shared_ptr<Array>>
+tracerAsArrays(const std::vector<std::shared_ptr<Tracer>> &tracers);
 } // namespace ainl::core

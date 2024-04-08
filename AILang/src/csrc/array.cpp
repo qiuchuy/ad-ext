@@ -1,3 +1,5 @@
+#include <map>
+
 #include "array.h"
 #include "graph.h"
 #include "ops.h"
@@ -7,16 +9,24 @@
 namespace ainl::core {
 
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
-             std::vector<Array> inputs, const std::vector<int> &shape,
+             const std::vector<Array> &inputs, const std::vector<int> &shape,
              const std::vector<int> &stride)
-    : info_(std::make_shared<MetaData>(prim, inputs)), dtype_(dtype) {
+    : dtype_(dtype) {
+  std::vector<std::shared_ptr<Tracer>> inputTracers;
+  for (const auto &input : inputs) {
+    inputTracers.push_back(
+        std::dynamic_pointer_cast<Tracer>(std::make_shared<Array>(input)));
+  }
+  inputs_ = inputTracers;
+  prim_ = std::move(prim);
   shape_ = std::make_shared<std::vector<int>>(shape);
   stride_ = std::make_shared<std::vector<int>>(stride);
 }
 
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
              const std::vector<int> &shape, const std::vector<int> &stride)
-    : data_(std::make_shared<Data>(
+    : Tracer({}, std::make_shared<IdentityPrimitive>()),
+      data_(std::make_shared<Data>(
           buffer, [](allocator::Buffer buffer) { allocator::free(buffer); })),
       dtype_(dtype), shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
@@ -24,27 +34,29 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
-  info_ = std::make_shared<MetaData>();
 }
 
-void Array::eval() {
+void Tracer::eval() {
   LOG_DEBUG("%s", "[eval] Start evaluating array.");
   auto trace = getCurrentTrace();
-  std::function<void(Array &)> recursion = [&](Array &arr) -> void {
-    if (evaluated()) {
+  std::map<uintptr_t, bool> evalCache;
+  std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
+      [&](std::shared_ptr<Tracer> tracer) -> void {
+    if (evalCache.find(reinterpret_cast<uintptr_t>(tracer.get())) !=
+        evalCache.end()) {
       return;
     } else {
-      for (auto &input : arr.inputs()) {
+      for (auto &input : tracer->inputs()) {
         recursion(input);
       }
-      if (!arr.isLeaf()) {
+      if (!tracer->isLeaf()) {
         LOG_DEBUG("[eval] Evaluating array with primitive %s",
-                  arr.primitive()->toString().c_str());
-        trace->process(arr.primitive(), arr.inputs(), arr);
+                  tracer->primitive()->toString().c_str());
+        trace->process(tracer->primitive(), tracer->inputs(), tracer);
       }
     }
   };
-  recursion(*this);
+  recursion(shared_from_this());
 }
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
@@ -54,7 +66,8 @@ void Array::copyBySharing(const Array &other, size_t size, size_t offset,
   shape_ = std::make_shared<std::vector<int>>(shape);
   dtype_ = other.dtype_;
   size_ = size;
-  info_ = other.info_;
+  inputs_ = other.inputs_;
+  prim_ = other.prim_;
   auto stride = std::vector<int>(shape.size(), 1);
   for (size_t i = 0; i < shape.size(); i++) {
     if (i == shape.size() - 1) {
@@ -115,8 +128,34 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
   return os;
 }
 
-// ConcreteArray::ConcreteArray(const Array &tracer) : Array(tracer) {
-//     tracer_ = std::make_shared<Array>(tracer);
-// }
+std::vector<std::shared_ptr<Tracer>>
+arrayAsTracers(const std::vector<std::shared_ptr<Array>> &inputs) {
+  std::vector<std::shared_ptr<Tracer>> tracers;
+  for (const auto &input : inputs) {
+    auto tracer = std::dynamic_pointer_cast<Tracer>(input);
+    if (tracer != nullptr) {
+      tracers.push_back(tracer);
+    } else {
+      throw std::invalid_argument(
+          "Cannot convert a non-array tracer into a base tracer.");
+    }
+  }
+  return tracers;
+}
+
+std::vector<std::shared_ptr<Array>>
+tracerAsArrays(const std::vector<std::shared_ptr<Tracer>> &inputs) {
+  std::vector<std::shared_ptr<Array>> arrays;
+  for (const auto &input : inputs) {
+    auto array = std::dynamic_pointer_cast<Array>(input);
+    if (array != nullptr) {
+      arrays.push_back(array);
+    } else {
+      throw std::invalid_argument(
+          "Cannot convert a non-array tracer into a base tracer.");
+    }
+  }
+  return arrays;
+}
 
 } // namespace ainl::core
