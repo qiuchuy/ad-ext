@@ -12,7 +12,7 @@ namespace ainl::core {
 
 class Primitive;
 
-class BaseTrace : public std::enable_shared_from_this<BaseTrace> {
+class BaseTrace {
 public:
   enum class TraceMode {
     eval,
@@ -42,6 +42,15 @@ public:
 class JITTrace : public BaseTrace {
 public:
   JITTrace();
+  virtual void pack(Array &array);
+  virtual void unpack(Array &array);
+  virtual void process(const std::shared_ptr<Primitive> &prim,
+                       std::vector<Array> &inputs, Array &output);
+};
+
+class JVPTrace : public BaseTrace {
+public:
+  JVPTrace();
   virtual void pack(Array &array);
   virtual void unpack(Array &array);
   virtual void process(const std::shared_ptr<Primitive> &prim,

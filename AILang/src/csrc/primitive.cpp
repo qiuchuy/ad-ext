@@ -6,8 +6,7 @@
 
 namespace ainl::core {
 
-void IdentityPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                             const std::vector<Array> &inputs, Array &output) {
+void IdentityPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -24,8 +23,7 @@ TypePtr IdentityPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 std::string IdentityPrimitive::toString() const { return "Identity"; }
 
-void AddPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                        const std::vector<Array> &inputs, Array &output) {
+void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -35,8 +33,7 @@ TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 std::string AddPrimitive::toString() const { return "Add"; }
 
-void FillPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                         const std::vector<Array> &inputs, Array &output) {
+void FillPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -46,8 +43,7 @@ TypePtr FillPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 std::string FillPrimitive::toString() const { return "Fill"; }
 
-void SlicePrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                          const std::vector<Array> &inputs, Array &output) {
+void SlicePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -130,8 +126,7 @@ std::string SlicePrimitive::toString() const { return "Slice"; }
 
 TypePtr SlicePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-void ReshapePrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                            const std::vector<Array> &inputs, Array &output) {
+void ReshapePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 

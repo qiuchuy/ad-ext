@@ -14,7 +14,7 @@ void EvaluationTrace::process(const std::shared_ptr<Primitive> &prim,
   for (auto &input : inputs) {
     // pack(input);
   }
-  prim->eval(shared_from_this(), inputs, output);
+  prim->eval(inputs, output);
   for (auto &input : inputs) {
     // unpack(input);
   }
@@ -29,7 +29,7 @@ void JITTrace::process(const std::shared_ptr<Primitive> &prim,
   for (auto &input : inputs) {
     // pack(input);
   }
-  prim->eval(shared_from_this(), inputs, output);
+  prim->eval(inputs, output);
   for (auto &input : inputs) {
     // unpack(input);
   }
