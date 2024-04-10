@@ -37,27 +37,45 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 }
 
 void Tracer::eval() {
-  LOG_DEBUG("%s", "[eval] Start evaluating array.");
+  LOG_DEBUG("%s", "[eval] Start evaluating tracer");
   auto trace = getCurrentTrace();
-  std::map<uintptr_t, bool> evalCache;
   std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
       [&](std::shared_ptr<Tracer> tracer) -> void {
-    if (evalCache.find(reinterpret_cast<uintptr_t>(tracer.get())) !=
-        evalCache.end()) {
+    if (evaluated()) {
       return;
     } else {
       for (auto &input : tracer->inputs()) {
         recursion(input);
       }
       if (!tracer->isLeaf()) {
-        LOG_DEBUG("[eval] Evaluating array with primitive %s",
+        LOG_DEBUG("[eval] Evaluating tracer with primitive %s",
                   tracer->primitive()->toString().c_str());
         trace->process(tracer->primitive(), tracer->inputs(), tracer);
       }
     }
   };
+
+  // if there are program transformations to be applied
+  // this feature will not be exposed to the user with `eval` instead with
+  // transformations
+  while (hasRemainingTrace()) {
+    auto trace = popLastTrace();
+    recursion(shared_from_this());
+    if (!this->subtracers().empty()) {
+      trace = popLastTrace();
+      auto subtracers = this->subtracers();
+      for (auto &subtracer : subtracers) {
+        subtracer->eval();
+      }
+    }
+  }
+
+  // apply standard evaluation
   recursion(shared_from_this());
 }
+bool Tracer::evaluated() const { return false; }
+
+std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
@@ -126,36 +144,6 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
   }
   os << ")";
   return os;
-}
-
-std::vector<std::shared_ptr<Tracer>>
-arrayAsTracers(const std::vector<std::shared_ptr<Array>> &inputs) {
-  std::vector<std::shared_ptr<Tracer>> tracers;
-  for (const auto &input : inputs) {
-    auto tracer = std::dynamic_pointer_cast<Tracer>(input);
-    if (tracer != nullptr) {
-      tracers.push_back(tracer);
-    } else {
-      throw std::invalid_argument(
-          "Cannot convert a non-array tracer into a base tracer.");
-    }
-  }
-  return tracers;
-}
-
-std::vector<std::shared_ptr<Array>>
-tracerAsArrays(const std::vector<std::shared_ptr<Tracer>> &inputs) {
-  std::vector<std::shared_ptr<Array>> arrays;
-  for (const auto &input : inputs) {
-    auto array = std::dynamic_pointer_cast<Array>(input);
-    if (array != nullptr) {
-      arrays.push_back(array);
-    } else {
-      throw std::invalid_argument(
-          "Cannot convert a non-array tracer into a base tracer.");
-    }
-  }
-  return arrays;
 }
 
 } // namespace ainl::core

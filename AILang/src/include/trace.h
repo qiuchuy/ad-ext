@@ -49,8 +49,11 @@ public:
     traceStack.pop();
     return trace;
   }
+  void pushTrace(std::shared_ptr<BaseTrace> trace) {
+    traceStack.push(std::move(trace));
+  }
   std::shared_ptr<BaseTrace> getCurrentTrace() { return traceStack.top(); }
-  bool hasRemainingTrace() { return !traceStack.empty(); }
+  bool hasRemainingTrace() { return traceStack.size() != 1; }
 
 private:
   std::stack<std::shared_ptr<BaseTrace>> traceStack;
@@ -58,6 +61,7 @@ private:
 
 TraceManager &traceManager();
 std::shared_ptr<BaseTrace> popLastTrace();
+void pushTrace(std::shared_ptr<BaseTrace> trace);
 std::shared_ptr<BaseTrace> getCurrentTrace();
 bool hasRemainingTrace();
 

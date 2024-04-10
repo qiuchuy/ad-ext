@@ -30,6 +30,8 @@ public:
   std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
   std::shared_ptr<Primitive> primitive() const { return prim_; }
   void eval();
+  virtual std::vector<std::shared_ptr<Tracer>> subtracers() const;
+  virtual bool evaluated() const;
 
 protected:
   std::vector<std::shared_ptr<Tracer>> inputs_;
@@ -92,7 +94,7 @@ public:
     ~Data() { deleter(buffer); }
   };
 
-  bool evaluated() const { return data_ != nullptr; }
+  bool evaluated() const override { return data_ != nullptr; }
 
   void copyBySharing(const Array &array, size_t size, size_t offset,
                      const std::vector<int> &shape);
@@ -196,8 +198,18 @@ protected:
   void *ptr_;
 };
 
-std::vector<std::shared_ptr<Tracer>>
-arrayAsTracers(const std::vector<std::shared_ptr<Array>> &arrays);
-std::vector<std::shared_ptr<Array>>
-tracerAsArrays(const std::vector<std::shared_ptr<Tracer>> &tracers);
+template <typename T1, typename T2>
+std::vector<T1>
+tracerVectorConversion(const std::vector<std::shared_ptr<T2>> &tracers) {
+  std::vector<T1> arrays;
+  for (auto &tracer : tracers) {
+    if (auto array = std::dynamic_pointer_cast<T1>(tracer)) {
+      arrays.push_back(*(std::dynamic_pointer_cast<T1>(tracer)));
+    } else {
+      throw std::runtime_error("Cannot convert one tracer to another.");
+    }
+  }
+  return arrays;
+}
+
 } // namespace ainl::core

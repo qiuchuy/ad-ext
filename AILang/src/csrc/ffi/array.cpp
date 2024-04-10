@@ -3,6 +3,7 @@
 #include "array.h"
 #include "ffi/array.h"
 #include "ops.h"
+#include "transformation.h"
 #include "utils/logger.h"
 
 namespace ainl::ffi {
@@ -83,6 +84,8 @@ auto parseAttr = [](const py::object &obj) -> int {
 void initArray(py::module &_m) {
   py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
                                                                       "tracer");
+  py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
+             std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
   py::class_<ainl::core::Array, ainl::core::Tracer,
              std::shared_ptr<ainl::core::Array>>(_m, "array",
                                                  py::buffer_protocol())
@@ -195,6 +198,17 @@ void initArray(py::module &_m) {
     auto result = std::make_shared<ainl::core::Array>(
         ainl::core::allocator::Buffer(buffer.ptr), dtype, shape, stride);
     return result;
+  });
+
+  _m.def("_jvp", [](py::function &f,
+                    std::vector<std::shared_ptr<ainl::core::Tracer>> primals,
+                    std::vector<std::shared_ptr<ainl::core::Tracer>> tangents) {
+    auto func = [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> primals)
+        -> std::shared_ptr<ainl::core::Tracer> {
+      auto result = f(primals);
+      return result.cast<std::shared_ptr<ainl::core::Tracer>>();
+    };
+    return jvp(func, primals, tangents);
   });
 }
 
