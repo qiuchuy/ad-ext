@@ -1,3 +1,6 @@
+#include <map>
+#include <sstream>
+
 #include "array.h"
 #include "graph.h"
 #include "ops.h"
@@ -7,16 +10,28 @@
 namespace ainl::core {
 
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
-             std::vector<Array> inputs, const std::vector<int> &shape,
+             const std::vector<Array> &inputs, const std::vector<int> &shape,
              const std::vector<int> &stride)
-    : info_(std::make_shared<MetaData>(prim, inputs)), dtype_(dtype) {
+    : dtype_(dtype) {
+  std::vector<std::shared_ptr<Tracer>> inputTracers;
+  for (const auto &input : inputs) {
+    inputTracers.push_back(
+        std::dynamic_pointer_cast<Tracer>(std::make_shared<Array>(input)));
+  }
+  inputs_ = inputTracers;
+  prim_ = std::move(prim);
   shape_ = std::make_shared<std::vector<int>>(shape);
   stride_ = std::make_shared<std::vector<int>>(stride);
 }
 
+Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
+             const std::shared_ptr<Primitive> &prim)
+    : Tracer(inputs, prim) {}
+
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
              const std::vector<int> &shape, const std::vector<int> &stride)
-    : data_(std::make_shared<Data>(
+    : Tracer({}, std::make_shared<IdentityPrimitive>()),
+      data_(std::make_shared<Data>(
           buffer, [](allocator::Buffer buffer) { allocator::free(buffer); })),
       dtype_(dtype), shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
@@ -24,28 +39,38 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
-  info_ = std::make_shared<MetaData>();
 }
 
-void Array::eval() {
-  LOG_DEBUG("%s", "[eval] Start evaluating array.");
+void Tracer::eval() {
+  LOG_DEBUG("%s", "[eval] Start evaluating tracer");
   auto trace = getCurrentTrace();
-  std::function<void(Array &)> recursion = [&](Array &arr) -> void {
+  std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
+      [&](std::shared_ptr<Tracer> tracer) -> void {
     if (evaluated()) {
       return;
     } else {
-      for (auto &input : arr.inputs()) {
+      for (auto &input : tracer->inputs()) {
         recursion(input);
       }
-      if (!arr.isLeaf()) {
-        LOG_DEBUG("[eval] Evaluating array with primitive %s",
-                  arr.primitive()->toString().c_str());
-        trace->process(arr.primitive(), arr.inputs(), arr);
+      if (!tracer->isLeaf()) {
+        LOG_DEBUG("[eval] Evaluating tracer with primitive %s",
+                  tracer->primitive()->toString().c_str());
+        trace->process(tracer->primitive(), tracer->inputs(), tracer);
       }
     }
   };
-  recursion(*this);
+
+  LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
+                              trace->toString())
+                      .c_str());
+  recursion(shared_from_this());
 }
+
+bool Tracer::evaluated() const { return false; }
+
+std::string Tracer::toString() const { return "tracer"; }
+
+std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
@@ -54,7 +79,8 @@ void Array::copyBySharing(const Array &other, size_t size, size_t offset,
   shape_ = std::make_shared<std::vector<int>>(shape);
   dtype_ = other.dtype_;
   size_ = size;
-  info_ = other.info_;
+  inputs_ = other.inputs_;
+  prim_ = other.prim_;
   auto stride = std::vector<int>(shape.size(), 1);
   for (size_t i = 0; i < shape.size(); i++) {
     if (i == shape.size() - 1) {
@@ -115,8 +141,9 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
   return os;
 }
 
-// ConcreteArray::ConcreteArray(const Array &tracer) : Array(tracer) {
-//     tracer_ = std::make_shared<Array>(tracer);
-// }
+std::string Array::toString() const {
+  std::ostringstream oss;
+  oss << *this;
+}
 
 } // namespace ainl::core

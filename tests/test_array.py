@@ -9,14 +9,14 @@ class TestArray:
         assert a.strides == b.strides
         assert a.tolist() == b.tolist()
 
-        c = np.random.randint(0, 10, (3, 4, 5), dtype=np.int16)
+        c = np.random.randint(1, 10, (3, 4, 5), dtype=np.int16)
         d = al.from_numpy(c) 
         assert c.shape == d.shape
         assert c.strides == d.strides
         assert c.tolist() == d.tolist()
 
     def test_indexing(self): 
-        a = np.random.randn(2, 2)
+        a = np.random.randn(3, 2)
         b = al.from_numpy(a)
         c = b[0:1]
         assert c.shape == (1, 2)

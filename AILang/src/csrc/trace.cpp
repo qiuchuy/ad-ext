@@ -1,39 +1,29 @@
 #include "trace.h"
 #include "primitive.h"
 
+#include "utils/logger.h"
+
 namespace ainl::core {
 
 EvaluationTrace::EvaluationTrace() {}
 
-void EvaluationTrace::pack(Array &array) {}
+void EvaluationTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 
-void EvaluationTrace::unpack(Array &array) {}
+void EvaluationTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 
-void EvaluationTrace::process(const std::shared_ptr<Primitive> &prim,
-                              std::vector<Array> &inputs, Array &output) {
-  for (auto &input : inputs) {
-    // pack(input);
-  }
-  prim->eval(shared_from_this(), inputs, output);
-  for (auto &input : inputs) {
-    // unpack(input);
-  }
-}
-
-void JITTrace::pack(Array &array) {}
-
-void JITTrace::unpack(Array &array) {}
-
-void JITTrace::process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output) {
-  for (auto &input : inputs) {
-    // pack(input);
-  }
-  prim->eval(shared_from_this(), inputs, output);
-  for (auto &input : inputs) {
-    // unpack(input);
+void EvaluationTrace::process(
+    const std::shared_ptr<Primitive> &prim,
+    const std::vector<std::shared_ptr<Tracer>> &inputs,
+    std::shared_ptr<Tracer> &output) {
+  auto arrays = tracerVectorConversion<Array, Tracer>(inputs);
+  if (auto primOutput = std::dynamic_pointer_cast<Array>(output)) {
+    prim->eval(arrays, *primOutput);
+  } else {
+    throw std::runtime_error("[eval] Output is not an array.");
   }
 }
+
+std::string EvaluationTrace::toString() const { return "eval"; }
 
 TraceManager::TraceManager() {
   auto evalTrace = std::make_shared<EvaluationTrace>();
@@ -49,10 +39,12 @@ std::shared_ptr<BaseTrace> popLastTrace() {
   return traceManager().popLastTrace();
 }
 
+void pushTrace(std::shared_ptr<BaseTrace> trace) {
+  traceManager().pushTrace(std::move(trace));
+}
+
 std::shared_ptr<BaseTrace> getCurrentTrace() {
   return traceManager().getCurrentTrace();
 }
-
-bool hasRemainingTrace() { return traceManager().hasRemainingTrace(); }
 
 } // namespace ainl::core

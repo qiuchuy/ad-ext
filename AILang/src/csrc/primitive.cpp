@@ -1,13 +1,13 @@
 #include <algorithm>
 #include <numeric>
 
-#include "array.h"
+#include "ops.h"
 #include "primitive.h"
+#include "transformation.h"
 
 namespace ainl::core {
 
-void IdentityPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                             const std::vector<Array> &inputs, Array &output) {
+void IdentityPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -22,32 +22,93 @@ void IdentityPrimitive::evalCPU(const std::vector<Array> &inputs,
 
 TypePtr IdentityPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
+void IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
 std::string IdentityPrimitive::toString() const { return "Identity"; }
 
-void AddPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                        const std::vector<Array> &inputs, Array &output) {
+void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[AddPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+
+  auto input1 = inputs[0];
+  auto input2 = inputs[1];
+  auto input1Shape = input1.shape();
+  auto input2Shape = input2.shape();
+  if (input1Shape != input2Shape) {
+    throw std::invalid_argument(
+        "[AddPrimitive::evalCPU] input arrays must have the same shape, "
+        "broadcasting is not supported yet.");
+  }
+
+  auto size = std::accumulate(input1Shape.begin(), input1Shape.end(), 1,
+                              std::multiplies<int>());
+}
 
 TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
+void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                       JVPTracer &output) {}
+
 std::string AddPrimitive::toString() const { return "Add"; }
 
-void FillPrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                         const std::vector<Array> &inputs, Array &output) {
+void FlattenPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void FlattenPrimitive::evalCPU(const std::vector<Array> &inputs,
+                               Array &output) {
+  /*
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[FlattenPrimitive::evalCPU] expects exactly one input array.");
+  }
+
+  auto input = inputs[0];
+  auto inputShape = input.shape();
+  auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                              std::multiplies<int>());
+  output.copyBySharing(input, size, 0, {size});
+  */
+}
+
+TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void FlattenPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {}
+
+std::string FlattenPrimitive::toString() const { return "Flatten"; }
+
+void FillPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[FillPrimitive::evalCPU] expects exactly one input array.");
+  }
+
+  auto input = inputs[0];
+  auto inputShape = input.shape();
+  auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                              std::multiplies<int>());
+}
 
 TypePtr FillPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
+void FillPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
 std::string FillPrimitive::toString() const { return "Fill"; }
 
-void SlicePrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                          const std::vector<Array> &inputs, Array &output) {
+void SlicePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -130,8 +191,10 @@ std::string SlicePrimitive::toString() const { return "Slice"; }
 
 TypePtr SlicePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-void ReshapePrimitive::eval(const std::shared_ptr<BaseTrace> &trace,
-                            const std::vector<Array> &inputs, Array &output) {
+void SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                         JVPTracer &output) {}
+
+void ReshapePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
@@ -157,6 +220,20 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
   output.copyBySharing(input, size, 0, shape_);
 }
 TypePtr ReshapePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ReshapePrimitive::jvp] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+
+  output.setPrimal(
+      reshape_({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
+  output.setTangent(
+      reshape_({input.tangent()}, std::make_shared<ReshapePrimitive>(shape_)));
+}
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }
 
