@@ -20,6 +20,7 @@ struct Dtype {
   Dtype() = default;
   constexpr explicit Dtype(DataType type) : type(type) {}
   bool operator<(const Dtype &other) const;
+  std::string toString() const;
   friend std::ostream &operator<<(std::ostream &os, const Dtype &dtype);
 };
 

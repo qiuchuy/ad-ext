@@ -28,8 +28,7 @@ public:
   virtual void eval(const std::vector<Array> &inputs, Array &output) = 0;
   virtual void evalCPU(const std::vector<Array> &inputs, Array &output) = 0;
   virtual TypePtr typeRalation(const std::vector<TypePtr> &inTypes) = 0;
-  virtual JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                        JVPTracer &output) = 0;
+  virtual void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) = 0;
   virtual std::string toString() const = 0;
   operator std::string() const { return toString(); }
 
@@ -49,8 +48,7 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
 
@@ -61,8 +59,7 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
 
@@ -73,8 +70,7 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
 
@@ -85,8 +81,7 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
 
@@ -105,8 +100,7 @@ public:
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 
 private:
@@ -123,8 +117,7 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-  JVPTracer jvp(const std::vector<JVPTracer> &inputs,
-                JVPTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 
 private:

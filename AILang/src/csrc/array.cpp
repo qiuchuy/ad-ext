@@ -1,4 +1,5 @@
 #include <map>
+#include <sstream>
 
 #include "array.h"
 #include "graph.h"
@@ -22,6 +23,10 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
   shape_ = std::make_shared<std::vector<int>>(shape);
   stride_ = std::make_shared<std::vector<int>>(stride);
 }
+
+Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
+             const std::shared_ptr<Primitive> &prim)
+    : Tracer(inputs, prim) {}
 
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
              const std::vector<int> &shape, const std::vector<int> &stride)
@@ -55,25 +60,15 @@ void Tracer::eval() {
     }
   };
 
-  // if there are program transformations to be applied
-  // this feature will not be exposed to the user with `eval` instead with
-  // transformations
-  while (hasRemainingTrace()) {
-    auto trace = popLastTrace();
-    recursion(shared_from_this());
-    if (!this->subtracers().empty()) {
-      trace = popLastTrace();
-      auto subtracers = this->subtracers();
-      for (auto &subtracer : subtracers) {
-        subtracer->eval();
-      }
-    }
-  }
-
-  // apply standard evaluation
+  LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
+                              trace->toString())
+                      .c_str());
   recursion(shared_from_this());
 }
+
 bool Tracer::evaluated() const { return false; }
+
+std::string Tracer::toString() const { return "tracer"; }
 
 std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
 
@@ -144,6 +139,11 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
   }
   os << ")";
   return os;
+}
+
+std::string Array::toString() const {
+  std::ostringstream oss;
+  oss << *this;
 }
 
 } // namespace ainl::core

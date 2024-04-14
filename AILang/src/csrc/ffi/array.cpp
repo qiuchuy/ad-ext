@@ -82,8 +82,13 @@ auto parseAttr = [](const py::object &obj) -> int {
 };
 
 void initArray(py::module &_m) {
+  py::class_<ainl::core::Dtype>(_m, "dtype")
+      .def(py::init<>())
+      .def("__repr__", &ainl::core::Dtype::toString);
   py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
-                                                                      "tracer");
+                                                                      "tracer")
+      .def(py::init<>())
+      .def("__repr__", &ainl::core::Tracer::toString);
   py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
              std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
   py::class_<ainl::core::Array, ainl::core::Tracer,
@@ -101,6 +106,7 @@ void initArray(py::module &_m) {
              if (!a.evaluated()) {
                a.eval();
              }
+             LOG_DEBUG("%s", "here");
              std::ostringstream oss;
              oss << a;
              return oss.str();
@@ -190,6 +196,7 @@ void initArray(py::module &_m) {
       .def("tolist", [](ainl::core::Array &a) { return toPyList(a); });
 
   _m.def("from_numpy", [](py::buffer arr) {
+    arr.inc_ref();
     py::buffer_info buffer = arr.request();
     ainl::core::Dtype dtype = ainl::core::getDtypeFromFormat(buffer.format);
     auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
@@ -200,15 +207,25 @@ void initArray(py::module &_m) {
     return result;
   });
 
-  _m.def("_jvp", [](py::function &f,
-                    std::vector<std::shared_ptr<ainl::core::Tracer>> primals,
-                    std::vector<std::shared_ptr<ainl::core::Tracer>> tangents) {
+  _m.def("jvp", [](py::function &f,
+                   std::vector<std::shared_ptr<ainl::core::Tracer>> primals,
+                   std::vector<std::shared_ptr<ainl::core::Tracer>> tangents) {
     auto func = [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> primals)
         -> std::shared_ptr<ainl::core::Tracer> {
-      auto result = f(primals);
+      py::tuple posArgs = py::tuple(primals.size());
+      for (size_t i = 0; i < primals.size(); i++) {
+        posArgs[i] = primals[i];
+      }
+      auto result = f(*posArgs);
       return result.cast<std::shared_ptr<ainl::core::Tracer>>();
     };
-    return jvp(func, primals, tangents);
+    auto tracer = jvp(func, primals, tangents);
+    if (auto jvptracer =
+            std::dynamic_pointer_cast<ainl::core::JVPTracer>(tracer)) {
+      return py::make_tuple(jvptracer->primal(), jvptracer->tangent());
+    } else {
+      throw std::runtime_error("Invalid return type");
+    }
   });
 }
 

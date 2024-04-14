@@ -23,6 +23,8 @@ void EvaluationTrace::process(
   }
 }
 
+std::string EvaluationTrace::toString() const { return "eval"; }
+
 TraceManager::TraceManager() {
   auto evalTrace = std::make_shared<EvaluationTrace>();
   traceStack.push(std::dynamic_pointer_cast<BaseTrace>(evalTrace));
@@ -44,7 +46,5 @@ void pushTrace(std::shared_ptr<BaseTrace> trace) {
 std::shared_ptr<BaseTrace> getCurrentTrace() {
   return traceManager().getCurrentTrace();
 }
-
-bool hasRemainingTrace() { return traceManager().hasRemainingTrace(); }
 
 } // namespace ainl::core

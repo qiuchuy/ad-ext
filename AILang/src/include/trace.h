@@ -29,16 +29,18 @@ public:
   virtual void process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &inputs,
                        std::shared_ptr<Tracer> &output) = 0;
+  virtual std::string toString() const = 0;
 };
 
 class EvaluationTrace : public BaseTrace {
 public:
   EvaluationTrace();
-  virtual void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  virtual void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  virtual void process(const std::shared_ptr<Primitive> &prim,
-                       const std::vector<std::shared_ptr<Tracer>> &inputs,
-                       std::shared_ptr<Tracer> &output);
+  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void process(const std::shared_ptr<Primitive> &prim,
+               const std::vector<std::shared_ptr<Tracer>> &inputs,
+               std::shared_ptr<Tracer> &output);
+  std::string toString() const override;
 };
 
 class TraceManager {
@@ -63,6 +65,5 @@ TraceManager &traceManager();
 std::shared_ptr<BaseTrace> popLastTrace();
 void pushTrace(std::shared_ptr<BaseTrace> trace);
 std::shared_ptr<BaseTrace> getCurrentTrace();
-bool hasRemainingTrace();
 
 } // namespace ainl::core

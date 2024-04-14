@@ -12,6 +12,7 @@
 #include "graph.h"
 #include "primitive.h"
 #include "trace.h"
+#include "utils/logger.h"
 
 namespace ainl::core {
 
@@ -24,7 +25,7 @@ public:
   Tracer() = default;
   virtual ~Tracer() = default;
   Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
-         std::shared_ptr<Primitive> prim)
+         const std::shared_ptr<Primitive> &prim)
       : inputs_(inputs), prim_(prim) {}
   bool isLeaf() { return inputs_.empty(); }
   std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
@@ -32,6 +33,7 @@ public:
   void eval();
   virtual std::vector<std::shared_ptr<Tracer>> subtracers() const;
   virtual bool evaluated() const;
+  virtual std::string toString() const;
 
 protected:
   std::vector<std::shared_ptr<Tracer>> inputs_;
@@ -44,6 +46,7 @@ public:
   template <typename T>
   explicit Array(T val, Dtype dtype = TypeToDtype<T>())
       : Tracer({}, std::make_shared<IdentityPrimitive>()) {
+    LOG_DEBUG("initialized value: %f", val);
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
@@ -53,7 +56,7 @@ public:
     shape_ = std::make_shared<std::vector<int>>();
     *(reinterpret_cast<T *>(ptr_)) = val;
     stride_ = std::make_shared<std::vector<int>>();
-    LOG_DEBUG("[malloc] Fill address %d with value: %d",
+    LOG_DEBUG("[malloc] Fill address %d with value: %f",
               reinterpret_cast<uintptr_t>(ptr_), val);
   }
 
@@ -78,10 +81,17 @@ public:
   /* Construct an array by copy*/
   Array(const Array &other) = default;
 
-  /* Construct an array in the computational graph*/
+  /* Construct an array in the computational graph in eager mode*/
   Array(Dtype dtype, std::shared_ptr<Primitive> prim,
         const std::vector<Array> &inputs, const std::vector<int> &shape,
         const std::vector<int> &stride);
+
+  /* Construct an array in the computational graph in the middle of higher order
+   * program transformation*/
+  /* Data members will be initialized in a lazy style during the evaluation
+   * procedure of program transformation*/
+  Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
+        const std::shared_ptr<Primitive> &prim);
 
   struct Data {
     allocator::Buffer buffer;
@@ -158,10 +168,12 @@ public:
 
   friend std::ostream &operator<<(std::ostream &os, const Array &arr);
 
+  std::string toString() const override;
+
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-      os << *reinterpret_cast<uintptr_t *>(ptr_ + offset / itemsize());
+      os << (*(data<T>() + offset / itemsize()));
       return;
     }
     os << "[";

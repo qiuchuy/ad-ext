@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <numeric>
 
+#include "ops.h"
 #include "primitive.h"
 #include "transformation.h"
 
@@ -21,8 +22,8 @@ void IdentityPrimitive::evalCPU(const std::vector<Array> &inputs,
 
 TypePtr IdentityPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                                 JVPTracer &output) {}
+void IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
 
 std::string IdentityPrimitive::toString() const { return "Identity"; }
 
@@ -52,8 +53,8 @@ void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
 TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                            JVPTracer &output) {}
+void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                       JVPTracer &output) {}
 
 std::string AddPrimitive::toString() const { return "Add"; }
 
@@ -79,8 +80,8 @@ void FlattenPrimitive::evalCPU(const std::vector<Array> &inputs,
 
 TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer FlattenPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                                JVPTracer &output) {}
+void FlattenPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {}
 
 std::string FlattenPrimitive::toString() const { return "Flatten"; }
 
@@ -88,12 +89,22 @@ void FillPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[FillPrimitive::evalCPU] expects exactly one input array.");
+  }
+
+  auto input = inputs[0];
+  auto inputShape = input.shape();
+  auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                              std::multiplies<int>());
+}
 
 TypePtr FillPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer FillPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                             JVPTracer &output) {}
+void FillPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
 
 std::string FillPrimitive::toString() const { return "Fill"; }
 
@@ -180,8 +191,8 @@ std::string SlicePrimitive::toString() const { return "Slice"; }
 
 TypePtr SlicePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                              JVPTracer &output) {}
+void SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                         JVPTracer &output) {}
 
 void ReshapePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
@@ -210,21 +221,18 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 TypePtr ReshapePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
-JVPTracer ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                                JVPTracer &output) {
+void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {
   if (inputs.size() != 1) {
     throw std::invalid_argument(
         "[ReshapePrimitive::jvp] expects exactly one input tracer.");
   }
-
   auto input = inputs[0];
 
-  output.setPrimal(std::make_shared<Tracer>(
-      std::vector<std::shared_ptr<Tracer>>{input.primal()},
-      std::make_shared<ReshapePrimitive>(shape_)));
-  output.setTangent(std::make_shared<Tracer>(
-      std::vector<std::shared_ptr<Tracer>>{input.tangent()},
-      std::make_shared<ReshapePrimitive>(shape_)));
+  output.setPrimal(
+      reshape_({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
+  output.setTangent(
+      reshape_({input.tangent()}, std::make_shared<ReshapePrimitive>(shape_)));
 }
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }

@@ -10,8 +10,10 @@ std::vector<std::shared_ptr<Tracer>> JVPTracer::subtracers() const {
 }
 
 bool JVPTracer::evaluated() const {
-  return primal_->evaluated() && tangent_->evaluated();
+  return primal_ != nullptr && tangent_ != nullptr;
 }
+
+std::string JVPTracer::toString() const { return "jvptracer"; }
 
 void JVPTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
   /*
@@ -32,12 +34,15 @@ void JVPTrace::process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &inputs,
                        std::shared_ptr<Tracer> &output) {
   auto arrays = tracerVectorConversion<JVPTracer, Tracer>(inputs);
+
   if (auto primOutput = std::dynamic_pointer_cast<JVPTracer>(output)) {
     prim->jvp(arrays, *primOutput);
   } else {
     throw std::runtime_error("[jvp] Output is not an jvp tracer");
   }
 }
+
+std::string JVPTrace::toString() const { return "jvp"; }
 
 std::shared_ptr<Tracer>
 jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
@@ -56,6 +61,7 @@ jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
     jvpTracers.push_back(std::make_shared<JVPTracer>(primals[i], tangents[i]));
   }
   auto result = f(jvpTracers);
+  result->eval();
   popLastTrace();
   return result;
 }
