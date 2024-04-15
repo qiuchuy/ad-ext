@@ -23,6 +23,7 @@ CMakeUserPresets.json
 *.VC.opendb
 *.suo
 *.user
+compile_commands.json
 
 # macOS files
 .DS_Store
@@ -37,3 +38,8 @@ __pycache__/
 cmake-build-debug/
 ailang.egg-info/
 log.txt
+log
+.clangd/
+.cache/
+
+
