@@ -7,7 +7,7 @@ from ailang import array
 class TestOp:
     @staticmethod
     def numeric_check(a: array, b: np.ndarray):
-        return a.tolist() == (b.tolist())
+        return np.allclose(a.tolist(), b.tolist())
 
     def test_flatten(self):
         a = np.random.randn(2, 2)

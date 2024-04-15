@@ -5,14 +5,14 @@
 #include <memory>
 #include <stack>
 
-#include "array.h"
 #include "primitive.h"
 
 namespace ainl::core {
 
 class Primitive;
+class Tracer;
 
-class BaseTrace : public std::enable_shared_from_this<BaseTrace> {
+class BaseTrace {
 public:
   enum class TraceMode {
     eval,
@@ -24,28 +24,23 @@ public:
   BaseTrace &operator=(const BaseTrace &other) = delete;
   BaseTrace &operator=(BaseTrace &&other) = delete;
   virtual ~BaseTrace() = default;
-  virtual void pack(Array &inputs) = 0;
-  virtual void unpack(Array &outputs) = 0;
+  virtual void pack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;
+  virtual void unpack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;
   virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output) = 0;
+                       const std::vector<std::shared_ptr<Tracer>> &inputs,
+                       std::shared_ptr<Tracer> &output) = 0;
+  virtual std::string toString() const = 0;
 };
 
 class EvaluationTrace : public BaseTrace {
 public:
   EvaluationTrace();
-  virtual void pack(Array &array);
-  virtual void unpack(Array &array);
-  virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output);
-};
-
-class JITTrace : public BaseTrace {
-public:
-  JITTrace();
-  virtual void pack(Array &array);
-  virtual void unpack(Array &array);
-  virtual void process(const std::shared_ptr<Primitive> &prim,
-                       std::vector<Array> &inputs, Array &output);
+  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void process(const std::shared_ptr<Primitive> &prim,
+               const std::vector<std::shared_ptr<Tracer>> &inputs,
+               std::shared_ptr<Tracer> &output);
+  std::string toString() const override;
 };
 
 class TraceManager {
@@ -56,8 +51,11 @@ public:
     traceStack.pop();
     return trace;
   }
+  void pushTrace(std::shared_ptr<BaseTrace> trace) {
+    traceStack.push(std::move(trace));
+  }
   std::shared_ptr<BaseTrace> getCurrentTrace() { return traceStack.top(); }
-  bool hasRemainingTrace() { return !traceStack.empty(); }
+  bool hasRemainingTrace() { return traceStack.size() != 1; }
 
 private:
   std::stack<std::shared_ptr<BaseTrace>> traceStack;
@@ -65,7 +63,7 @@ private:
 
 TraceManager &traceManager();
 std::shared_ptr<BaseTrace> popLastTrace();
+void pushTrace(std::shared_ptr<BaseTrace> trace);
 std::shared_ptr<BaseTrace> getCurrentTrace();
-bool hasRemainingTrace();
 
 } // namespace ainl::core

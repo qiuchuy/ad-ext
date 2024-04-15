@@ -3,6 +3,7 @@
 #include "array.h"
 #include "ffi/array.h"
 #include "ops.h"
+#include "transformation.h"
 #include "utils/logger.h"
 
 namespace ainl::ffi {
@@ -81,7 +82,18 @@ auto parseAttr = [](const py::object &obj) -> int {
 };
 
 void initArray(py::module &_m) {
-  py::class_<ainl::core::Array>(_m, "array", py::buffer_protocol())
+  py::class_<ainl::core::Dtype>(_m, "dtype")
+      .def(py::init<>())
+      .def("__repr__", &ainl::core::Dtype::toString);
+  py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
+                                                                      "tracer")
+      .def(py::init<>())
+      .def("__repr__", &ainl::core::Tracer::toString);
+  py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
+             std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
+  py::class_<ainl::core::Array, ainl::core::Tracer,
+             std::shared_ptr<ainl::core::Array>>(_m, "array",
+                                                 py::buffer_protocol())
       .def(py::init<>([]() { return ainl::core::Array(1.0f); }))
       .def_buffer([](ainl::core::Array &a) -> py::buffer_info {
         return py::buffer_info(
@@ -94,6 +106,7 @@ void initArray(py::module &_m) {
              if (!a.evaluated()) {
                a.eval();
              }
+             LOG_DEBUG("%s", "here");
              std::ostringstream oss;
              oss << a;
              return oss.str();
@@ -180,18 +193,39 @@ void initArray(py::module &_m) {
       .def_property_readonly("data_size", &ainl::core::Array::size)
       .def_property_readonly("dtype", &ainl::core::Array::dtype)
       .def_property_readonly("ndim", &ainl::core::Array::ndim)
-      .def("eval", &ainl::core::Array::eval)
       .def("tolist", [](ainl::core::Array &a) { return toPyList(a); });
 
   _m.def("from_numpy", [](py::buffer arr) {
+    arr.inc_ref();
     py::buffer_info buffer = arr.request();
     ainl::core::Dtype dtype = ainl::core::getDtypeFromFormat(buffer.format);
     auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
     auto stride =
         std::vector<int>(buffer.strides.begin(), buffer.strides.end());
-    auto result = ainl::core::Array(ainl::core::allocator::Buffer(buffer.ptr),
-                                    dtype, shape, stride);
+    auto result = std::make_shared<ainl::core::Array>(
+        ainl::core::allocator::Buffer(buffer.ptr), dtype, shape, stride);
     return result;
+  });
+
+  _m.def("jvp", [](py::function &f,
+                   std::vector<std::shared_ptr<ainl::core::Tracer>> primals,
+                   std::vector<std::shared_ptr<ainl::core::Tracer>> tangents) {
+    auto func = [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> primals)
+        -> std::shared_ptr<ainl::core::Tracer> {
+      py::tuple posArgs = py::tuple(primals.size());
+      for (size_t i = 0; i < primals.size(); i++) {
+        posArgs[i] = primals[i];
+      }
+      auto result = f(*posArgs);
+      return result.cast<std::shared_ptr<ainl::core::Tracer>>();
+    };
+    auto tracer = jvp(func, primals, tangents);
+    if (auto jvptracer =
+            std::dynamic_pointer_cast<ainl::core::JVPTracer>(tracer)) {
+      return py::make_tuple(jvptracer->primal(), jvptracer->tangent());
+    } else {
+      throw std::runtime_error("Invalid return type");
+    }
   });
 }
 

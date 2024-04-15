@@ -12,30 +12,40 @@
 #include "graph.h"
 #include "primitive.h"
 #include "trace.h"
+#include "utils/logger.h"
 
 namespace ainl::core {
 
 class Array;
 class Primitive;
 
-class MetaData {
+class Tracer : public std::enable_shared_from_this<Tracer> {
 public:
-  MetaData() = default;
-  MetaData(std::shared_ptr<Primitive> prim, std::vector<Array> inputs)
-      : prim_(std::move(prim)), inputs_(std::move(inputs)) {}
-  virtual ~MetaData() = default;
-  friend class Array;
+  Tracer() = default;
+  virtual ~Tracer() = default;
+  Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
+         const std::shared_ptr<Primitive> &prim)
+      : inputs_(inputs), prim_(prim) {}
+  bool isLeaf() { return inputs_.empty(); }
+  std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
+  std::shared_ptr<Primitive> primitive() const { return prim_; }
+  void eval();
+  virtual std::vector<std::shared_ptr<Tracer>> subtracers() const;
+  virtual bool evaluated() const;
+  virtual std::string toString() const;
 
-private:
+protected:
+  std::vector<std::shared_ptr<Tracer>> inputs_;
   std::shared_ptr<Primitive> prim_;
-  std::vector<Array> inputs_;
-  std::shared_ptr<Array> tracer_;
 };
 
-class Array {
+class Array : public Tracer {
 public:
   /* Construct a scalar array*/
-  template <typename T> explicit Array(T val, Dtype dtype = TypeToDtype<T>()) {
+  template <typename T>
+  explicit Array(T val, Dtype dtype = TypeToDtype<T>())
+      : Tracer({}, nullptr) {
+    LOG_DEBUG("initialized value: %f", val);
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
@@ -43,10 +53,9 @@ public:
     dtype_ = dtype;
     size_ = sizeof(T);
     shape_ = std::make_shared<std::vector<int>>();
-    info_ = std::make_shared<MetaData>();
     *(reinterpret_cast<T *>(ptr_)) = val;
     stride_ = std::make_shared<std::vector<int>>();
-    LOG_DEBUG("[malloc] Fill address %d with value: %d",
+    LOG_DEBUG("[malloc] Fill address %d with value: %f",
               reinterpret_cast<uintptr_t>(ptr_), val);
   }
 
@@ -54,14 +63,13 @@ public:
   /* Construct an array from a flattened vector*/
   Array(const std::vector<T> &vec, const std::vector<int> &shape,
         Dtype dtype = TypeToDtype<T>())
-      : shape_(std::make_shared<std::vector<int>>(shape)) {
+      : Tracer({}, nullptr), shape_(std::make_shared<std::vector<int>>(shape)) {
     auto buffer = allocator::malloc(sizeof(T) * vec.size());
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
         buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
     dtype_ = dtype;
     size_ = vec.size() * sizeof(T);
-    info_ = std::make_shared<MetaData>();
     stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
     std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(ptr_));
   }
@@ -72,9 +80,17 @@ public:
   /* Construct an array by copy*/
   Array(const Array &other) = default;
 
-  /* Construct an array in the computational graph*/
-  Array(Dtype dtype, std::shared_ptr<Primitive> prim, std::vector<Array> inputs,
-        const std::vector<int> &shape, const std::vector<int> &stride);
+  /* Construct an array in the computational graph in eager mode*/
+  Array(Dtype dtype, std::shared_ptr<Primitive> prim,
+        const std::vector<Array> &inputs, const std::vector<int> &shape,
+        const std::vector<int> &stride);
+
+  /* Construct an array in the computational graph in the middle of higher order
+   * program transformation*/
+  /* Data members will be initialized in a lazy style during the evaluation
+   * procedure of program transformation*/
+  Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
+        const std::shared_ptr<Primitive> &prim);
 
   struct Data {
     allocator::Buffer buffer;
@@ -87,11 +103,7 @@ public:
     ~Data() { deleter(buffer); }
   };
 
-  void eval();
-
-  bool evaluated() const { return data_ != nullptr; }
-
-  bool isLeaf() const { return info_->inputs_.empty(); }
+  bool evaluated() const override { return data_ != nullptr; }
 
   void copyBySharing(const Array &array, size_t size, size_t offset,
                      const std::vector<int> &shape);
@@ -139,9 +151,7 @@ public:
     return ArrayIterator(*this, this->shape_->at(0));
   }
 
-  std::shared_ptr<Array> tracer() { return info_->tracer_; }
-  std::shared_ptr<Primitive> primitive() const { return info_->prim_; }
-  std::vector<Array> &inputs() { return info_->inputs_; }
+  std::shared_ptr<Primitive> primitive() const { return prim_; }
   std::vector<int> shape() const { return *(shape_); }
   std::vector<int> strides() const { return *(stride_); }
   size_t size() const { return size_; }
@@ -157,10 +167,12 @@ public:
 
   friend std::ostream &operator<<(std::ostream &os, const Array &arr);
 
+  std::string toString() const override;
+
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-      os << *reinterpret_cast<uintptr_t *>((char*)ptr_ + offset / itemsize());
+      os << (*((char*)data<T>() + offset / itemsize()));
       return;
     }
     os << "[";
@@ -168,7 +180,7 @@ public:
       LOG_DEBUG("[print] Printing array at %d with offset %d",
                 reinterpret_cast<uintptr_t>(ptr_), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
-        os << (*(data<T>() + offset / itemsize() + i));
+        os << (*((char*)data<T>() + offset / itemsize() + i));
         if (i != shape_->at(dim) - 1) {
           os << ", ";
         }
@@ -192,49 +204,23 @@ protected:
   std::shared_ptr<Data> data_;
   Dtype dtype_;
   size_t size_;
-  std::shared_ptr<MetaData> info_;
   std::shared_ptr<std::vector<int>> shape_;
   std::shared_ptr<std::vector<int>> stride_;
   void *ptr_;
-}; // namespace ainl::core
-
-/*
-class ConcreteArray : public Array {
-  public:
-    template <typename T>
-    explicit ConcreteArray(T val, Dtype dtype = TypeToDtype<T>())
-        : Array(val, dtype) {}
-
-    ConcreteArray(const allocator::Buffer &buffer, Dtype dtype,
-                  std::function<void(allocator::Buffer)> deleter)
-        : Array(buffer, dtype, deleter) {}
-
-    ConcreteArray(const Array &array);
-
-    ConcreteArray(const std::vector<int> &shape, const std::vector<int> &stride,
-                  int offset, int ndim, std::shared_ptr<Primitive> prim,
-                  std::vector<Array> inputs);
 };
 
-class ConcreteArrayMetaData : public MetaData {
-  public:
-    ConcreteArrayMetaData() = default;
-
-    std::vector<size_t> shape() const { return shape_; }
-    std::vector<size_t> stride() const { return stride_; }
-    size_t offset() const { return offset_; }
-    size_t ndim() const { return ndim_; }
-
-    MetaData::TraceMode getTraceMode() override {
-        return MetaData::TraceMode::eval;
+template <typename T1, typename T2>
+std::vector<T1>
+tracerVectorConversion(const std::vector<std::shared_ptr<T2>> &tracers) {
+  std::vector<T1> arrays;
+  for (auto &tracer : tracers) {
+    if (auto array = std::dynamic_pointer_cast<T1>(tracer)) {
+      arrays.push_back(*(std::dynamic_pointer_cast<T1>(tracer)));
+    } else {
+      throw std::runtime_error("Cannot convert one tracer to another.");
     }
-
-  private:
-    std::vector<size_t> shape_;
-    std::vector<size_t> stride_;
-    size_t offset_;
-    size_t ndim_;
-};
-*/
+  }
+  return arrays;
+}
 
 } // namespace ainl::core

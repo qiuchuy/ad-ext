@@ -6,8 +6,12 @@ Array zeros(const std::vector<int> &shape, Dtype dtype) {
   return fill(shape, Array(0, dtype), dtype);
 }
 
+Array ones(const std::vector<int> &shape, Dtype dtype) {
+  return fill(shape, Array(1, dtype), dtype);
+}
+
 Array fill(const std::vector<int> &shape, const Array &value, Dtype dtype) {
-  return Array(dtype, std::make_shared<FillPrimitive>(), {value}, value.shape(),
+  return Array(dtype, std::make_shared<FillPrimitive>(), {value}, shape,
                value.strides());
 }
 
@@ -55,5 +59,7 @@ std::vector<int> getStridesFromShape(const std::vector<int> &shape,
   }
   return strides;
 }
+
+GENERIC_OP_IMPL(reshape_)
 
 }; // namespace ainl::core

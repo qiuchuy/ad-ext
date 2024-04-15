@@ -48,6 +48,27 @@ size_t dtypeSize(Dtype dtype) {
   }
 }
 
+std::string Dtype::toString() const {
+  switch (type) {
+  case DataType::BoolType:
+    return "bool";
+  case DataType::Int8Type:
+    return "int8";
+  case DataType::Int16Type:
+    return "int16";
+  case DataType::Int32Type:
+    return "int32";
+  case DataType::Int64Type:
+    return "int64";
+  case DataType::Float32Type:
+    return "float32";
+  case DataType::Float64Type:
+    return "float64";
+  default:
+    return "unknown";
+  }
+}
+
 Dtype getDtypeFromFormat(const std::string &formatStr) {
   if (formatStr == "b" || formatStr == "B") {
     return Int8;

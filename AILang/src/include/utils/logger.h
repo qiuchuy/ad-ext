@@ -33,7 +33,7 @@ public:
 
   static void enableFileOutput() {
     Logger &loggerInstance = getInstance();
-    loggerInstance.filePath = "/root/AILang/log.txt";
+    loggerInstance.filePath = "/root/AILang/log";
     loggerInstance.enableFileOutput_();
   }
 

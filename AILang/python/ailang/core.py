@@ -1,7 +1,7 @@
 import inspect
 from typing import Union, Tuple, Callable
 
-from ailang import Tensor, ModuleNode
+from ailang import Tensor, ModuleNode, array
 
 from .ast_converter import parse_pycallable
 
@@ -46,3 +46,4 @@ def compile_ir(f: Callable, *args: Union[Tuple[Tensor], Tensor]):
     arg_names = list(inspect.signature(f).parameters.values())
     arg_names = [str(name) for name in arg_names]
     return ast.ir_lowering(arg_names, *args)
+
