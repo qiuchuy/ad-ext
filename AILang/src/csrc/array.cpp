@@ -50,7 +50,7 @@ void Array::eval() {
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
   data_ = other.data_;
-  ptr_ = other.ptr_ + offset;
+  ptr_ = (char*)other.ptr_ + offset;
   shape_ = std::make_shared<std::vector<int>>(shape);
   dtype_ = other.dtype_;
   size_ = size;

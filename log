@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.8, pytest-8.1.1, pluggy-1.4.0
+rootdir: /root/AILang/tests
+collected 37 items
+
+test_array.py ...                                                        [  8%]
+test_ast.py ....................                                         [ 62%]
+test_nn.py .                                                             [ 64%]
+test_op.py ...                                                           [ 72%]
+test_typeinfer.py 

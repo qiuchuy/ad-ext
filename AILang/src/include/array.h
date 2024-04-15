@@ -54,7 +54,7 @@ public:
   /* Construct an array from a flattened vector*/
   Array(const std::vector<T> &vec, const std::vector<int> &shape,
         Dtype dtype = TypeToDtype<T>())
-      : shape_(shape) {
+      : shape_(std::make_shared<std::vector<int>>(shape)) {
     auto buffer = allocator::malloc(sizeof(T) * vec.size());
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
@@ -160,7 +160,7 @@ public:
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-      os << *reinterpret_cast<uintptr_t *>(ptr_ + offset / itemsize());
+      os << *reinterpret_cast<uintptr_t *>((char*)ptr_ + offset / itemsize());
       return;
     }
     os << "[";

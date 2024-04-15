@@ -35,7 +35,7 @@ Array reshape(const Array &input, const std::vector<int> &shape) {
 
 Array flatten(const Array &input) {
   auto shape = input.shape();
-  size_t totalShape =
+  int totalShape =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
   std::vector<int> flattenShape = {totalShape};
   return Array(input.dtype(), std::make_shared<ReshapePrimitive>(flattenShape),
