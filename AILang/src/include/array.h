@@ -172,7 +172,7 @@ public:
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-      os << (*((char*)data<T>() + offset / itemsize()));
+      os << (*(data<T>() + offset / itemsize()));
       return;
     }
     os << "[";
@@ -180,7 +180,7 @@ public:
       LOG_DEBUG("[print] Printing array at %d with offset %d",
                 reinterpret_cast<uintptr_t>(ptr_), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
-        os << (*((char*)data<T>() + offset / itemsize() + i));
+        os << (*(data<T>() + offset / itemsize() + i));
         if (i != shape_->at(dim) - 1) {
           os << ", ";
         }
