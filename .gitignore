@@ -41,5 +41,6 @@ log.txt
 log
 .clangd/
 .cache/
+AILang/python/ailang/ffi/*.so
 
 

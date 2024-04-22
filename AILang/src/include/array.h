@@ -18,7 +18,6 @@ namespace ainl::core {
 
 class Array;
 class Primitive;
-class IdentityPrimitive;
 
 class Tracer : public std::enable_shared_from_this<Tracer> {
 public:
@@ -45,7 +44,7 @@ public:
   /* Construct a scalar array*/
   template <typename T>
   explicit Array(T val, Dtype dtype = TypeToDtype<T>())
-      : Tracer({}, std::make_shared<IdentityPrimitive>()) {
+      : Tracer({}, nullptr) {
     LOG_DEBUG("initialized value: %f", val);
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
@@ -64,7 +63,7 @@ public:
   /* Construct an array from a flattened vector*/
   Array(const std::vector<T> &vec, const std::vector<int> &shape,
         Dtype dtype = TypeToDtype<T>())
-      : Tracer({}, std::make_shared<IdentityPrimitive>()), shape_(shape) {
+      : Tracer({}, nullptr), shape_(std::make_shared<std::vector<int>>(shape)) {
     auto buffer = allocator::malloc(sizeof(T) * vec.size());
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
@@ -178,7 +177,7 @@ public:
     }
     os << "[";
     if (dim == ndim() - 1) {
-      LOG_DEBUG("[print] Printing array at %d with offset %d",
+      LOG_DEBUG("[print] Printing array at %f with offset %f",
                 reinterpret_cast<uintptr_t>(ptr_), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
         os << (*(data<T>() + offset / itemsize() + i));

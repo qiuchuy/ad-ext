@@ -2,6 +2,7 @@
 #include <sstream>
 
 #include "array.h"
+#include "primitive.h"
 #include "graph.h"
 #include "ops.h"
 #include "trace.h"
