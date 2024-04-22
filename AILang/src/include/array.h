@@ -177,7 +177,7 @@ public:
     }
     os << "[";
     if (dim == ndim() - 1) {
-      LOG_DEBUG("[print] Printing array at %f with offset %f",
+      LOG_DEBUG("[print] Printing array at %d with offset %d",
                 reinterpret_cast<uintptr_t>(ptr_), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
         os << (*(data<T>() + offset / itemsize() + i));

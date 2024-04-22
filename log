@@ -1,64 +1,22 @@
-============================= test session starts ==============================
-platform linux -- Python 3.11.8, pytest-8.1.1, pluggy-1.4.0
-rootdir: /root/AILang
-collected 38 items
-
-tests/test_array.py ...                                                  [  7%]
-tests/test_ast.py ....................                                   [ 60%]
-tests/test_autograd.py .                                                 [ 63%]
-tests/test_nn.py .                                                       [ 65%]
-tests/test_op.py ...                                                     [ 73%]
-tests/test_typeinfer.py ..........                                       [100%]
-
-============================== 38 passed in 0.10s ==============================
-03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: jvp on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Slice on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-4 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Slice on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: jvp on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Reshape on line 58 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Start evaluating tracer on line 46 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Current program transformation: eval on line 66 in /root/AILang/AILang/src/csrc/array.cpp
-Mon Apr 15 03:45:37 2024 [Debug] [eval] Evaluating tracer with primitive Slice on line 58 in /root/AILang/AILang/src/csrc/array.cpp
+Mon Apr 22 13:30:17 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:30:17 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:30:59 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:30:59 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:00 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:00 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:01 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:01 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:01 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:01 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:01 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:01 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:02 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:02 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:02 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:02 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:04 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:04 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:31:05 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:31:05 2024 [Debug] [print] Printing array at 0.000000 with offset 0.000000 on line 180 in /root/AILang/AILang/src/include/array.h
+Mon Apr 22 13:32:08 2024 [Debug] here on line 109 in /root/AILang/AILang/src/csrc/ffi/array.cpp
+Mon Apr 22 13:32:08 2024 [Debug] [print] Printing array at 22091440 with offset 0 on line 180 in /root/AILang/AILang/src/include/array.h
