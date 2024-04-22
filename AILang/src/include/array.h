@@ -173,11 +173,7 @@ public:
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-<<<<<<< HEAD
       os << (*(data<T>() + offset / itemsize()));
-=======
-      os << *reinterpret_cast<uintptr_t *>((char*)ptr_ + offset / itemsize());
->>>>>>> 07d0d275f... fix: fix build problems on clang and update build scripts.
       return;
     }
     os << "[";
