@@ -1,5 +1,6 @@
 #include "array.h"
 
+#include <pybind11/cast.h>
 #include <sstream>
 
 #include "ffi/array.h"
@@ -222,20 +223,27 @@ void initArray(py::module &_m) {
     }
   });
 
-  _m.def("jit", [](py::function &f,
-                   std::vector<std::shared_ptr<ainl::core::Tracer>> inputs) {
-    auto func = [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
-        -> std::shared_ptr<ainl::core::Tracer> {
-      py::tuple posArgs = py::tuple(inputs.size());
-      for (size_t i = 0; i < inputs.size(); i++) {
-        posArgs[i] = inputs[i];
-      }
-      auto result = f(*posArgs);
-      return result.cast<std::shared_ptr<ainl::core::Tracer>>();
-    };
-    auto module = jit(func, py::str(getattr(f, "__name__")), inputs);
-    return module;
-  });
+  _m.def(
+      "jit",
+      [](py::function &f,
+         std::vector<std::shared_ptr<ainl::core::Tracer>> inputs,
+         const std::string &target) {
+        auto func =
+            [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
+            -> std::shared_ptr<ainl::core::Tracer> {
+          py::tuple posArgs = py::tuple(inputs.size());
+          for (size_t i = 0; i < inputs.size(); i++) {
+            posArgs[i] = inputs[i];
+          }
+          auto result = f(*posArgs);
+          return result.cast<std::shared_ptr<ainl::core::Tracer>>();
+        };
+        auto module =
+            jit(func, py::str(getattr(f, "__name__")), target, inputs);
+        return module;
+      },
+      "jit compilation of python function", py::arg(), py::arg(),
+      py::arg("target") = "ailang");
 }
 
 } // namespace ainl::ffi

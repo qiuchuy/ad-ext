@@ -130,7 +130,8 @@ std::string JITTrace::toString() const { return "jit"; }
 ir::ModulePtr
 jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
         f,
-    std::string funcName, const std::vector<std::shared_ptr<Tracer>> &inputs) {
+    std::string funcName, std::string target,
+    const std::vector<std::shared_ptr<Tracer>> &inputs) {
   std::vector<ir::TypePtr> types;
   for (auto &input : inputs) {
     types.push_back(input->getJITType());
@@ -153,6 +154,9 @@ jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
   module->setReturnType(result->value()->getType());
   module->getGraph()->create<ir::ReturnOp>(
       std::dynamic_pointer_cast<JITTracer>(result)->value());
+  if ("target" == "mlir") {
+    // return
+  }
   return module;
 }
 

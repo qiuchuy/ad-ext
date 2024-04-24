@@ -106,6 +106,7 @@ jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
 ir::ModulePtr
 jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
         f,
-    std::string funcName, const std::vector<std::shared_ptr<Tracer>> &inputs);
+    std::string funcName, std::string target,
+    const std::vector<std::shared_ptr<Tracer>> &inputs);
 
 } // namespace ainl::core
