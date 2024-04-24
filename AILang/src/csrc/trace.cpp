@@ -1,6 +1,6 @@
 #include "trace.h"
-#include "primitive.h"
 
+#include "primitive.h"
 #include "utils/logger.h"
 
 namespace ainl::core {

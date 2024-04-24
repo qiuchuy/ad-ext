@@ -1,9 +1,10 @@
+#include "ir/node.h"
+
 #include <memory>
 #include <utility>
 
 #include "ir/block.h"
 #include "ir/function.h"
-#include "ir/node.h"
 
 namespace ainl::ir {
 

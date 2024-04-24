@@ -5,8 +5,6 @@
 #include <memory>
 #include <stack>
 
-#include "primitive.h"
-
 namespace ainl::core {
 
 class Primitive;

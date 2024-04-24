@@ -18,11 +18,10 @@
 //   $ hello-compiler </path/to/libIREECompiler.so or IREECompiler.dll>
 
 #include <inttypes.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <iree/compiler/embedding_api.h>
 #include <iree/compiler/loader.h>
+#include <stdio.h>
+#include <string.h>
 
 #define IREE_COMPILER_EXPECTED_API_MAJOR 1 // At most this major version
 #define IREE_COMPILER_EXPECTED_API_MINOR 2 // At least this minor version

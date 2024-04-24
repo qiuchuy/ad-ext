@@ -30,13 +30,15 @@ void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }
 
 Block::operator std::string() const {
   std::string str;
-  str.append(label + ":\n");
+  str.append("{\n");
+  // str.append(label + ":\n");
   for (auto node = (NodePtr)beginNode->next; node->next != nullptr;
        node = (NodePtr)node->next) {
     str.append("\t");
     str.append(std::string(*node));
     str.append("\n");
   }
+  str.append("}\n");
   return str;
 }
 } // namespace ainl::ir

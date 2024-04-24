@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "dtype.h"
 #include "ir/value.h"
 #include "utils/logger.h"
 
@@ -382,5 +383,7 @@ public:
   TypePtr getTypePtr() override { return SingletonTypePtr<LinearType>::get(); }
 };
 using LinearTypePtr = SingletonTypePtr<LinearType>;
+
+TypePtr DtypeToTypePtr(core::Dtype dtype);
 
 } // namespace ainl::ir

@@ -1,9 +1,9 @@
 
+#include "ir/use.h"
+
 #include <cassert>
 #include <sstream>
 #include <string>
-
-#include "ir/use.h"
 
 namespace ainl::ir {
 int Use::use_num = 0;

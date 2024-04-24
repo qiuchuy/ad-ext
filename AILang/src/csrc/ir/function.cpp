@@ -1,4 +1,5 @@
 #include "ir/function.h"
+
 #include <utility>
 
 namespace ainl::ir {
@@ -44,10 +45,8 @@ std::string ALModule::str() {
       .append("(")
       .append(paramList)
       .append(") : ")
-      .append(std::string(*signature))
-      .append(" {\n");
+      .append(std::string(*signature) + " ");
   str.append(graph->str());
-  str.append("}\n");
   return str;
 }
 } // namespace ainl::ir

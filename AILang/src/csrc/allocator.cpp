@@ -1,6 +1,7 @@
+#include "allocator.h"
+
 #include <cstdlib>
 
-#include "allocator.h"
 #include "utils/logger.h"
 
 namespace ainl::core::allocator {
