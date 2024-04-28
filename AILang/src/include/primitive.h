@@ -254,7 +254,8 @@ class AsTypePrimitive : public Primitive {
 class BroadCastPrimitive : public Primitive {
   public:
     BroadCastPrimitive() = default;
-    explicit BroadCastPrimitive(const std::vector<int> &shape) : shape_(shape) {}
+    explicit BroadCastPrimitive(const std::vector<int> &shape)
+        : shape_(shape) {}
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;

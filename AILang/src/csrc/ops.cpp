@@ -175,7 +175,7 @@ Array sinh(const Array &arr) {
 Array cos(const Array &arr) {
     Dtype output_type = isFloat(arr.dtype());
     auto input = astype(arr, output_type);
-    return Array(output_type, std::make_shared<CosPrimitive>(), {input},
+    return Array(output_type, std::make_shared<CosPrimitive>(), {arr},
                  arr.shape(),
                  getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
@@ -224,6 +224,14 @@ Array softmax(const Array &arr) {
     Dtype output_type = isFloat(arr.dtype());
     auto input = astype(arr, output_type);
     return Array(output_type, std::make_shared<SoftmaxPrimitive>(), {input},
+                 arr.shape(),
+                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+}
+
+Array sigmoid(const Array &arr) {
+    Dtype output_type = isFloat(arr.dtype());
+    auto input = astype(arr, output_type);
+    return Array(output_type, std::make_shared<SigmoidPrimitive>(), {input},
                  arr.shape(),
                  getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }

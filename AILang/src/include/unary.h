@@ -1,19 +1,20 @@
 #pragma once
-
 #include "allocator.h"
 #include "array.h"
 #include "dtype.h"
+#include "utils/logger.h"
 
 namespace ainl::core {
 
 void set_unary_out_data(const Array &in, Array &out) {
-    if (in.itemsize() == out.itemsize())
+    if (in.itemsize() == out.itemsize()) {
         out.copyBySharing(in, in.size(), 0, in.shape());
-    else {
+    } else {
         auto data_size = in.size() / dtypeSize(in.dtype());
         auto size = data_size * dtypeSize(out.dtype());
         // TODO there is a div operator. and allocator maybe has bug.
-        out.copyBySharing(out, size, 0, out.shape());
+        out.SetDataWithBuffer(allocator::malloc(size), out.dtype(), out.shape(),
+                              out.strides());
     }
 }
 
@@ -24,7 +25,7 @@ void unary_op(const Array &a, Array &out, Op op) {
     const T *a_ptr = a.data<T>();
     set_unary_out_data(a, out);
     T *dst = out.data<T>();
-    for (size_t i = 0; i < a.size(); ++i) {
+    for (size_t i = 0; i < a.data_size(); ++i) {
         dst[i] = op(a_ptr[i]);
     }
 }

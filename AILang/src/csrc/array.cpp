@@ -100,7 +100,7 @@ void Array::SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
                               const std::vector<int> &shape,
                               const std::vector<int> &stride) {
     data_ = std::make_shared<Data>(
-        buffer, [](allocator::Buffer buffer) { allocator::free; });
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
     ptr_ = buffer.ptr();
     dtype_ = dtype;
     shape_ = std::make_shared<std::vector<int>>(shape);

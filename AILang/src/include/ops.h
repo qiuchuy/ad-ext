@@ -40,7 +40,8 @@ Array tan(const Array &arr);
 Array tanh(const Array &arr);
 Array exp(const Array &arr);
 Array log(const Array &arr);
-Array softmax(const Array &arr);
+Array softmax(const Array &arr);    
+Array sigmoid(const Array &arr);
 
 Array broadcast_to(const Array &arr, const std::vector<int> &shape);
 std::vector<int> broadcast_shapes(const std::vector<int> &s1,
@@ -59,9 +60,9 @@ std::vector<Array> broadcast_arrays(const std::vector<Array> &inputs);
         return TracerFactory::createTracer(inputs, prim);                      \
     }
 
-    GENERIC_OP_DECL(reshape_)
+GENERIC_OP_DECL(reshape_)
 
-        std::vector<int> getStridesFromShape(const std::vector<int> &shape,
-                                             size_t itemsize);
+std::vector<int> getStridesFromShape(const std::vector<int> &shape,
+                                     size_t itemsize);
 
 } // namespace ainl::core

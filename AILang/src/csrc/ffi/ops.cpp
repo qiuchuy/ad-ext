@@ -53,6 +53,18 @@ void initOps(py::module_ &m) {
                 {input}, start, end, stride);
         },
         "Slice the input");
+
+    m.def(
+        "sigmoid",
+        [](const ainl::core::Array &input) {
+            return ainl::core::sigmoid(input);
+        },
+        "Get sigmoid of input");
+
+    m.def(
+        "cos",
+        [](const ainl::core::Array &input) { return ainl::core::cos(input); },
+        "Get sigmoid of input");
 }
 
 }; // namespace ainl::ffi
