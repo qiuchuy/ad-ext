@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <numeric>
 
+#include "binary.h"
 #include "ops.h"
 #include "primitive.h"
 #include "transformation.h"
@@ -50,6 +51,8 @@ void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
     auto size = std::accumulate(input1Shape.begin(), input1Shape.end(), 1,
                                 std::multiplies<int>());
+
+    binary(input1, input2, output, detail::Add());
 }
 
 TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
@@ -64,20 +67,19 @@ void FlattenPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
 }
 
 void FlattenPrimitive::evalCPU(const std::vector<Array> &inputs,
-                               Array &output) {
-    /*
-    if (inputs.size() != 1) {
-      throw std::invalid_argument(
-          "[FlattenPrimitive::evalCPU] expects exactly one input array.");
-    }
-
-    auto input = inputs[0];
-    auto inputShape = input.shape();
-    auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
-                                std::multiplies<int>());
-    output.copyBySharing(input, size, 0, {size});
-    */
+                               Array &output) {}
+/*
+if (inputs.size() != 1) {
+  throw std::invalid_argument(
+      "[FlattenPrimitive::evalCPU] expects exactly one input array.");
 }
+
+auto input = inputs[0];
+auto inputShape = input.shape();
+auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                            std::multiplies<int>());
+output.copyBySharing(input, size, 0, {size});
+*/
 
 TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 

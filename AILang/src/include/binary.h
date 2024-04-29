@@ -13,8 +13,8 @@ enum class BinaryNodeType {
     General,
 };
 
-BinaryNodeType get_binary_op_output(const Array &a, const Array &b, Array &out,
-                                    BinaryNodeType nodetype) {
+void get_binary_op_output(const Array &a, const Array &b, Array &out,
+                          BinaryNodeType nodetype) {
     switch (nodetype) {
     // TODO need add the flag which decides the array's buffer wthether can be
     // share.
@@ -26,8 +26,20 @@ BinaryNodeType get_binary_op_output(const Array &a, const Array &b, Array &out,
         if (b.itemsize() == out.itemsize()) {
             out.copyBySharing(b, out.size(), 0, out.shape());
         }
-
+        break;
+    case BinaryNodeType::VectorScalar:
+        if (a.itemsize() == out.itemsize()) {
+            out.copyBySharing(a, out.size(), 0, out.shape());
+        }
+        break;
+    case BinaryNodeType::VectorVector:
+        if (a.itemsize() == out.itemsize()) {
+            out.SetDataWithBuffer(allocator::malloc(a.size()), a.dtype(),
+                                  a.shape(), a.strides());
+        }
+        break;
     default:
+        std::runtime_error("[GetBinaryOPOutput] not implement yet.");
         break;
     }
 }
@@ -43,6 +55,7 @@ BinaryNodeType getBinaryNodeType(const Array &a, const Array &b) {
         nodetype = BinaryNodeType::VectorScalar;
     } else if (a.data_size() > 1 && b.data_size() > 1) {
         nodetype = BinaryNodeType::VectorVector;
+
     } else {
         nodetype = BinaryNodeType::General;
     }
@@ -60,7 +73,7 @@ template <typename T, typename D, typename Op> struct DefaultVectorScalar {
         while (size-- > 0) {
             *dst = op(*a, scalar);
             dst++;
-            w a++;
+            a++;
         }
     }
 
@@ -69,11 +82,11 @@ template <typename T, typename D, typename Op> struct DefaultVectorScalar {
     }
 };
 
-template <typename T, typename U, typename Op> struct DefaultScalarVector {
+template <typename T, typename D, typename Op> struct DefaultScalarVector {
     Op op;
     DefaultScalarVector(Op op_) : op(op_) {}
     void operator()(const T *a, const T *b, D *dst, int size) {
-        T *scalar = *a;
+        T scalar = *a;
         while (size-- > 0) {
             *dst = op(scalar, *b);
             dst++;
@@ -89,31 +102,38 @@ template <typename T, typename U, typename Op> struct DefaultScalarVector {
 // function just has typename T without U.is about op dispatcher.
 
 // TODO why dont
-template <typename T, typename U, typename Op, typename OpSV, typename OpVS,
+template <typename T, typename D, typename Op, typename OpSV, typename OpVS,
           typename OpVV>
 void binary_op(const Array &a, const Array &b, Array &out, Op op, OpSV opsv,
                OpVS opvs, OpVV opvv) {
-    BinaryNodeType nodetype = getBinaryNodeType();
+    BinaryNodeType nodetype = getBinaryNodeType(a, b);
+    get_binary_op_output(a, b, out, nodetype);
+    printf("[DEBUG_INFO] Out Run in file %s at line %d\n", __FILE__, __LINE__);
+
     // TODO set output data.
     if (nodetype == BinaryNodeType::ScalarScalar) {
-        *(out.data<U>()) = op(*a.data<T>(), *b.data<T>());
+        *(out.data<D>()) = op(*a.data<T>(), *b.data<T>());
         return;
     } else if (nodetype == BinaryNodeType::ScalarVector) {
-        opsv(a.data<T>(), b.data<T>(), out.data<U>(), b.data_size());
+        opsv(a.data<T>(), b.data<T>(), out.data<D>(), b.data_size());
         return;
     } else if (nodetype == BinaryNodeType::VectorScalar) {
-        opvs(a.data<T>(), b.data<T>(), out.data<U>(), a.data_size());
+        opvs(a.data<T>(), b.data<T>(), out.data<D>(), a.data_size());
         return;
     } else if (nodetype == BinaryNodeType::VectorVector) {
-        opvs(a.data<T>(), b.data<T>(), out.data<U>(), out.data_size());
+        opvv(a.data<T>(), b.data<T>(), out.data<D>(), out.data_size());
         return;
     }
 }
 
-template <typename T, typename U, typename Op> struct DefaultVectorVector {
+template <typename T, typename D, typename Op> struct DefaultVectorVector {
     Op op;
     DefaultVectorVector(Op op_) : op(op_) {}
+
     void operator()(const T *a, const T *b, D *dst, int size) {
+        printf("[DEBUG_INFO] Out Run in file %s at line %d\n", __FILE__,
+               __LINE__);
+
         while (size-- > 0) {
             *dst = op(*a, *b);
             a++;
@@ -133,33 +153,33 @@ void binary_op(const Array &a, const Array &b, Array &out, Op op) {
 
 template <typename... Ops>
 void binary(const Array &a, const Array &b, Array &out, Ops... ops) {
-    switch (out.dtype()) {
-    case Any:
-        std::invalid_argument("[binary Abs] not support Ant type.");
+    switch (out.dtype().type) {
+    case Dtype::DataType::Any:
+        std::invalid_argument("[binary Abs] not support Any type.");
         break;
-    case Bool:
-        binary_op<bool>(a, b, out, op);
+    case Dtype::DataType::BoolType:
+        binary_op<bool>(a, b, out, ops...);
         break;
-    case Int8:
-        binary_op<uint8_t>(a, b, out, op);
+    case Dtype::DataType::Int8Type:
+        binary_op<uint8_t>(a, b, out, ops...);
         break;
-    case Int16:
-        binary_op<uint16_t>(a, b, out, op);
+    case Dtype::DataType::Int16Type:
+        binary_op<uint16_t>(a, b, out, ops...);
         break;
-    case Int32:
-        binary_op<uint32_t>(a, b, out, op);
+    case Dtype::DataType::Int32Type:
+        binary_op<uint32_t>(a, b, out, ops...);
         break;
-    case Int64:
-        binary_op<uint64_t>(a, b, out, op);
+    case Dtype::DataType::Int64Type:
+        binary_op<uint64_t>(a, b, out, ops...);
         break;
-    case Float32:
-        binary_op<float32_t>(a, b, out, op);
+    case Dtype::DataType::Float32Type:
+        binary_op<float>(a, b, out, ops...);
         break;
-    case Float64:
-        binary_op<float64_t>(a, b, out, op);
+    case Dtype::DataType::Float64Type:
+        binary_op<double>(a, b, out, ops...);
         break;
     default:
-        breaks;
+        break;
     }
 }
 } // namespace

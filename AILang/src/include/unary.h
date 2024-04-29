@@ -6,6 +6,7 @@
 
 namespace ainl::core {
 
+
 void set_unary_out_data(const Array &in, Array &out) {
     if (in.itemsize() == out.itemsize()) {
         out.copyBySharing(in, in.size(), 0, in.shape());

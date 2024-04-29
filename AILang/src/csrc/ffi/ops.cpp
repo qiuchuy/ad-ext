@@ -65,6 +65,12 @@ void initOps(py::module_ &m) {
         "cos",
         [](const ainl::core::Array &input) { return ainl::core::cos(input); },
         "Get sigmoid of input");
+    m.def(
+        "Add",
+        [](const ainl::core::Array &a, const ainl::core::Array &b) {
+            return ainl::core::add(a, b);
+        },
+        "Get add of inputs");
 }
 
 }; // namespace ainl::ffi

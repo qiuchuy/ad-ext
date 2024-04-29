@@ -23,6 +23,10 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
     prim_ = std::move(prim);
     shape_ = std::make_shared<std::vector<int>>(shape);
     stride_ = std::make_shared<std::vector<int>>(stride);
+    // add attribute size_
+    size_ =
+        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
+        dtypeSize(dtype);
 }
 
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
@@ -73,6 +77,7 @@ std::string Tracer::toString() const { return "tracer"; }
 
 std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
 
+// CopyBySharing may cause the old Array coverd by new Array 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
     data_ = other.data_;
@@ -108,6 +113,7 @@ void Array::SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
         std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
         dtypeSize(dtype);
     stride_ = std::make_shared<std::vector<int>>(stride);
+
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)

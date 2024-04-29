@@ -237,12 +237,19 @@ Array sigmoid(const Array &arr) {
 }
 
 Array add(const Array &a, const Array &b) {
+    // Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
+    // auto inputs =
+    //     broadcast_arrays({astype(a, output_type), astype(b, output_type)});
+    // std::vector<int> output_shape = inputs[0].shape();
+    // return Array(output_type, std::make_shared<AddPrimitive>(),
+    //              std::move(inputs), output_shape,
+    //              getStridesFromShape(output_shape, dtypeSize(output_type)));
     Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
-    auto inputs =
-        broadcast_arrays({astype(a, output_type), astype(b, output_type)});
-    std::vector<int> output_shape = inputs[0].shape();
-    return Array(output_type, std::make_shared<AddPrimitive>(),
-                 std::move(inputs), output_shape,
+    std::vector<int> output_shape = a.shape();
+    // std::move？
+
+    return Array(output_type, std::make_shared<AddPrimitive>(), {a, b},
+                 output_shape,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
 }
 
