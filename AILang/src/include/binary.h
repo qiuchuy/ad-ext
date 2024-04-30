@@ -108,9 +108,6 @@ void binary_op(const Array &a, const Array &b, Array &out, Op op, OpSV opsv,
                OpVS opvs, OpVV opvv) {
     BinaryNodeType nodetype = getBinaryNodeType(a, b);
     get_binary_op_output(a, b, out, nodetype);
-    printf("[DEBUG_INFO] Out Run in file %s at line %d\n", __FILE__, __LINE__);
-
-    // TODO set output data.
     if (nodetype == BinaryNodeType::ScalarScalar) {
         *(out.data<D>()) = op(*a.data<T>(), *b.data<T>());
         return;
@@ -131,9 +128,6 @@ template <typename T, typename D, typename Op> struct DefaultVectorVector {
     DefaultVectorVector(Op op_) : op(op_) {}
 
     void operator()(const T *a, const T *b, D *dst, int size) {
-        printf("[DEBUG_INFO] Out Run in file %s at line %d\n", __FILE__,
-               __LINE__);
-
         while (size-- > 0) {
             *dst = op(*a, *b);
             a++;

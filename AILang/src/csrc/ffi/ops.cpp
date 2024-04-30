@@ -70,7 +70,7 @@ void initOps(py::module_ &m) {
         [](const ainl::core::Array &a, const ainl::core::Array &b) {
             return ainl::core::add(a, b);
         },
-        "Get add of inputs");
+        "Add the inputs");
 }
 
 }; // namespace ainl::ffi

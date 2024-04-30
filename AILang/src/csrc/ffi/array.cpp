@@ -107,7 +107,7 @@ void initArray(py::module &_m) {
                  if (!a.evaluated()) {
                      a.eval();
                  }
-                 LOG_DEBUG("%s", "here");
+                //  LOG_DEBUG("%s", "here");
                  std::ostringstream oss;
                  oss << a;
                  return oss.str();

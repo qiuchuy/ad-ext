@@ -47,7 +47,7 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 }
 
 void Tracer::eval() {
-    LOG_DEBUG("%s", "[eval] Start evaluating tracer");
+    // LOG_DEBUG("%s", "[eval] Start evaluating tracer");
     auto trace = getCurrentTrace();
     std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
         [&](std::shared_ptr<Tracer> tracer) -> void {
@@ -58,16 +58,16 @@ void Tracer::eval() {
                 recursion(input);
             }
             if (!tracer->isLeaf()) {
-                LOG_DEBUG("[eval] Evaluating tracer with primitive %s",
-                          tracer->primitive()->toString().c_str());
+                // LOG_DEBUG("[eval] Evaluating tracer with primitive %s",
+                //   tracer->primitive()->toString().c_str());
                 trace->process(tracer->primitive(), tracer->inputs(), tracer);
             }
         }
     };
 
-    LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
-                                trace->toString())
-                        .c_str());
+    // LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
+    //                             trace->toString())
+    //                     .c_str());
     recursion(shared_from_this());
 }
 
@@ -77,7 +77,7 @@ std::string Tracer::toString() const { return "tracer"; }
 
 std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
 
-// CopyBySharing may cause the old Array coverd by new Array 
+// CopyBySharing may cause the old Array coverd by new Array
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape) {
     data_ = other.data_;
@@ -113,7 +113,6 @@ void Array::SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
         std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
         dtypeSize(dtype);
     stride_ = std::make_shared<std::vector<int>>(stride);
-
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)

@@ -40,7 +40,7 @@ Array tan(const Array &arr);
 Array tanh(const Array &arr);
 Array exp(const Array &arr);
 Array log(const Array &arr);
-Array softmax(const Array &arr);    
+Array softmax(const Array &arr);
 Array sigmoid(const Array &arr);
 
 Array broadcast_to(const Array &arr, const std::vector<int> &shape);

@@ -237,20 +237,16 @@ Array sigmoid(const Array &arr) {
 }
 
 Array add(const Array &a, const Array &b) {
-    // Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
-    // auto inputs =
-    //     broadcast_arrays({astype(a, output_type), astype(b, output_type)});
-    // std::vector<int> output_shape = inputs[0].shape();
-    // return Array(output_type, std::make_shared<AddPrimitive>(),
-    //              std::move(inputs), output_shape,
-    //              getStridesFromShape(output_shape, dtypeSize(output_type)));
     Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
-    std::vector<int> output_shape = a.shape();
-    // std::move？
 
-    return Array(output_type, std::make_shared<AddPrimitive>(), {a, b},
-                 output_shape,
+    auto inputs =
+        broadcast_arrays({astype(a, output_type), astype(b, output_type)});
+
+    std::vector<int> output_shape = inputs[0].shape();
+    return Array(output_type, std::make_shared<AddPrimitive>(),
+                 std::move(inputs), output_shape,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
+
 }
 
 // Convolution
@@ -280,34 +276,35 @@ Array broadcast_to(const Array &arr, const std::vector<int> &shape) {
 }
 std::vector<int> broadcast_shapes(const std::vector<int> &s1,
                                   const std::vector<int> &s2) {
-    int ndim1 = s1.size();
-    int ndim2 = s2.size();
-    int max_dim = std::max(ndim1, ndim2);
-    int diff = std::abs(ndim1 - ndim2);
+
+    int ndim1 = s1.size();                // 3
+    int ndim2 = s2.size();                // 3
+    int max_dim = std::max(ndim1, ndim2); // 3
+    int diff = std::abs(ndim1 - ndim2);   // 0
     const std::vector<int> &large = ndim1 > ndim2 ? s1 : s2;
     const std::vector<int> &small = ndim1 > ndim2 ? s2 : s1;
-
-    std::vector<int> output_shape(max_dim);
-    for (int i = max_dim - 1; i > diff; i--) {
-        int l = large[i];
-        int s = small[i - diff];
+    // 3 3
+    std::vector<int> output_shape(max_dim);     // 3
+    for (int i = max_dim - 1; i >= diff; i--) { // 2 0
+        int l = large[i];                       // 2
+        int s = small[i - diff];                // 2-0
         if (l == s)
             output_shape[i] = l;
-        else if (l == 1 || s == 1)
+        else if (l == 1 || s == 1) {
             output_shape[i] = l * s;
-        else
+        } else
             throw std::invalid_argument("Shapes  cannot be broadcast.");
     }
 
-    for (size_t i = diff - 1; i >= 0; --i) {
-        output_shape[i] = large[i];
-    }
+    // for (size_t i = diff - 1; i >= 0; --i) {
+    //   output_shape[i] = large[i];
+    // }
 
     return output_shape;
 }
 
 std::vector<Array> broadcast_arrays(const std::vector<Array> &inputs) {
-    std::vector<int> shape;
+    std::vector<int> shape = inputs[0].shape();
     for (const Array &in : inputs) {
         shape = broadcast_shapes(shape, in.shape());
     }
