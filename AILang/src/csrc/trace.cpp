@@ -1,6 +1,8 @@
 #include "trace.h"
 
+#include "ir/function.h"
 #include "primitive.h"
+#include "transformation.h"
 #include "utils/logger.h"
 
 namespace ainl::core {
@@ -45,6 +47,16 @@ void pushTrace(std::shared_ptr<BaseTrace> trace) {
 
 std::shared_ptr<BaseTrace> getCurrentTrace() {
   return traceManager().getCurrentTrace();
+}
+
+ir::ModulePtr getTracedModule() {
+  auto trace = getCurrentTrace();
+  if (auto jit = std::dynamic_pointer_cast<JITTrace>(trace)) {
+    return jit->module();
+  } else {
+    throw std::runtime_error(
+        "[jit] Attempt to get module when running a non-JIT trace.");
+  }
 }
 
 } // namespace ainl::core

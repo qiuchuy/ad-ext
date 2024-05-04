@@ -17,6 +17,7 @@ namespace ainl::ir {
 class Graph;
 class Block;
 class Signature;
+class IRVisitor;
 using GraphPtr = std::shared_ptr<Graph>;
 using BlockPtr = Block *;
 using SignaturePtr = Signature *;
@@ -60,13 +61,23 @@ public:
     useList.clear();
     useValueList.clear();
     signature = nullptr;
+    setNext(nullptr);
+    setPrev(nullptr);
   }
   ~Node() override = default;
   Node();
   Node(const TypePtr &type, const TypePtr &inType);
 
   explicit operator std::string() const override { return ""; }
+
+  template <typename NodeType, typename... ARGS>
+  static NodePtr create(ARGS &&... args) {
+    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
+    return Node;
+  }
+
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
+  void accept(IRVisitor *visitor);
 
   friend class Graph;
 

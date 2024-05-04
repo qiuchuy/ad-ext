@@ -5,6 +5,8 @@
 #include <memory>
 #include <stack>
 
+#include "ir/function.h"
+
 namespace ainl::core {
 
 class Primitive;
@@ -63,5 +65,6 @@ TraceManager &traceManager();
 std::shared_ptr<BaseTrace> popLastTrace();
 void pushTrace(std::shared_ptr<BaseTrace> trace);
 std::shared_ptr<BaseTrace> getCurrentTrace();
+ir::ModulePtr getTracedModule();
 
 } // namespace ainl::core

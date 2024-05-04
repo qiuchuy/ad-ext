@@ -39,5 +39,6 @@ private:
 };
 
 TypeContract &getTypeContract();
+TypePtr resolveContract(const std::string &name, std::vector<TypePtr> args);
 
 } // namespace ainl::ir

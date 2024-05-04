@@ -112,4 +112,9 @@ NodeContract &getNodeContract() {
   static NodeContract contract;
   return contract;
 }
+
+ValuePtr resolveContract(const std::string &name, ModulePtr module,
+                         TypePtr nodeType, std::vector<ValuePtr> args) {
+  return getNodeContract().resolveContract(name, module, nodeType, args);
+}
 } // namespace ainl::ir

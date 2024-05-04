@@ -47,7 +47,6 @@ else()
     find_package(MLIR REQUIRED CONFIG)
 endif()
 
-
 # link mlir libraries
 list(APPEND CMAKE_MODULE_PATH ${MLIR_CMAKE_DIR})
 list(APPEND CMAKE_MODULE_PATH ${LLVM_CMAKE_DIR})
@@ -58,14 +57,16 @@ include(HandleLLVMOptions)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-# get_property(dialect_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
-# list(APPEND LINKER_LIBS LLVMSupport)
-# list(APPEND LINKER_LIBS ${dialect_libs})
+get_property(dialect_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+list(APPEND LINKER_LIBS LLVMSupport)
+list(APPEND LINKER_LIBS ${dialect_libs})
 add_definitions(${LLVM_DEFINITIONS})
+list(APPEND LINKER_LIBS StablehloOps StablehloReferenceApi)
 
 # find include directories
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/iree/third_party/stablehlo
 )
 
 # find CXX source files

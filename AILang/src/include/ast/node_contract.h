@@ -47,5 +47,7 @@ private:
 };
 
 NodeContract &getNodeContract();
+ValuePtr resolveContract(const std::string &name, ModulePtr module,
+                         TypePtr nodeType, std::vector<ValuePtr> args);
 
 } // namespace ainl::ir

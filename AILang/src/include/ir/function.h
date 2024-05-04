@@ -8,8 +8,6 @@
 #include "ir/graph.h"
 #include "ir/type.h"
 
-// class Graph;
-// using GraphPtr = std::shared_ptr<Graph>;
 namespace ainl::ir {
 
 class Signature {

@@ -287,4 +287,8 @@ TypeContract &getTypeContract() {
   return contract;
 }
 
+TypePtr resolveContract(const std::string &name, std::vector<TypePtr> args) {
+  return getTypeContract().resolveContract(name, std::move(args));
+}
+
 } // namespace ainl::ir

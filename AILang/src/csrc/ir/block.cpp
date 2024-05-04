@@ -41,4 +41,49 @@ Block::operator std::string() const {
   str.append("}\n");
   return str;
 }
+
+Block::BlockIterator Block::begin() {
+  return BlockIterator(beginNode, paramNode, returnNode);
+}
+
+Block::BlockIterator Block::end() {
+  return BlockIterator(endNode, paramNode, returnNode);
+}
+
+Block::BlockIterator::BlockIterator(NodePtr node, NodePtr paramNode,
+                                    NodePtr returnNode)
+    : node(node), paramNode(paramNode), returnNode(returnNode),
+      beginNode(beginNode), endNode(endNode) {}
+
+Block::BlockIterator::reference Block::BlockIterator::operator*() {
+  return node;
+}
+
+Block::BlockIterator &Block::BlockIterator::operator++() {
+  if (node == beginNode) {
+    node = (NodePtr)(paramNode);
+  } else if (node == paramNode) {
+    node = (NodePtr)(beginNode->next);
+  } else if (node == endNode) {
+    node = (NodePtr)(returnNode);
+  } else {
+    node = (NodePtr)(node->next);
+  }
+  return *this;
+}
+
+Block::BlockIterator Block::BlockIterator::operator++(int) {
+  BlockIterator tmp = *this;
+  ++(*this);
+  return tmp;
+}
+
+bool Block::BlockIterator::operator==(const BlockIterator &rhs) const {
+  return node == rhs.node;
+}
+
+bool Block::BlockIterator::operator!=(const BlockIterator &rhs) const {
+  return node != rhs.node;
+}
+
 } // namespace ainl::ir

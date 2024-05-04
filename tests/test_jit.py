@@ -1,18 +1,34 @@
 import numpy as np
 import ailang as al
 
+
 def g(x, y):
-    z = al.transpose(y)
+    b = al.transpose(y)
+    a = al.transpose(b)
+    z = al.transpose(a)
     return al.matmul(x, z)
+
+a = np.array([[1, 2], [3, 4]])
+b = np.array([[1, 2], [3, 4]])
+c = al.from_numpy(a)
+d = al.from_numpy(b)
+module = al.jit(g, (c, d, ), target="mlir")
+print(module)
 
 from iree import compiler as ireec
 from iree import runtime as ireert
 
 # Compile a module.
+INPUT_MLIR = str(module)
+
+
+
+
+
 INPUT_MLIR = """
 module @arithmetic {
   func.func @simple_mul(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
-    %0 = arith.mulf %arg0, %arg1 : tensor<4xf32>
+    %0 = stablehlo.add %arg0, %arg1 : tensor<4xf32>
     return %0 : tensor<4xf32>
   }
 }
@@ -21,6 +37,7 @@ module @arithmetic {
 # Compile using the vmvx (reference) target:
 compiled_flatbuffer = ireec.tools.compile_str(
     INPUT_MLIR,
+    input_type="stablehlo",
     target_backends=["vmvx"])
 
 # Register the module with a runtime context.
@@ -38,9 +55,3 @@ f = ctx.modules.arithmetic["simple_mul"]
 results = f(arg0, arg1).to_host()
 print("Results:", results)
 
-a = np.array([[1, 2], [3, 4]])
-b = np.array([[1, 2], [3, 4]])
-c = al.from_numpy(a)
-d = al.from_numpy(b)
-module = al.jit(g, (c, d, ), target="ailang")
-print(module)

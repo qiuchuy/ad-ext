@@ -279,14 +279,13 @@ void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
   }
 
   auto input = inputs[0];
-  std::vector<ir::TypePtr> inputType = {input.getJITType()};
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
   std::vector<ir::ValuePtr> inputValues = {input.value()};
-  auto outputType =
-      ir::getTypeContract().resolveContract("transpose", inputType);
+  auto outputType = ir::resolveContract("transpose", inputType);
 
-  auto trace = std::dynamic_pointer_cast<JITTrace>(getCurrentTrace());
-  output.setValue(ir::getNodeContract().resolveContract(
-      "transpose", trace->module(), outputType, inputValues));
+  auto module = getTracedModule();
+  output.setValue(
+      ir::resolveContract("transpose", module, outputType, inputValues));
   output.setTracer(
       transpose({input.tracer()}, std::make_shared<TransposePrimitive>()));
 }
@@ -352,13 +351,17 @@ void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
   std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
                                         input1.value()->getType()};
   std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
-  auto outputType = ir::getTypeContract().resolveContract("matmul", inputType);
 
-  auto trace = std::dynamic_pointer_cast<JITTrace>(getCurrentTrace());
-  output.setValue(ir::getNodeContract().resolveContract(
-      "matmul", trace->module(), outputType, inputValues));
-  output.setTracer(transpose({input0.tracer(), input1.tracer()},
-                             std::make_shared<MatMulPrimitive>()));
+  // type inference
+  auto outputType = ir::resolveContract("matmul", inputType);
+
+  auto module = getTracedModule();
+
+  // ir generation
+  output.setValue(
+      ir::resolveContract("matmul", module, outputType, inputValues));
+  output.setTracer(matmul({input0.tracer(), input1.tracer()},
+                          std::make_shared<MatMulPrimitive>()));
 }
 
 void MatMulPrimitive::jvp(const std::vector<JVPTracer> &inputs,

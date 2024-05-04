@@ -25,6 +25,30 @@ public:
   explicit operator std::string() const override;
   static int blockCount;
 
+  struct BlockIterator {
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = NodePtr;
+    using reference = const value_type;
+
+    explicit BlockIterator(NodePtr node, NodePtr paramNode, NodePtr returnNode);
+    BlockIterator &operator++();
+    BlockIterator operator++(int);
+    bool operator==(const BlockIterator &rhs) const;
+    bool operator!=(const BlockIterator &rhs) const;
+    reference operator*();
+
+  private:
+    NodePtr node;
+    NodePtr beginNode;
+    NodePtr endNode;
+    NodePtr paramNode;
+    NodePtr returnNode;
+  };
+
+  BlockIterator begin();
+  BlockIterator end();
+
 private:
   // Node link list
   NodePtr beginNode;

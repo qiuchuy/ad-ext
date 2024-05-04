@@ -5,6 +5,7 @@
 
 #include "ir/block.h"
 #include "ir/function.h"
+#include "ir/ir_visitor.h"
 
 namespace ainl::ir {
 
@@ -62,6 +63,8 @@ void Node::addBlockWithParam(NodePtr param) {
   /* insert this new block to graph */
   this->graph->endBlock->insertBefore(newBlock);
 }
+
+void Node::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 Alloca::Alloca(const TypePtr &type)
     : Node(PointerType::createPointerType(type), VoidTypePtr::get()) {
