@@ -53,6 +53,8 @@ public:
     return std::make_shared<ALModule>(name, inputType, returnType);
   }
   std::vector<ValuePtr> getParams();
+  std::vector<TypePtr> getParamTypes();
+  std::vector<TypePtr> getReturnTypes();
   void setReturnType(const TypePtr &returnType) {
     signature->returnType = returnType;
   }

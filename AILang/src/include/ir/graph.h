@@ -56,17 +56,23 @@ public:
     using value_type = BlockPtr;
     using reference = const value_type;
 
-    explicit GraphIterator(BlockPtr block) : block(block) {}
+    explicit GraphIterator(BlockPtr block, BlockPtr begin, BlockPtr end)
+        : block(block), beginBlock(begin), endBlock(end) {}
 
     reference operator*() const { return block; }
 
     GraphIterator &operator+(difference_type diff) {
-      block = (BlockPtr)block->next;
+      for (difference_type i = 0; i < diff; ++i) {
+        if (block == endBlock) // Stop if we reach endBlock
+          break;
+        block = (BlockPtr)block->next;
+      }
       return *this;
     }
 
     GraphIterator &operator++() {
-      block = (BlockPtr)block->next;
+      if (block != endBlock)
+        block = (BlockPtr)block->next;
       return *this;
     }
 
@@ -86,10 +92,17 @@ public:
 
   private:
     BlockPtr block;
+    BlockPtr beginBlock;
+    BlockPtr endBlock;
   };
 
-  GraphIterator begin() const { return GraphIterator(beginBlock); }
-  GraphIterator end() const { return GraphIterator(endBlock); }
+  GraphIterator begin() const {
+    return GraphIterator((BlockPtr)beginBlock->next, beginBlock, endBlock);
+  }
+
+  GraphIterator end() const {
+    return GraphIterator(endBlock, beginBlock, endBlock);
+  }
 
 private:
   void insertNodeAtEnd(NodePtr Node);

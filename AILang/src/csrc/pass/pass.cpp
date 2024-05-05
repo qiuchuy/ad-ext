@@ -27,6 +27,4 @@ void pipelineRegisterPass(const std::string &name, std::unique_ptr<Pass> pass) {
 
 void runPipelineOnModule(ModulePtr module) { pipeline().run(module); }
 
-
-
 } // namespace ainl::ir

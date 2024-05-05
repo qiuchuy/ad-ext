@@ -5,6 +5,7 @@
 
 #include "ffi/array.h"
 #include "ops.h"
+#include "pass/stablehlo_lowering.h"
 #include "transformation.h"
 #include "utils/logger.h"
 
@@ -240,7 +241,13 @@ void initArray(py::module &_m) {
         };
         auto module =
             jit(func, py::str(getattr(f, "__name__")), target, inputs);
-        return module;
+        if (target == "ailang") {
+          return py::cast(module);
+        } else if (target == "mlir") {
+          return py::cast(ir::StableHLOLowering(module));
+        } else {
+          throw std::invalid_argument("Invalid jit target");
+        }
       },
       "jit compilation of python function", py::arg(), py::arg(),
       py::arg("target") = "ailang");

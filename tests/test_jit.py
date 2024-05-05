@@ -3,10 +3,10 @@ import ailang as al
 
 
 def g(x, y):
-    b = al.transpose(y)
-    a = al.transpose(b)
-    z = al.transpose(a)
-    return al.matmul(x, z)
+    #b = al.transpose(y)
+    #a = al.transpose(b)
+    #z = al.transpose(a)
+    return al.matmul(x, y)
 
 a = np.array([[1, 2], [3, 4]])
 b = np.array([[1, 2], [3, 4]])
@@ -19,13 +19,10 @@ from iree import compiler as ireec
 from iree import runtime as ireert
 
 # Compile a module.
-INPUT_MLIR = str(module)
+INPUT_MLIR = module
 
-
-
-
-
-INPUT_MLIR = """
+"""
+INPUT_MLIR = 
 module @arithmetic {
   func.func @simple_mul(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
     %0 = stablehlo.add %arg0, %arg1 : tensor<4xf32>
@@ -49,9 +46,9 @@ ctx.add_vm_module(vm_module)
 
 # Invoke the function and print the result.
 print("INVOKE simple_mul")
-arg0 = np.array([1., 2., 3., 4.], dtype=np.float32)
-arg1 = np.array([4., 5., 6., 7.], dtype=np.float32)
-f = ctx.modules.arithmetic["simple_mul"]
+arg0 = np.array([[1, 2], [3, 4]], dtype=np.float32)
+arg1 = np.array([[5, 6], [7, 8]], dtype=np.float32)
+f = ctx.modules.main["g"]
 results = f(arg0, arg1).to_host()
 print("Results:", results)
 

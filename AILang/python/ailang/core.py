@@ -1,9 +1,38 @@
 import inspect
-from typing import Union, Tuple, Callable
+import numpy as np
+import ailang as al
 
+from typing import Union, Tuple, Callable
 from ailang import Tensor, ModuleNode, array
+from iree import compiler as ireec
+from iree import runtime as ireert
 
 from .ast_converter import parse_pycallable
+
+"""
+def jit(f: Union[Callable]):
+    def jitted_f(*args, **kwargs):
+        module = al.jit(f, args, target="mlir")
+
+        compiled_flatbuffer = ireec.tools.compile_str(
+            module,
+            input_type="stablehlo",
+            target_backends=["vmvx"]
+        )
+
+        config = ireert.Config("local-task")
+        ctx = ireert.SystemContext(config=config)
+        vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
+        ctx.add_vm_module(vm_module)
+
+        numpy_args = [np.asarray(arg.tolist()) for arg in args]
+
+        _jitted_f = ctx.modules.main[f.__name__]
+        results = _jitted_f(*numpy_args).to_host()
+
+    return jitted_f
+"""
+
 
 
 def compile(f: Union[Callable]):

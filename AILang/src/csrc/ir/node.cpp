@@ -98,6 +98,9 @@ ReturnOp::ReturnOp(const ValuePtr &value)
     : Node(VoidTypePtr::get(), value->getType()) {
   this->value = value;
 }
+
+void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType, createTypePtrForValues({lhs, rhs})) {
@@ -109,6 +112,9 @@ Matmul::operator std::string() const {
   return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
          getRHS()->getName() + "): " + std::string(*signature);
 }
+
+void Matmul::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Relu
 Relu::Relu(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType, createTypePtrForValues({inValue})) {
@@ -128,6 +134,9 @@ Transpose::operator std::string() const {
   return getName() + " = ailang::transpose(" + getValue()->getName() +
          "):" + std::string(*signature);
 }
+
+void Transpose::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Maxpool2d
 Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType, createTypePtrForValues({inValue})) {

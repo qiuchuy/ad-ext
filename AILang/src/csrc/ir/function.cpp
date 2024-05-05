@@ -30,6 +30,24 @@ ALModule::ALModule(std::string name, const TypePtr &inputType,
 
 std::vector<ValuePtr> ALModule::getParams() { return graph->getParams(); }
 
+std::vector<TypePtr> ALModule::getParamTypes() {
+  std::vector<TypePtr> paramTypes;
+  for (auto &param : getParams()) {
+    paramTypes.push_back(param->getType());
+  }
+  return paramTypes;
+}
+
+std::vector<TypePtr> ALModule::getReturnTypes() {
+  std::vector<TypePtr> returnTypes;
+  if (auto tupleType =
+          std::dynamic_pointer_cast<TupleType>(signature->returnType)) {
+    return tupleType->getTypes();
+  }
+  returnTypes.push_back(signature->returnType);
+  return returnTypes;
+}
+
 std::string ALModule::str() {
   std::stringstream ss;
   for (size_t i = 0; i < getParams().size(); ++i) {

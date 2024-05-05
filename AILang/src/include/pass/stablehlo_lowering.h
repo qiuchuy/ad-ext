@@ -3,15 +3,17 @@
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/Value.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Support/FileUtilities.h"
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/Support/raw_ostream.h"
-
 
 #include "ir/function.h"
 #include "ir/ir_visitor.h"
@@ -19,19 +21,12 @@
 
 namespace ainl::ir {
 
-class StableHLOLoweringPass : public Pass {
+class StableHLOLoweringPass : public Pass, public IRVisitor {
 public:
-  StableHLOLoweringPass(mlir::MLIRContext &context);
+  StableHLOLoweringPass(mlir::MLIRContext &context, const std::string &name);
   void run(ModulePtr module) override;
-  mlir::ModuleOp module();
-private:
-  mlir::ModuleOp theModule;
-  mlir::OpBuilder builder;
-};
+  mlir::ModuleOp *module();
 
-class StableHLOLoweringVisitor : public IRVisitor {
-public:
-  StableHLOLoweringVisitor(mlir::ModuleOp &theModule) : theModule(theModule) {}
   void visit(NodePtr node) override;
   void visit(ParamPtr node) override;
   void visit(ReturnOpPtr node) override;
@@ -39,9 +34,19 @@ public:
   void visit(MatmulPtr node) override;
 
 private:
-  mlir::ModuleOp &theModule;
+  mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);
+  void insertValueMapping(ValuePtr value, mlir::Value mlirValue);
+  mlir::ModuleOp *theModule;
+  mlir::OpBuilder builder;
+  llvm::DenseMap<ValuePtr, mlir::Value> valueMap;
 };
 
-mlir::OwningOpRef<mlir::ModuleOp> StableHLOLowering(ModulePtr module);
+std::string StableHLOLowering(ModulePtr module);
+static mlir::RankedTensorType
+createRankedTensorTypeFromTensorType(TensorTypePtr type,
+                                     mlir::MLIRContext &context);
+static mlir::Type createTypeFromElementType(TypePtr type,
+                                            mlir::MLIRContext &context);
+static std::string mlirModuleToString(mlir::ModuleOp module);
 
 } // namespace ainl::ir
