@@ -9,11 +9,10 @@ from iree import runtime as ireert
 
 from .ast_converter import parse_pycallable
 
-"""
 def jit(f: Union[Callable]):
     def jitted_f(*args, **kwargs):
-        module = al.jit(f, args, target="mlir")
-
+        module = al.jit_impl(f, args, target="mlir")
+        print(module)
         compiled_flatbuffer = ireec.tools.compile_str(
             module,
             input_type="stablehlo",
@@ -25,13 +24,12 @@ def jit(f: Union[Callable]):
         vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
         ctx.add_vm_module(vm_module)
 
-        numpy_args = [np.asarray(arg.tolist()) for arg in args]
-
+        numpy_args = [np.array(arg.tolist(), dtype=np.float32) for arg in args]
         _jitted_f = ctx.modules.main[f.__name__]
         results = _jitted_f(*numpy_args).to_host()
+        return results
 
     return jitted_f
-"""
 
 
 

@@ -85,6 +85,8 @@ TypePtr DtypeToTypePtr(core::Dtype dtype) {
     return IntTypePtr::get();
   case core::Dtype::DataType::Float32Type:
     return FloatTypePtr::get();
+  case core::Dtype::DataType::Float64Type:
+    return DoubleTypePtr::get();
   default:
       // throw AINLError("Unsupported dtype.");
       ;

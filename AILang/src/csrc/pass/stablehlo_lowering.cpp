@@ -158,6 +158,8 @@ mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {
     return mlir::IntegerType::get(&context, 32);
   case Type::TypeKind::FloatType:
     return mlir::FloatType::getF32(&context);
+  case Type::TypeKind::DoubleType:
+    return mlir::FloatType::getF64(&context);
   default:
     throw std::runtime_error(
         "Unsupported element type when lowering to mlir type.");

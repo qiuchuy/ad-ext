@@ -48,6 +48,7 @@ public:
     BoolType,
     IntType,
     FloatType,
+    DoubleType,
     // Derived Types
     FunctionType,
     TupleType,
@@ -74,6 +75,7 @@ public:
   virtual bool isVoidType() { return true; }
   virtual bool isIntType() { return false; }
   virtual bool isFloatType() { return false; }
+  virtual bool isDoubleType() { return false; }
   virtual bool isBoolType() { return false; }
   virtual bool isFunctionType() { return false; }
   virtual bool isTensorType() { return false; }
@@ -131,6 +133,20 @@ public:
   TypePtr getTypePtr() override { return SingletonTypePtr<FloatType>::get(); }
 };
 using FloatTypePtr = SingletonTypePtr<FloatType>;
+
+class DoubleType : public Type {
+public:
+  TypeKind kind() const override { return Type::TypeKind::DoubleType; }
+
+  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
+
+  std::string str() override { return "f64"; }
+
+  bool isDoubleType() override { return true; }
+
+  TypePtr getTypePtr() override { return SingletonTypePtr<DoubleType>::get(); }
+};
+using DoubleTypePtr = SingletonTypePtr<DoubleType>;
 
 class BoolType : public Type {
 public:
