@@ -94,6 +94,8 @@ Param::Param(std::vector<ValuePtr> params, const TypePtr &type)
   this->contentType = type;
 }
 
+void Param::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 ReturnOp::ReturnOp(const ValuePtr &value)
     : Node(VoidTypePtr::get(), value->getType()) {
   this->value = value;
@@ -136,6 +138,14 @@ Transpose::operator std::string() const {
 }
 
 void Transpose::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Transpose::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Transpose input is not a tensor");
+  }
+}
 
 // Maxpool2d
 Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)

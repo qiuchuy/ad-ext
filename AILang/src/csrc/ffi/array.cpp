@@ -225,7 +225,7 @@ void initArray(py::module &_m) {
   });
 
   _m.def(
-      "jit",
+      "jit_impl",
       [](py::function &f,
          std::vector<std::shared_ptr<ainl::core::Tracer>> inputs,
          const std::string &target) {

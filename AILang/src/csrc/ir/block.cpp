@@ -43,15 +43,16 @@ Block::operator std::string() const {
 }
 
 Block::BlockIterator Block::begin() {
-  return BlockIterator(beginNode, paramNode, returnNode);
+  return BlockIterator(paramNode, paramNode, returnNode, beginNode, endNode);
 }
 
 Block::BlockIterator Block::end() {
-  return BlockIterator(endNode, paramNode, returnNode);
+  return BlockIterator(returnNode, paramNode, returnNode, beginNode, endNode);
 }
 
 Block::BlockIterator::BlockIterator(NodePtr node, NodePtr paramNode,
-                                    NodePtr returnNode)
+                                    NodePtr returnNode, NodePtr beginNode,
+                                    NodePtr endNode)
     : node(node), paramNode(paramNode), returnNode(returnNode),
       beginNode(beginNode), endNode(endNode) {}
 
@@ -60,11 +61,9 @@ Block::BlockIterator::reference Block::BlockIterator::operator*() {
 }
 
 Block::BlockIterator &Block::BlockIterator::operator++() {
-  if (node == beginNode) {
-    node = (NodePtr)(paramNode);
-  } else if (node == paramNode) {
+  if (node == paramNode) {
     node = (NodePtr)(beginNode->next);
-  } else if (node == endNode) {
+  } else if (node->next == endNode) {
     node = (NodePtr)(returnNode);
   } else {
     node = (NodePtr)(node->next);

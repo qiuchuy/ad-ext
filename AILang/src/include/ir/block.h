@@ -31,7 +31,8 @@ public:
     using value_type = NodePtr;
     using reference = const value_type;
 
-    explicit BlockIterator(NodePtr node, NodePtr paramNode, NodePtr returnNode);
+    explicit BlockIterator(NodePtr node, NodePtr paramNode, NodePtr returnNode,
+                           NodePtr beginNode, NodePtr endNode);
     BlockIterator &operator++();
     BlockIterator operator++(int);
     bool operator==(const BlockIterator &rhs) const;

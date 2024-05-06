@@ -43,8 +43,7 @@ private:
 
 std::string StableHLOLowering(ModulePtr module);
 static mlir::RankedTensorType
-createRankedTensorTypeFromTensorType(TensorTypePtr type,
-                                     mlir::MLIRContext &context);
+createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context);
 static mlir::Type createTypeFromElementType(TypePtr type,
                                             mlir::MLIRContext &context);
 static std::string mlirModuleToString(mlir::ModuleOp module);

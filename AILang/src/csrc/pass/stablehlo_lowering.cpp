@@ -1,5 +1,6 @@
 #include "ir/type.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -43,24 +44,15 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
   auto params = graph->getParams();
   llvm::SmallVector<mlir::Type, 16> inputTypes;
   llvm::SmallVector<mlir::Type, 4> returnTypes;
+
   for (auto paramType : module->getParamTypes()) {
-    if (auto tensorType = std::dynamic_pointer_cast<TensorType>(paramType)) {
-      inputTypes.push_back(createRankedTensorTypeFromTensorType(
-          tensorType, *theModule->getContext()));
-    } else {
-      throw std::runtime_error(
-          "Unsupported parameter type when lowering down to mlir type.");
-    }
+    inputTypes.push_back(createRankedTensorTypeFromTensorType(
+        paramType, *theModule->getContext()));
   }
 
   for (auto returnType : module->getReturnTypes()) {
-    if (auto tensorType = std::dynamic_pointer_cast<TensorType>(returnType)) {
-      returnTypes.push_back(createRankedTensorTypeFromTensorType(
-          tensorType, *theModule->getContext()));
-    } else {
-      throw std::runtime_error(
-          "Unsupported return type when lowering down to mlir type.");
-    }
+    returnTypes.push_back(createRankedTensorTypeFromTensorType(
+        returnType, *theModule->getContext()));
   }
 
   auto funcType =
@@ -73,27 +65,21 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
   function.setVisibility(mlir::func::FuncOp::Visibility::Public);
   theModule->push_back(function);
 
-  mlir::Block *block = function.addEntryBlock();
-  builder.setInsertionPointToEnd(block);
-  llvm::SmallVector<mlir::Value, 16> arguments(block->args_begin(),
-                                               block->args_end());
-  assert(arguments.size() == params.size());
-  for (size_t i = 0; i < params.size(); ++i) {
-    insertValueMapping(params[i], arguments[i]);
-  }
-
   return function;
 }
 
 void StableHLOLoweringPass::run(ModulePtr module) {
-  LOG_DEBUG("%s", "[pass] Start running StableHLO lowering pass");
   auto graph = module->getGraph();
   auto function = createFunctionOpFromModule(module);
-  LOG_DEBUG("%s", "[pass] Successfully create mlir function op from module");
+
+  bool entry = true;
   for (auto block : *graph) {
-    LOG_DEBUG("%s", "[pass] Start lowering a new block");
-    // auto currentBlock = function.addBlock();
-    // builder.setInsertionPointToEnd(currentBlock);
+    if (entry) {
+      entry = false;
+      builder.setInsertionPointToEnd(function.addEntryBlock());
+    } else {
+      builder.setInsertionPointToEnd(function.addBlock());
+    }
     for (auto node : *block) {
       LOG_DEBUG("[pass] Lowering [%s] down to stablehlo",
                 std::string(*node).c_str());
@@ -108,38 +94,62 @@ void StableHLOLoweringPass::run(ModulePtr module) {
 
 void StableHLOLoweringPass::visit(NodePtr node) {}
 
-void StableHLOLoweringPass::visit(ParamPtr node) {}
-
-void StableHLOLoweringPass::visit(ReturnOpPtr node) {
-  auto loc = builder.getUnknownLoc();
-  auto value = valueMap[node->getReturnValue()];
-  auto op = builder.create<mlir::func::ReturnOp>(loc, value);
-  // insertValueMapping(node, op);
+void StableHLOLoweringPass::visit(ParamPtr node) {
+  mlir::Block *block = builder.getInsertionBlock();
+  llvm::SmallVector<mlir::Value, 16> arguments(block->args_begin(),
+                                               block->args_end());
+  auto params = node->getParams();
+  assert(arguments.size() == params.size());
+  for (size_t i = 0; i < params.size(); ++i) {
+    insertValueMapping(params[i], arguments[i]);
+  }
 }
 
-void StableHLOLoweringPass::visit(TransposePtr node) {}
+void StableHLOLoweringPass::visit(ReturnOpPtr node) {
+  auto value = valueMap[node->getReturnValue()];
+  auto op =
+      builder.create<mlir::func::ReturnOp>(builder.getUnknownLoc(), value);
+}
+
+void StableHLOLoweringPass::visit(TransposePtr node) {
+  mlir::Value value = valueMap[node->getValue()];
+  auto shape = node->getShape();
+  std::vector<int64_t> perm;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    perm.push_back(shape.size() - 1 - i);
+  }
+  auto op = builder.create<mlir::stablehlo::TransposeOp>(
+      builder.getUnknownLoc(), value, perm);
+  insertValueMapping(node, op);
+}
 
 void StableHLOLoweringPass::visit(MatmulPtr node) {
   llvm::SmallVector<mlir::Value, 4> inputs = {valueMap[node->getLHS()],
                                               valueMap[node->getRHS()]};
-  auto loc = builder.getUnknownLoc();
   llvm::SmallVector<mlir::NamedAttribute, 4> attributes;
-  auto op = builder.create<mlir::stablehlo::MulOp>(loc, inputs, attributes);
+  auto op = builder.create<mlir::stablehlo::MulOp>(builder.getUnknownLoc(),
+                                                   inputs, attributes);
   insertValueMapping(node, op);
 }
 
 mlir::RankedTensorType
-createRankedTensorTypeFromTensorType(TensorTypePtr type,
-                                     mlir::MLIRContext &context) {
-  // may need to change the data type used in `getConcreteShape` to avoid this
-  std::vector<int64_t> shape;
-  shape.reserve(type->getConcreteShape().size());
+createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
-  for (const auto &value : type->getConcreteShape()) {
-    shape.push_back(static_cast<int64_t>(value));
+  if (auto tensorType = std::dynamic_pointer_cast<TensorType>(type)) {
+    // may need to change the data type used in `getConcreteShape` to avoid this
+    std::vector<int64_t> shape;
+    shape.reserve(tensorType->getConcreteShape().size());
+
+    for (const auto &value : tensorType->getConcreteShape()) {
+      shape.push_back(static_cast<int64_t>(value));
+    }
+    auto elementType =
+        createTypeFromElementType(tensorType->getElementType(), context);
+    return mlir::RankedTensorType::get(shape, elementType);
+  } else {
+    throw std::runtime_error(
+        "Unsupported tensor type when lowering to mlir type.");
   }
-  auto elementType = createTypeFromElementType(type->getElementType(), context);
-  return mlir::RankedTensorType::get(shape, elementType);
 }
 
 mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {

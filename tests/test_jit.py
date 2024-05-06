@@ -3,37 +3,24 @@ import ailang as al
 
 
 def g(x, y):
-    #b = al.transpose(y)
+    b = al.transpose(y)
     #a = al.transpose(b)
     #z = al.transpose(a)
-    return al.matmul(x, y)
+    return al.matmul(x, b)
 
 a = np.array([[1, 2], [3, 4]])
 b = np.array([[1, 2], [3, 4]])
 c = al.from_numpy(a)
 d = al.from_numpy(b)
-module = al.jit(g, (c, d, ), target="mlir")
+module = al.jit_impl(g, (c, d, ), target="mlir")
 print(module)
 
 from iree import compiler as ireec
 from iree import runtime as ireert
 
-# Compile a module.
-INPUT_MLIR = module
-
-"""
-INPUT_MLIR = 
-module @arithmetic {
-  func.func @simple_mul(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
-    %0 = stablehlo.add %arg0, %arg1 : tensor<4xf32>
-    return %0 : tensor<4xf32>
-  }
-}
-"""
-
 # Compile using the vmvx (reference) target:
 compiled_flatbuffer = ireec.tools.compile_str(
-    INPUT_MLIR,
+    module,
     input_type="stablehlo",
     target_backends=["vmvx"])
 

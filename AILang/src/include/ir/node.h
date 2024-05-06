@@ -121,6 +121,7 @@ public:
     ssm << ")";
     return ssm.str();
   }
+  void accept(IRVisitor *visitor) override;
 
 private:
   std::vector<ValuePtr> params;
@@ -222,6 +223,7 @@ public:
   explicit operator std::string() const override;
   // 在需要将 Transpsoe 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
+  std::vector<int> getShape();
 
 private:
   ValuePtr inValue;
