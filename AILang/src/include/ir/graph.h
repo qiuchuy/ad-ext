@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <list>
 #include <memory>
 
@@ -48,6 +49,60 @@ public:
   friend class ALModule;
   // friend std::ostream &operator<<(std::ostream &stream, const GraphPtr &g);
   std::string str();
+
+  struct GraphIterator {
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = BlockPtr;
+    using reference = const value_type;
+
+    explicit GraphIterator(BlockPtr block, BlockPtr begin, BlockPtr end)
+        : block(block), beginBlock(begin), endBlock(end) {}
+
+    reference operator*() const { return block; }
+
+    GraphIterator &operator+(difference_type diff) {
+      for (difference_type i = 0; i < diff; ++i) {
+        if (block == endBlock) // Stop if we reach endBlock
+          break;
+        block = (BlockPtr)block->next;
+      }
+      return *this;
+    }
+
+    GraphIterator &operator++() {
+      if (block != endBlock)
+        block = (BlockPtr)block->next;
+      return *this;
+    }
+
+    GraphIterator operator++(int) {
+      GraphIterator temp = *this;
+      block = (BlockPtr)block->next;
+      return temp;
+    }
+
+    friend bool operator==(const GraphIterator &a, const GraphIterator &b) {
+      return a.block == b.block;
+    };
+
+    friend bool operator!=(const GraphIterator &a, const GraphIterator &b) {
+      return !(a == b);
+    };
+
+  private:
+    BlockPtr block;
+    BlockPtr beginBlock;
+    BlockPtr endBlock;
+  };
+
+  GraphIterator begin() const {
+    return GraphIterator((BlockPtr)beginBlock->next, beginBlock, endBlock);
+  }
+
+  GraphIterator end() const {
+    return GraphIterator(endBlock, beginBlock, endBlock);
+  }
 
 private:
   void insertNodeAtEnd(NodePtr Node);

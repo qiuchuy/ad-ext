@@ -1,8 +1,8 @@
+#include "dtype.h"
+
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
-
-#include "dtype.h"
 
 namespace ainl::core {
 
@@ -27,7 +27,6 @@ template <> TypeToDtype<void>::operator Dtype() {
 }
 
 size_t dtypeSize(Dtype dtype) {
-
   switch (dtype.type) {
   case Dtype::DataType::BoolType:
     return sizeof(bool);

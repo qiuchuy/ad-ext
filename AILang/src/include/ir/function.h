@@ -8,8 +8,6 @@
 #include "ir/graph.h"
 #include "ir/type.h"
 
-// class Graph;
-// using GraphPtr = std::shared_ptr<Graph>;
 namespace ainl::ir {
 
 class Signature {
@@ -27,7 +25,7 @@ public:
     ssm << returnType->getName();
     return ssm.str();
   }
-
+  friend class ALModule;
   friend std::ostream &operator<<(std::ostream &stream,
                                   const Signature *signature) {
     stream << std::string(*signature);
@@ -49,8 +47,17 @@ class ALModule : public std::enable_shared_from_this<ALModule> {
 public:
   ALModule() = default;
   ALModule(std::string name, const TypePtr &inputType,
-           const TypePtr &returnType);
+           const TypePtr &returnType = nullptr);
+  static ModulePtr create(std::string name, const TypePtr &inputType,
+                          const TypePtr &returnType = nullptr) {
+    return std::make_shared<ALModule>(name, inputType, returnType);
+  }
   std::vector<ValuePtr> getParams();
+  std::vector<TypePtr> getParamTypes();
+  std::vector<TypePtr> getReturnTypes();
+  void setReturnType(const TypePtr &returnType) {
+    signature->returnType = returnType;
+  }
   GraphPtr getGraph() { return graph; }
   std::string getName() { return name; }
   std::string str();

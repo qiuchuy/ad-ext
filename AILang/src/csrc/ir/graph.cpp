@@ -1,6 +1,7 @@
+#include "ir/graph.h"
+
 #include <utility>
 
-#include "ir/graph.h"
 #include "ir/node.h"
 #include "ir/value.h"
 

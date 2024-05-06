@@ -11,6 +11,8 @@ Array fill(const std::vector<int> &shape, const Array &value, Dtype dtype);
 Array slice(const Array &input, const std::vector<int> &start,
             const std::vector<int> &end, const std::vector<int> &stride);
 Array reshape(const Array &input, const std::vector<int> &shape);
+Array transpose(const Array &input);
+Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
 
 #define GENERIC_OP_DECL(name)                                                  \
@@ -25,7 +27,9 @@ Array flatten(const Array &input);
     return TracerFactory::createTracer(inputs, prim);                          \
   }
 
-GENERIC_OP_DECL(reshape_)
+GENERIC_OP_DECL(reshape)
+GENERIC_OP_DECL(transpose)
+GENERIC_OP_DECL(matmul)
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize);
