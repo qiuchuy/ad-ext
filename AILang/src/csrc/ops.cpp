@@ -1,9 +1,9 @@
 #include "ops.h"
-
+#include <set>
 namespace ainl::core {
 Dtype isFloat(Dtype dtype) { return dtype < Float32 ? Float32 : dtype; }
 
-Array zeros(const std::vector<int> &shape, Dtype dtype) {
+Array zeros(const std::vector<int> &shape, Dtype dtype = Float64) {
     return fill(shape, Array(0, dtype), dtype);
 }
 
@@ -164,6 +164,136 @@ Array sin(const Array &arr) {
                  arr.shape(),
                  getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
+Array multiply(const Array &a, const Array &b) {
+    // promote types
+    auto output_type = a.dtype();
+    auto inputs = broadcast_arrays({a, b});
+    return Array(output_type, std::make_shared<MultiplyPrimitive>(), inputs,
+                 inputs[0].shape(), a.strides());
+}
+
+
+Array getelementsnumber(const Array &arr, std::vector<int> &axes, bool inverted,
+                        Dtype dtype) {
+    for (auto &axis : axes) {
+        // in [0,ndim-1]
+        int normal_axis = (axis + arr.ndim()) % arr.ndim();
+        if (normal_axis >= arr.ndim() || normal_axis < 0) {
+            throw std::invalid_argument(
+                "[OPS number_of_elements] Cannot get the shape for axis.");
+        }
+        axis = normal_axis;
+    }
+    // TODO no stop grad
+    return Array(
+        arr.dtype(),
+        std::make_shared<GetElementsNumberPrimitive>(axes, inverted, dtype),
+        {arr},
+        // Shape {1} is scalar
+        std::vector<int>{1},
+        getStridesFromShape(arr.shape(), dtypeSize(arr.dtype())));
+}
+
+std::pair<std::vector<int>, std::vector<int>>
+getReduceShape(const std::vector<int> &axes, const std::vector<int> &shape) {
+    std::set<int> axes_set;
+    int ndim = shape.size();
+    for (auto axis : axes) {
+        int axis_ = (axis < 0) ? axis + ndim : axis;
+        if (axis < 0 || axis >= ndim) {
+            throw std::invalid_argument(
+                "[GetReduceShape] given axes out of range.");
+        }
+        axes_set.insert(axis_);
+    }
+
+    std::vector<int> output_shape;
+    for (int i = 0; i < ndim; i++) {
+        if (axes_set.count(i) == 0) {
+            output_shape.push_back(shape[i]);
+        } else {
+            output_shape.push_back(1);
+        }
+        std::vector<int> sorted_axes(axes_set.begin(),
+                                     axes_set.end()); // increase
+        return {output_shape, sorted_axes};
+    }
+}
+
+Array sum(const Array &arr, const std::vector<int> &axes, bool keepdims) {
+    if (axes.empty()) {
+        return arr;
+    }
+    auto [output_shape, sorted_axes] = getReduceShape(axes, arr.shape());
+    auto output_type = arr.dtype();
+    auto out = Array(output_type, std::make_shared<ReducePrimitive>(), {arr},
+                     output_shape,
+                     getStridesFromShape(output_shape, dtypeSize(output_type)));
+    if (keepdims) {
+        return out;
+    } else {
+        return squeeze(out, sorted_axes);
+    }
+}
+
+Array squeeze(const Array &arr, const std::vector<int> &axes) {
+    std::set<int> axes_set;
+    int ndim = arr.ndim();
+    for (auto axis : axes) {
+        auto ax_ = axis < 0 ? axis + ndim : axis;
+        if (ax_ < 0 || ax_ > ndim) {
+            throw std::invalid_argument(
+                "[Ops Squeeze] given axes out of range");
+        }
+        // must specific axis = 1
+        if (arr.shape()[ax_] != 1) {
+            throw std::invalid_argument(
+                "[Ops Squeeze] cannot deal with axis == 1.");
+        }
+        axes_set.insert(ax_);
+    }
+    if (axes_set.size() != axes.size()) {
+        throw std::invalid_argument("[Ops squeeze] Received duplicate axes.");
+    }
+    // make sure squeeze in order
+    std::vector<int> sorted_axes(axes_set.begin(), axes_set.end());
+    std::vector<int> shape;
+    for (int i = 0, j = 0; i < ndim; ++i) {
+        // if current axis_i is in specific axes, this dimension will be
+        // squeezed，else maintain old
+        if (j < sorted_axes.size() && i == sorted_axes[j]) {
+            j++;
+        } else {
+            shape.push_back(arr.shape()[i]);
+        }
+    }
+    return reshape(arr, shape);
+}
+Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims) {
+    int ndim = arr.ndim();
+    for (int axis : axes) {
+        if (axis < -ndim || axis >= ndim) {
+            throw std::invalid_argument(
+                "[Ops.cpp mean] axis is out of bounds for array");
+        }
+    }
+    auto output_type = isFloat(arr.dtype());
+    // sum
+    // return multiply(sum(a, axes, keepdims), normalizer);
+    return Array(output_type, std::make_shared<MeanPrimitive>(axes, keepdims),
+                 {arr}, arr.shape(),
+                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+}
+Array mean(const Array &arr, bool keepdims) {
+    std::vector<int> axes(arr.shape().size());
+}
+Array mean(const Array &arr, int axis, bool keepdims = false) {
+    return mean(arr, std::vector<int>{axis}, keepdims);
+}
+
+Array var(const Array &arr, bool keepdims);
+Array var(const Array &arr, const std::vector<int> &axes, bool keepdims);
+Array var(const Array &arr, int axis, bool keepdims);
 
 Array sinh(const Array &arr) {
     Dtype output_type = isFloat(arr.dtype());
@@ -238,7 +368,6 @@ Array sigmoid(const Array &arr) {
 
 Array add(const Array &a, const Array &b) {
     Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
-
     auto inputs =
         broadcast_arrays({astype(a, output_type), astype(b, output_type)});
 
@@ -246,10 +375,66 @@ Array add(const Array &a, const Array &b) {
     return Array(output_type, std::make_shared<AddPrimitive>(),
                  std::move(inputs), output_shape,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
-
 }
 
 // Convolution
+
+Array conv2d(const Array &input, const Array &weight,
+             const std::pair<int, int> &stride /* {1, 1}*/,
+             const std::pair<int, int> &padding /* {0, 0}*/,
+             const std::pair<int, int> &dilation /*{1, 1}*/) {
+    int spatial_dims = input.ndim() - 2;
+    if (spatial_dims < 1 || spatial_dims > 2) {
+        throw std::invalid_argument(
+            "[ops.h Conv2d cannot handle spatialdim !=1or2 yet.]");
+    }
+    // TODO more type and check
+    auto output_type = isFloat(input.dtype());
+
+    /* input = astype(input,out_type);
+    weight = astype(weight,out_type);*/
+
+    std::vector<int> output_shape = get_output_shape(
+        input.shape(), weight.shape(), stride, padding, dilation);
+
+    const std::vector<int> stride_vec = {stride.first, stride.second};
+    const std::vector<int> padding_vec = {padding.first, padding.second};
+    const std::vector<int> dilation_vec = {dilation.first, dilation.second};
+
+    return Array(output_type,
+                 std::make_shared<ConvolutionPrimitive>(stride_vec, padding_vec,
+                                                        dilation_vec),
+                 {input, weight}, output_shape,
+                 getStridesFromShape(output_shape, dtypeSize(output_type)));
+}
+
+std::vector<int> get_output_shape(const std::vector<int> &in_shape,
+                                  const std::vector<int> &weight_shape,
+                                  const std::pair<int, int> &stride,
+                                  const std::pair<int, int> &padding,
+                                  const std::pair<int, int> &dilation) {
+    // 3 224 224 in channels h w
+    // weight shape=(out_channels, *kernel_size, in_channels),
+    // auto [C_in, H_in, W_in] = in_shape;
+    // auto [C_out, KernelSize0, KernelSize1, C_in_] = weight_shape;
+
+    auto C_in = in_shape[0];
+    auto H_in = in_shape[1];
+    auto W_in = in_shape[2];
+    auto C_out = weight_shape[0];
+    auto KernelSize0 = weight_shape[1];
+    auto KernelSize1 = weight_shape[2];
+
+    int H_out = static_cast<int>(
+        (H_in + 2 * padding.first - dilation.first * (KernelSize0 - 1) - 1) /
+            stride.first +
+        1);
+    int W_out = static_cast<int>(
+        (W_in + 2 * padding.second - dilation.second * (KernelSize1 - 1) - 1) /
+            stride.second +
+        1);
+    return {C_out, H_out, W_out};
+}
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize) {
@@ -269,10 +454,10 @@ Array broadcast_to(const Array &arr, const std::vector<int> &shape) {
         return arr;
     }
     // check is broadcastable
-    broadcast_shapes(arr.shape(), shape);
-    return Array(arr.dtype(), std::make_shared<BroadCastPrimitive>(shape),
-                 {arr}, std::move(shape),
-                 getStridesFromShape(shape, arr.itemsize()));
+    auto outputShape = broadcast_shapes(arr.shape(), shape);
+    return Array(arr.dtype(), std::make_shared<BroadCastPrimitive>(outputShape),
+                 {arr}, outputShape,
+                 getStridesFromShape(outputShape, arr.itemsize()));
 }
 std::vector<int> broadcast_shapes(const std::vector<int> &s1,
                                   const std::vector<int> &s2) {
@@ -295,10 +480,11 @@ std::vector<int> broadcast_shapes(const std::vector<int> &s1,
         } else
             throw std::invalid_argument("Shapes  cannot be broadcast.");
     }
-
-    // for (size_t i = diff - 1; i >= 0; --i) {
-    //   output_shape[i] = large[i];
-    // }
+    if (diff > 0) {
+        for (int i = diff - 1; i >= 0; --i) {
+            output_shape[i] = large[i];
+        }
+    }
 
     return output_shape;
 }

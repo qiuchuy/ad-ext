@@ -130,4 +130,8 @@ struct Add {
     template <typename T> T operator()(T x, T y) { return x + y; }
 };
 
+struct Multiply {
+    template <typename T> T operator()(T x, T y) { return x * y; }
+};
+
 }; // namespace ainl::core::detail

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "array.h"
-#include "compute.h"
+#include "backend/common/compute.h"
 #include "device.h"
 class Type;
 using TypePtr = std::shared_ptr<Type>;
@@ -279,26 +279,6 @@ class CeilPrimitive : public Primitive {
 };
 // cancatenate skip
 
-// Convolution
-class ConvolutionPrimitive : public Primitive {
-    ConvolutionPrimitive() = default;
-    explicit ConvolutionPrimitive(const std::vector<int> &strides,
-                                  const std::vector<int> &padding,
-                                  const int group = 1)
-        : strides_(strides), padding_(padding){};
-
-    void eval(const std::vector<Array> &inputs, Array &out) override;
-    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-
-    std::string toString() const override;
-
-  private:
-    std::vector<int> strides_;
-    std::vector<int> padding_;
-};
-
 class CopyPrimitive : public Primitive {
   public:
     CopyPrimitive() = default;
@@ -413,17 +393,6 @@ class MinimumPrimitive : public Primitive {
     std::string toString() const override;
 };
 
-class MultiplyPrimitive : public Primitive {
-  public:
-    MultiplyPrimitive() = default;
-    void eval(const std::vector<Array> &inputs, Array &out) override;
-    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
-    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-
-    std::string toString() const override;
-};
-
 class SigmoidPrimitive : public Primitive {
   public:
     SigmoidPrimitive() = default;
@@ -503,5 +472,84 @@ class TransposePrimitive : public Primitive {
   private:
     std::vector<int> axes_;
 };
+class MultiplyPrimitive : public Primitive {
+  public:
+    MultiplyPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
 
+class GetElementsNumberPrimitive : public Primitive {
+  public:
+    explicit GetElementsNumberPrimitive(const std::vector<int> &axes,
+                                        bool inverted, Dtype dtype)
+        : axes_(axes), inverted_(inverted), dtype_(dtype) {}
+    GetElementsNumberPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+
+  private:
+    std::vector<int> axes_;
+    bool inverted_;
+    Dtype dtype_;
+};
+
+// MeanPrimitive
+class MeanPrimitive : public Primitive {
+  public:
+    explicit MeanPrimitive(const std::vector<int> &axes, bool keepdims)
+        : axes_(axes), keepdims_(keepdims) {}
+    MeanPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+
+  private:
+    std::vector<int> axes_;
+    bool keepdims_;
+};
+class ReducePrimitive : public Primitive {
+  public:
+    enum ReduceType { And, Or, Sum, Prod, Min, Max };
+    explicit ReducePrimitive(const std::vector<int> &axes,
+                             ReduceType reduce_type)
+        : axes_(axes), reduce_type_(reduce_type) {}
+    ReducePrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+
+  private:
+    ReduceType reduce_type_;
+    std::vector<int> axes_;
+};
+
+class ConvolutionPrimitive : public Primitive {
+  public:
+    explicit ConvolutionPrimitive(const std::vector<int> &stride,
+                                  const std::vector<int> &padding,
+                                  const std::vector<int> &dilation)
+        : stride_(stride), padding_(padding), dilation_(dilation){};
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+
+  private:
+    std::vector<int> stride_;
+    std::vector<int> padding_;
+    std::vector<int> dilation_;
+
+}; // namespace ainl::core
 } // namespace ainl::core

@@ -1,11 +1,11 @@
-#include <algorithm>
-#include <numeric>
-
+#include "primitive.h"
+#include "backend/common/reduce.h"
 #include "binary.h"
 #include "ops.h"
-#include "primitive.h"
 #include "transformation.h"
 #include "unary.h"
+#include <algorithm>
+#include <numeric>
 
 namespace ainl::core {
 
@@ -603,23 +603,45 @@ void SinhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 TypePtr SinhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 std::string SinhPrimitive::toString() const { return "Sinh"; }
 
-// BroadCast
+// FIXME BroadCast in Value has error, but with no broadcast and just
+// shape/operate is successful
 void BroadCastPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
     evalCPU(inputs, out);
 }
 void BroadCastPrimitive::evalCPU(const std::vector<Array> &inputs,
                                  Array &output) {
-    if (inputs.size() != 0) {
+    if (inputs.size() != 1) {
         std::invalid_argument("[BroadCastPrimitive::evalCPU] expects "
                               "exactly one input array.");
     }
     const auto &input = inputs[0];
     if (output.size() == 0) {
         std::invalid_argument(
-            "[BroadCastPrimitive::evalCPU] output size cant be zero. ");
+            "[BroadCastPrimitive::evalCPU] output size can't be zero. ");
     }
-    output.copyBySharing(input, input.data_size(), 0, shape_);
+
+    output.SetDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
+                             shape_, output.strides());
+
+    // TODO need to optimize size_t offset = 0;
+    //  auto inputShape = input.shape();
+    //  size_t inputNdim = input.ndim();
+    //  size_t shapeNdim = shape_.ndim();
+    //  auto shapeStrides = output.strides();
+    //  // assert whether can be broadcast have been verified in ops
+    //  int diff = shapeNdim - inputNdim;
+    //  for (int i = shapeNdim - 1; i >= diff; i--) {
+    //      if (inputShape[i] == 1 && shape_[i] != 1) {
+    //          // satisfy broadcast to
+    //          auto shape_iter_i = std::next(shape_.begin(), i);
+    //          size_t current_offset =
+    //              std::inner_product(shape_begin(), shape_iter_i,
+    //                                 shapeStrides.begin(),0);
+    //          size_t copy_times =
+    //      }
+    //  }
 }
+
 void BroadCastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                              JVPTracer &output) {}
 TypePtr BroadCastPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
@@ -716,9 +738,194 @@ void SoftmaxPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 TypePtr SoftmaxPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 std::string SoftmaxPrimitive::toString() const { return "Softmax"; }
 
-// convolution
+// GetElementsNumberPrimitive
+void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,
+                                      Array &out) {
+    evalCPU(inputs, out);
+}
+void GetElementsNumberPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                         Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[GetElementsNumberPrimitive eval] inputs must have one arrays.");
+    }
+    output.SetDataWithBuffer(allocator::malloc(output.size()), dtype_,
+                             output.shape(), output.strides());
+    auto input = inputs[0];
+    double numbel = 1;
+    for (auto axis : axes_) {
+        numbel *= input.shape()[axis];
+    }
+    if (inverted_) {
+        numbel = 1.0 / numbel;
+    }
+    switch (output.dtype().type) {
+    case Dtype::DataType::Any:
+        std::invalid_argument(
+            "[GetElementsNumberPrimitive evalCPU] not support Ant type.");
+        break;
+    case Dtype::DataType::BoolType:
+        *output.data<bool>() = static_cast<bool>(numbel);
+        break;
+    case Dtype::DataType::Int8Type:
+        *output.data<int8_t>() = static_cast<int8_t>(numbel);
+        break;
+    case Dtype::DataType::Int16Type:
+        *output.data<int16_t>() = static_cast<int16_t>(numbel);
+        break;
+    case Dtype::DataType::Int32Type:
+        *output.data<int32_t>() = static_cast<int32_t>(numbel);
+        break;
+    case Dtype::DataType::Int64Type:
+        *output.data<int64_t>() = static_cast<int64_t>(numbel);
+        break;
+    case Dtype::DataType::Float32Type:
+        *output.data<float>() = static_cast<float>(numbel);
+        break;
+    case Dtype::DataType::Float64Type:
+        *output.data<double>() = static_cast<double>(numbel);
+        break;
+    default:
+        break;
+    }
+}
+TypePtr
+GetElementsNumberPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void GetElementsNumberPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                                     JVPTracer &output) {}
+
+std::string GetElementsNumberPrimitive::toString() const {
+    return "GetElementsNumber";
+}
+
+// Multiply
+void MultiplyPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
+    evalCPU(inputs, out);
+}
+void MultiplyPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+    if (inputs.size() != 2) {
+        throw std::invalid_argument(
+            "[Primitives Multiply eval] inputs must have two arrays.");
+    }
+    auto &a = inputs[0];
+    auto &b = inputs[1];
+    binary(a, b, output, detail::Multiply());
+}
+TypePtr MultiplyPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
+std::string MultiplyPrimitive::toString() const { return "multiply"; }
+
+// Mean
+void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
+    evalCPU(inputs, out);
+}
+void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[MeanPrimitive] inputs of mean shoule be one.");
+    }
+    auto input = inputs[0];
+    double numbel = 1;
+
+    int ndim = input.ndim();
+    for (int axis : axes_) {
+        numbel *= input.shape()[axis];
+        if (axis < -ndim || axis >= ndim)
+            throw std::invalid_argument(
+                "[MeanPrimitive] axis is out of bounds for Array.");
+    }
+}
+TypePtr MeanPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
+std::string MeanPrimitive::toString() const { return "Mean"; }
+
+// Reduce
+
+void ReducePrimitive::eval(const std::vector<Array> &inputs, Array &out) {
+    evalCPU(inputs, out);
+}
+void ReducePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[ReducePrimitive] inputs of mean shoule be one.");
+    }
+    auto input = inputs[0];
+    switch (input.dtype().type) {
+    case Dtype::DataType::Any:
+        std::invalid_argument(
+            "[ReducePrimitive evalcpu] not support Any type.");
+        break;
+    case Dtype::DataType::BoolType:
+        reduce_dispatch<bool>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Int8Type:
+        reduce_dispatch<int8_t>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Int16Type:
+        reduce_dispatch<int16_t>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Int32Type:
+        reduce_dispatch<int32_t>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Int64Type:
+        reduce_dispatch<int64_t>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Float32Type:
+        reduce_dispatch<float>(input, output, reduce_type_, axes_);
+        break;
+    case Dtype::DataType::Float64Type:
+        reduce_dispatch<double>(input, output, reduce_type_, axes_);
+        break;
+    default:
+        break;
+    }
+}
+TypePtr ReducePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void ReducePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                          JVPTracer &output) {}
+
+std::string ReducePrimitive::toString() const {
+    switch (reduce_type_) {
+    case And:
+        return "And";
+        break;
+    case Or:
+        return "Or";
+        break;
+    case Sum:
+        return "Sum";
+        break;
+    case Prod:
+        return "Prod";
+        break;
+    case Min:
+        return "Min";
+        break;
+    case Max:
+        return "Max";
+        break;
+    default:
+        break;
+    }
+}
+
+// convolutio
+void ConvolutionPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
+    evalCPU(inputs, out);
+}
+void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                   Array &output) {}
+TypePtr
+ConvolutionPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                               JVPTracer &output) {}
+std::string ConvolutionPrimitive::toString() const { return "Conv"; }
 
 // TODO MKL
 // add::std
-
 } // namespace ainl::core

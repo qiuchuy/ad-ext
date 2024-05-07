@@ -71,6 +71,25 @@ void initOps(py::module_ &m) {
             return ainl::core::add(a, b);
         },
         "Add the inputs");
+    m.def(
+        "zeros",
+        [](const std::vector<int> &shape) {
+            return ainl::core::zeros(shape, ainl::core::Float32);
+        },
+        "create zeros array");
+    m.def(
+        "mean",
+        [](const ainl::core::Array &input, const std::vector<int> &axes,
+           bool keepdims = false) {
+            return ainl::core::mean(input, axes, keepdims);
+        },
+        "compute  array's mean");
+    m.def(
+        "mean",
+        [](const ainl::core::Array &input, int axis, bool keepdims = false) {
+            return ainl::core::mean(input, axis, keepdims);
+        },
+        "compute  array's mean");
 }
 
 }; // namespace ainl::ffi
