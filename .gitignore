@@ -37,3 +37,6 @@ __pycache__/
 cmake-build-debug/
 ailang.egg-info/
 log.txt
+
+local_test/
+cudnn-baseline/
