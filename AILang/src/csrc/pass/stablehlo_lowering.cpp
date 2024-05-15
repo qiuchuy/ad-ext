@@ -1,4 +1,3 @@
-#include "ir/type.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
@@ -20,6 +19,7 @@
 #include "stablehlo/reference/Api.h"
 
 #include "ir/tensor.h"
+#include "ir/type.h"
 #include "pass/stablehlo_lowering.h"
 
 namespace ainl::ir {

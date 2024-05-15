@@ -14,6 +14,9 @@ Array reshape(const Array &input, const std::vector<int> &shape);
 Array transpose(const Array &input);
 Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
+Array loop(const std::function<Array(Array)> &cond,
+                 const std::function<Array(Array)> &body, const Array &init);
+
 
 #define GENERIC_OP_DECL(name)                                                  \
   std::shared_ptr<Tracer> name(                                                \
@@ -30,6 +33,7 @@ Array flatten(const Array &input);
 GENERIC_OP_DECL(reshape)
 GENERIC_OP_DECL(transpose)
 GENERIC_OP_DECL(matmul)
+GENERIC_OP_DECL(loop)
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize);

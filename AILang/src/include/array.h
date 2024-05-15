@@ -36,6 +36,23 @@ public:
   virtual bool evaluated() const = 0;
   virtual std::string toString() const = 0;
 
+  bool operator==(Tracer &other);
+  bool operator>(Tracer &other);
+
+  template <typename T> bool operator==(T scalar) {
+    if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+      return *array == scalar;
+    }
+    return aval()->operator==(scalar);
+  }
+
+  template <typename T> bool operator>(T scalar) {
+    if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+      return *array > scalar;
+    }
+    return aval()->operator>(scalar);
+  }
+
 protected:
   std::vector<std::shared_ptr<Tracer>> inputs_;
   std::shared_ptr<Primitive> prim_;
@@ -164,6 +181,16 @@ public:
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
 
+  template <typename T> T item() {
+    if (!evaluated()) {
+      eval();
+    }
+    if (ndim() != 0) {
+      throw std::runtime_error("Item() is only supported for scalar array.");
+    }
+    return *(data<T>());
+  }
+
   template <typename T> T *data() { return static_cast<T *>(ptr_); };
 
   template <typename T> const T *data() const {
@@ -203,6 +230,79 @@ public:
     }
     os << "]";
   }
+
+  bool operator==(Array &other) {
+    if (!evaluated())
+      eval();
+    if (!other.evaluated())
+      other.eval();
+
+    bool shapeEqual =
+        std::equal(shape_->begin(), shape_->end(), other.shape_->begin());
+    bool strideEqual =
+        std::equal(stride_->begin(), stride_->end(), other.stride_->begin());
+    if (!shapeEqual || !strideEqual || dtype_.type != other.dtype_.type ||
+        size_ != other.size_) {
+      return false;
+    }
+
+    if (ndim() == 0) {
+      throw std::runtime_error(
+          "Comparison is only supported for scalar array.");
+    }
+
+    switch (dtype_.type) {
+    case Dtype::DataType::BoolType:
+      return item<bool>() == other.item<bool>();
+    case Dtype::DataType::Int16Type:
+      return item<int16_t>() == other.item<int16_t>();
+    case Dtype::DataType::Int32Type:
+      return item<int32_t>() == other.item<int32_t>();
+    case Dtype::DataType::Int64Type:
+      return item<int64_t>() == other.item<int64_t>();
+    case Dtype::DataType::Float32Type:
+      return item<float>() == other.item<float>();
+    case Dtype::DataType::Float64Type:
+      return item<double>() == other.item<double>();
+    default:
+      throw std::runtime_error("Unsupported data type.");
+    }
+  }
+
+  bool operator>(Array &other) {
+    if (!evaluated())
+      eval();
+    if (!other.evaluated())
+      other.eval();
+
+    if (ndim() != 0) {
+      throw std::runtime_error(
+          "Comparison is only supported for scalar array.");
+    }
+
+    switch (dtype_.type) {
+    case Dtype::DataType::BoolType:
+      return item<bool>() > other.item<bool>();
+    case Dtype::DataType::Int16Type:
+      return item<int16_t>() > other.item<int16_t>();
+    case Dtype::DataType::Int32Type:
+      return item<int32_t>() > other.item<int32_t>();
+    case Dtype::DataType::Int64Type:
+      return item<int64_t>() > other.item<int64_t>();
+    case Dtype::DataType::Float32Type:
+      return item<float>() > other.item<float>();
+    case Dtype::DataType::Float64Type:
+      return item<double>() > other.item<double>();
+    default:
+      throw std::runtime_error("Unsupported data type.");
+    }
+  }
+
+  template <typename T> bool operator==(T scalar) {
+    return item<T>() == scalar;
+  }
+
+  template <typename T> bool operator>(T scalar) { return item<T>() > scalar; }
 
 protected:
   std::shared_ptr<Data> data_;

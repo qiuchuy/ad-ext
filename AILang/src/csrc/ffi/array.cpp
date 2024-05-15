@@ -1,8 +1,7 @@
-#include "array.h"
-
 #include <pybind11/cast.h>
 #include <sstream>
 
+#include "array.h"
 #include "ffi/array.h"
 #include "ops.h"
 #include "pass/stablehlo_lowering.h"
@@ -83,7 +82,47 @@ void initArray(py::module &_m) {
       .def("__repr__", &ainl::core::Dtype::toString);
   py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
                                                                       "tracer")
-      .def("__repr__", &ainl::core::Tracer::toString);
+      .def("__repr__", &ainl::core::Tracer::toString)
+      .def("__bool__",
+           [](ainl::core::Tracer &tracer) {
+             throw std::runtime_error(
+                 "Cannot convert a abstract Tracer to bool, try to use .item() "
+                 "in conditions instead");
+           })
+      .def("__len__",
+           [](ainl::core::Tracer &tracer) {
+             throw std::runtime_error(
+                 "Cannot get the length of an abstract Tracer.");
+           })
+      .def("__gt__",
+           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
+             return tracer > other && !(tracer == other);
+           })
+      .def("__gt__", [](ainl::core::Tracer &tracer,
+                        int scalar) { return tracer > scalar; })
+      .def("__lt__",
+           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
+             return !(tracer > other) && !(tracer == other);
+           })
+      .def("__ge__",
+           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
+             return tracer > other || tracer == other;
+           })
+      .def("__le__",
+           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
+             return !(tracer > other) || tracer == other;
+           })
+      .def("__eq__", [](ainl::core::Tracer &tracer,
+                        ainl::core::Tracer &other) { return tracer == other; })
+      .def("__ne__",
+           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
+             return !(tracer == other);
+           })
+
+          DEFINE_COMPARE_OPERATOR_ON_SCALAR(int)
+              DEFINE_COMPARE_OPERATOR_ON_SCALAR(float)
+                  DEFINE_COMPARE_OPERATOR_ON_SCALAR(double);
+
   py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
              std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
   py::class_<ainl::core::JITTracer, ainl::core::Tracer,
@@ -189,6 +228,25 @@ void initArray(py::module &_m) {
       .def_property_readonly("data_size", &ainl::core::Array::size)
       .def_property_readonly("dtype", &ainl::core::Array::dtype)
       .def_property_readonly("ndim", &ainl::core::Array::ndim)
+      .def("item",
+           [](ainl::core::Array &a) {
+             switch (a.dtype().type) {
+             case ainl::core::Dtype::DataType::BoolType:
+               return py::cast(a.item<bool>());
+             case ainl::core::Dtype::DataType::Int16Type:
+               return py::cast(a.item<int16_t>());
+             case ainl::core::Dtype::DataType::Int32Type:
+               return py::cast(a.item<int32_t>());
+             case ainl::core::Dtype::DataType::Int64Type:
+               return py::cast(a.item<int64_t>());
+             case ainl::core::Dtype::DataType::Float32Type:
+               return py::cast(a.item<float>());
+             case ainl::core::Dtype::DataType::Float64Type:
+               return py::cast(a.item<double>());
+             default:
+               throw std::invalid_argument("Unknown data type");
+             }
+           })
       .def("tolist", [](ainl::core::Array &a) { return toPyList(a); });
 
   _m.def("from_numpy", [](py::buffer arr) {

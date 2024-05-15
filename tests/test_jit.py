@@ -3,7 +3,8 @@ import ailang as al
 
 @al.jit
 def g(x, y):
-    a = al.transpose(y)
+    b = al.transpose(y)
+    a = al.transpose(b)
     z = al.transpose(a)
     return al.matmul(x, z)
 

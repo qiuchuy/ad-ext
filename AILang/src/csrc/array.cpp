@@ -1,7 +1,7 @@
-#include "array.h"
-
+#include <numeric>
 #include <sstream>
 
+#include "array.h"
 #include "graph.h"
 #include "ir/literal.h"
 #include "ir/type.h"
@@ -77,17 +77,32 @@ bool Tracer::evaluated() const { return false; }
 
 std::string Tracer::toString() const { return "tracer"; }
 
-/*
-void Array::copyBySharing(const Array &other, size_t size, size_t offset,
-                          const std::vector<int> &shape, const std::vector<int>
-&stride={}) { data_ = other.data_; ptr_ = (char *)other.ptr_ + offset; shape_ =
-std::make_shared<std::vector<int>>(shape); dtype_ = other.dtype_; size_ = size;
-  inputs_ = other.inputs_;
-  prim_ = other.prim_;
-
-  // stride_ = std::make_shared<std::vector<int>>(stride);
+bool Tracer::operator==(Tracer &other) {
+  if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+    if (auto another =
+            std::dynamic_pointer_cast<Array>(other.shared_from_this())) {
+      return array->operator==(*another);
+    } else {
+      throw std::invalid_argument(
+          "Cannot compare an abstract Tracer with an Array.");
+    }
+  }
+  return aval() == other.aval();
 }
-*/
+
+bool Tracer::operator>(Tracer &other) {
+  if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+    if (auto another =
+            std::dynamic_pointer_cast<Array>(other.shared_from_this())) {
+      return array->operator>(*another);
+    } else {
+      throw std::invalid_argument(
+          "Cannot compare an abstract Tracer with an Array.");
+    }
+  }
+  return aval() > other.aval();
+}
+
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
                           const std::vector<int> &shape,
                           const std::vector<int> &stride) {
