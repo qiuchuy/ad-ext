@@ -111,75 +111,53 @@ void conv2d_op(const Array &input, const Array &weight, Array &output,
     // auto [N, C_in, H_in, W_in] = in_shape;
     // auto [C_out, KernelSizeH, KernelSizeW, C_in_] =
     // weight_shape; out [N, C_out, H_out, W_out]
-    const size_t in_stride_N = input.strides()[0];
-    const size_t in_stride_C = input.strides()[1];
-    const size_t in_stride_H = input.strides()[2];
-    const size_t in_stride_W = input.strides()[3];
+    const size_t in_stride_N = input.strides()[0] / sizeof(T);
+    const size_t in_stride_C = input.strides()[1] / sizeof(T);
+    const size_t in_stride_H = input.strides()[2] / sizeof(T);
+    const size_t in_stride_W = input.strides()[3] / sizeof(T);
 
-    const size_t wt_stride_O = weight.strides()[0];
-    const size_t wt_stride_H = weight.strides()[1];
-    const size_t wt_stride_W = weight.strides()[2];
-    const size_t wt_stride_C = weight.strides()[3];
+    const size_t wt_stride_O = weight.strides()[0] / sizeof(T);
+    const size_t wt_stride_H = weight.strides()[1] / sizeof(T);
+    const size_t wt_stride_W = weight.strides()[2] / sizeof(T);
+    const size_t wt_stride_C = weight.strides()[3] / sizeof(T);
 
-    const size_t out_stride_N = output.strides()[0];
-    const size_t out_stride_O = output.strides()[1];
-    const size_t out_stride_H = output.strides()[2];
-    const size_t out_stride_W = output.strides()[3];
+    const size_t out_stride_N = output.strides()[0] / sizeof(T);
+    const size_t out_stride_O = output.strides()[1] / sizeof(T);
+    const size_t out_stride_H = output.strides()[2] / sizeof(T);
+    const size_t out_stride_W = output.strides()[3] / sizeof(T);
 
-    auto point_conv = [&](const T *in_ptr, const T *wt_ptr, T *out_ptr, int oH,
-                          int oW) {
-        // out_ptr += out_stride_H * oH + out_stride_W * oW;
-
-        int temp = 1;
-        temp++;
-        // in one kernel, base
-        int ih_base = oH * wt_stride_O - padding[0];
-        int iw_base = oW * wt_stride_H - padding[1];
-
-        for (int out_channel = 0; out_channel < out_channels;
-             ++out_channel) { // channel wise
-            float res = 0.;
-            // weight element wise
-            for (int wh = 0; wh < weight_H; ++wh) {
-                for (int ww = 0; ww < weight_W; ++ww) {
-
-                    if (ih_base >= 0 && ih_base < in_H && iw_base >= 0 &&
-                        iw_base < in_W) {
-                        // not implemnet flip/dilation
-                        // const T *weight_ptr_pt =
-                        //     wt_ptr + wh * wt_stride_H + ww *
-                        //     wt_stride_W;
-                        // const T *in_ptr_pt = in_ptr + ih_base
-                        // * in_stride_H +
-                        //                      iw_base *
-                        //                      in_stride_W;
-                        int temp = 1;
-                        temp++;
-                        for (int in_channel = 0; in_channel < in_channels;
-                             in_channel++) {
-                            // res +=
-                            // static_cast<float>(in_ptr_pt[0])
-                            // *
-                            //        static_cast<float>(weight_ptr_pt[0]);
-                            // in_ptr_pt += in_stride_C;
-                            // weight_ptr_pt += wt_stride_C;
-                            int temp = 1;
-                            temp++;
+    for (int n = 0; n < N; n++) {
+        for (int o = 0; o < out_channels; o++) {
+            for (int oh = 0; oh < out_H; oh++) {
+                for (int ow = 0; ow < out_W; ow++) {
+                    T sum = 0;
+                    for (int c = 0; c < in_channels; c++) {
+                        for (int kh = 0; kh < weight_H; kh++) {
+                            for (int kw = 0; kw < weight_W; kw++) {
+                                int ih = oh * stride[0] - padding[0] +
+                                         kh * dilation[0];
+                                int iw = ow * stride[1] - padding[1] +
+                                         kw * dilation[1];
+                                if (ih >= 0 && ih < in_H && iw >= 0 &&
+                                    iw < in_W) {
+                                    sum +=
+                                        in_ptr[n * in_channels * in_H * in_W +
+                                               c * in_H * in_W + ih * in_W +
+                                               iw] *
+                                        wt_ptr[o * in_channels * weight_H *
+                                                   weight_W +
+                                               c * weight_H * weight_W +
+                                               kh * weight_W + kw];
+                                }
+                            }
                         }
-                    } // c
-                } // ww
-            } // wh
-            // printf("[CONV2D DEBUG INFO] at line %d at file %s
-            // and res %f\n",
-            //        __LINE__, __FILE__, 1.0);
-
-            // out_ptr[0] = static_cast<T>(res);
-            // out_ptr += out_stride_O;
-            // wt_ptr += wt_stride_O;
-            int temp = 1;
-            temp++;
+                    }
+                    out_ptr[n * out_channels * out_H * out_W +
+                            o * out_H * out_W + oh * out_W + ow] = sum;
+                }
+            }
         }
-    };
+    }
 }
 void conv2d_dispatch(const Array &input, const Array &weight, Array &output,
                      const std::vector<int> &stride,
@@ -187,10 +165,10 @@ void conv2d_dispatch(const Array &input, const Array &weight, Array &output,
                      const std::vector<int> &dilation) {
     switch (input.dtype().type) {
     case Dtype::DataType::Float32Type:
-        conv2d_gemm<float>(input, weight, output, stride, padding, dilation);
+        conv2d_op<float>(input, weight, output, stride, padding, dilation);
         break;
     case Dtype::DataType::Float64Type:
-        conv2d_gemm<double>(input, weight, output, stride, padding, dilation);
+        conv2d_op<double>(input, weight, output, stride, padding, dilation);
         break;
     default:
         throw std::invalid_argument(
