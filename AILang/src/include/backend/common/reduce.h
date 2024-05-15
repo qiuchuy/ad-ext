@@ -6,9 +6,9 @@ namespace {
 template <typename T, typename Op> struct contiguousReduce {
     Op op_;
     contiguousReduce(Op op) : op_(op) {}
-    void operator()(const T *x, T *accumulator, int size) {
+    void operator()(const T *x, T *y, int size) {
         while (size--) {
-            op_(accumulator, *x);
+            op_(y, *x);
             x++;
         }
     }
@@ -38,7 +38,7 @@ void reduce_dispatch(const Array &input, Array &output,
         throw std::invalid_argument("[Reduce] Not implement Or yet.");
         break;
     case ReducePrimitive::Sum: {
-        auto op = [](auto y, auto x) { (*y) = (*y) + x; };
+        auto op = [](auto x, auto y) { (*x) = (*x) + y; };
         reduction_op<T>(input, output, axes, op);
         break;
     }

@@ -1,5 +1,8 @@
 #include "primitive.h"
+#include "backend/common/Broadcast.h"
+#include "backend/common/conv.h"
 #include "backend/common/reduce.h"
+
 #include "binary.h"
 #include "ops.h"
 #include "transformation.h"
@@ -16,8 +19,8 @@ void IdentityPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
 void IdentityPrimitive::evalCPU(const std::vector<Array> &inputs,
                                 Array &output) {
     if (inputs.size() != 1) {
-        throw std::invalid_argument(
-            "[IdentityPrimitive::evalCPU] expects exactly one input array.");
+        throw std::invalid_argument("[IdentityPrimitive::evalCPU] expects "
+                                    "exactly one input array.");
     }
     output.copyBySharing(inputs[0], 0, 0, inputs[0].shape());
 }
@@ -44,9 +47,9 @@ void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     auto input1Shape = input1.shape();
     auto input2Shape = input2.shape();
     if (input1Shape != input2Shape) {
-        throw std::invalid_argument(
-            "[AddPrimitive::evalCPU] input arrays must have the same shape, "
-            "broadcasting is not supported yet.");
+        throw std::invalid_argument("[AddPrimitive::evalCPU] input arrays "
+                                    "must have the same shape, "
+                                    "broadcasting is not supported yet.");
     }
 
     auto size = std::accumulate(input1Shape.begin(), input1Shape.end(), 1,
@@ -95,13 +98,13 @@ void FillPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
 void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     if (inputs.size() != 1) {
         if (inputs.size() != 1) {
-            std::invalid_argument(
-                "[FillPrimitive::evalCPU] expects exactly one input array.");
+            std::invalid_argument("[FillPrimitive::evalCPU] expects "
+                                  "exactly one input array.");
         }
         const auto &input = inputs[0];
         if (input.dtype() != output.dtype())
-            std::runtime_error(
-                "[FillPrimitive] input and output dont have the same dtype.");
+            std::runtime_error("[FillPrimitive] input and output dont have "
+                               "the same dtype.");
         auto inputShape = input.shape();
         auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
                                     std::multiplies<int>());
@@ -217,15 +220,18 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
 
     auto input = inputs[0];
     auto inputShape = input.shape();
-    auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
-                                std::multiplies<int>());
+    // * itemsize
+    auto data_size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                                     std::multiplies<int>());
+    size_t size = data_size * input.itemsize();
     if (std::accumulate(shape_.begin(), shape_.end(), 1,
-                        std::multiplies<int>()) != size) {
-        throw std::invalid_argument(
-            "[ReshapePrimitive::evalCPU] The total number of elements in the "
-            "input array must be the same as the total number of elements in "
-            "the "
-            "output array.");
+                        std::multiplies<int>()) != data_size) {
+        throw std::invalid_argument("[ReshapePrimitive::evalCPU] The total "
+                                    "number of elements in the "
+                                    "input array must be the same as the "
+                                    "total number of elements in "
+                                    "the "
+                                    "output array.");
     }
 
     output.copyBySharing(input, size, 0, shape_);
@@ -297,7 +303,8 @@ void ArangePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[ArangePrimitive::evalCPU] expects exactly zero input array.");
     }
     output.SetDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
-                             output.shape(), output.strides()); // malloc bytes
+                             output.shape(),
+                             output.strides()); // malloc bytes
     if (output.dtype() == Bool) {
         std::runtime_error(
             "[ArangePrimitive:evalCPU]: Bool type unsupported for arange.");
@@ -604,10 +611,11 @@ TypePtr SinhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 std::string SinhPrimitive::toString() const { return "Sinh"; }
 
 // FIXME BroadCast in Value has error, but with no broadcast and just
-// shape/operate is successful
+// shape/operate is successful, maybe will be called frequently
 void BroadCastPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
     evalCPU(inputs, out);
 }
+
 void BroadCastPrimitive::evalCPU(const std::vector<Array> &inputs,
                                  Array &output) {
     if (inputs.size() != 1) {
@@ -622,24 +630,7 @@ void BroadCastPrimitive::evalCPU(const std::vector<Array> &inputs,
 
     output.SetDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
                              shape_, output.strides());
-
-    // TODO need to optimize size_t offset = 0;
-    //  auto inputShape = input.shape();
-    //  size_t inputNdim = input.ndim();
-    //  size_t shapeNdim = shape_.ndim();
-    //  auto shapeStrides = output.strides();
-    //  // assert whether can be broadcast have been verified in ops
-    //  int diff = shapeNdim - inputNdim;
-    //  for (int i = shapeNdim - 1; i >= diff; i--) {
-    //      if (inputShape[i] == 1 && shape_[i] != 1) {
-    //          // satisfy broadcast to
-    //          auto shape_iter_i = std::next(shape_.begin(), i);
-    //          size_t current_offset =
-    //              std::inner_product(shape_begin(), shape_iter_i,
-    //                                 shapeStrides.begin(),0);
-    //          size_t copy_times =
-    //      }
-    //  }
+    BroadCast_dispatch(input, output);
 }
 
 void BroadCastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -746,8 +737,8 @@ void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,
 void GetElementsNumberPrimitive::evalCPU(const std::vector<Array> &inputs,
                                          Array &output) {
     if (inputs.size() != 1) {
-        throw std::invalid_argument(
-            "[GetElementsNumberPrimitive eval] inputs must have one arrays.");
+        throw std::invalid_argument("[GetElementsNumberPrimitive eval] "
+                                    "inputs must have one arrays.");
     }
     output.SetDataWithBuffer(allocator::malloc(output.size()), dtype_,
                              output.shape(), output.strides());
@@ -919,7 +910,24 @@ void ConvolutionPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
     evalCPU(inputs, out);
 }
 void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
-                                   Array &output) {}
+                                   Array &output) {
+    if (inputs.size() != 2) {
+        throw std::invalid_argument("[ConvolutionPrimitive evalCPU] inputs of "
+                                    "conv must have both input and weight.");
+    }
+    output.SetDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
+                             output.shape(), output.strides());
+
+    auto &input = inputs[0];
+    auto &weight = inputs[1];
+    // 2D convolution
+    if (input.ndim() != 4) {
+        throw std::invalid_argument("[ConvolutionPrimitive evalCPU] only "
+                                    "support 2dConv,with N,C,W,H.");
+    } else {
+        conv2d_dispatch(input, weight, output, stride_, padding_, dilation_);
+    }
+}
 TypePtr
 ConvolutionPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,

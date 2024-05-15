@@ -72,14 +72,20 @@ void initOps(py::module_ &m) {
         },
         "Add the inputs");
     m.def(
+        "ones",
+        [](const std::vector<int> &shape) {
+            return ainl::core::ones(shape, ainl::core::Float64);
+        },
+        "create zeros array");
+    m.def(
         "zeros",
         [](const std::vector<int> &shape) {
-            return ainl::core::zeros(shape, ainl::core::Float32);
+            return ainl::core::zeros(shape, ainl::core::Float64);
         },
         "create zeros array");
     m.def(
         "mean",
-        [](const ainl::core::Array &input, const std::vector<int> &axes,
+        [](const ainl::core::Array &input, std::vector<int> &axes,
            bool keepdims = false) {
             return ainl::core::mean(input, axes, keepdims);
         },
@@ -90,6 +96,27 @@ void initOps(py::module_ &m) {
             return ainl::core::mean(input, axis, keepdims);
         },
         "compute  array's mean");
+    m.def(
+        "mean",
+        [](const ainl::core::Array &input, bool keepdims = false) {
+            return ainl::core::mean(input, keepdims);
+        },
+        "compute  array's mean");
+    m.def(
+        "var",
+        [](const ainl::core::Array &input, bool keepdims = false) {
+            return ainl::core::mean(input, keepdims);
+        },
+        "compute  array's mean");
+    m.def(
+        "conv",
+        [](const ainl::core::Array &input, const ainl::core::Array &weight,
+           const std::pair<int, int> &stride,
+           const std::pair<int, int> &padding,
+           const std::pair<int, int> &dilation) {
+            return ainl::core::conv2d(input, weight, stride, padding, dilation);
+        },
+        "compute  array's conv");
 }
 
 }; // namespace ainl::ffi

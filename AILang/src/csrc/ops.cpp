@@ -1,4 +1,5 @@
 #include "ops.h"
+#include "dtype.h"
 #include <set>
 namespace ainl::core {
 Dtype isFloat(Dtype dtype) { return dtype < Float32 ? Float32 : dtype; }
@@ -10,7 +11,7 @@ Array zeros(const std::vector<int> &shape, Dtype dtype = Float64) {
 Array zeros_like(const Array &arr) { return zeros(arr.shape(), arr.dtype()); }
 
 Array ones(const std::vector<int> &shape, Dtype dtype) {
-    return fill(shape, Array(1, dtype), dtype);
+    return fill(shape, Array(1., dtype), dtype);
 }
 
 Array ones_like(const Array &arr) { return ones(arr.shape(), arr.dtype()); }
@@ -26,10 +27,7 @@ Array fill(const std::vector<int> &shape, const Array &value, Dtype dtype) {
         throw std::invalid_argument(
             "[ops.cpp:fill] Input array's dimension can't be negative. ");
     };
-    auto in = broadcast_to(astype(value, dtype), shape);
-    // return Array(Float, std::make_shared<FillPrimitive>(), {value});
-    return Array(dtype, std::make_shared<FillPrimitive>(), {in}, shape,
-                 in.strides());
+    return broadcast_to(value, shape);
 }
 
 Array slice(const Array &input, const std::vector<int> &start,
@@ -167,14 +165,15 @@ Array sin(const Array &arr) {
 Array multiply(const Array &a, const Array &b) {
     // promote types
     auto output_type = a.dtype();
-    auto inputs = broadcast_arrays({a, b});
-    return Array(output_type, std::make_shared<MultiplyPrimitive>(), inputs,
-                 inputs[0].shape(), a.strides());
+    // auto inputs = broadcast_arrays({a, b});
+    // std::cout<<inputs[0]<<inputs[1];
+    return Array(output_type, std::make_shared<MultiplyPrimitive>(), {a, b},
+                 a.shape(), a.strides());
 }
 
-
-Array getelementsnumber(const Array &arr, std::vector<int> &axes, bool inverted,
-                        Dtype dtype) {
+Array getElementsNumber(const Array &arr, const std::vector<int> &axes,
+                        bool inverted, Dtype dtype) {
+    std::vector<int> normal_axes;
     for (auto &axis : axes) {
         // in [0,ndim-1]
         int normal_axis = (axis + arr.ndim()) % arr.ndim();
@@ -182,16 +181,17 @@ Array getelementsnumber(const Array &arr, std::vector<int> &axes, bool inverted,
             throw std::invalid_argument(
                 "[OPS number_of_elements] Cannot get the shape for axis.");
         }
-        axis = normal_axis;
+        normal_axes.push_back(normal_axis);
     }
+    std::vector<int> output_shape{1};
     // TODO no stop grad
-    return Array(
-        arr.dtype(),
-        std::make_shared<GetElementsNumberPrimitive>(axes, inverted, dtype),
-        {arr},
-        // Shape {1} is scalar
-        std::vector<int>{1},
-        getStridesFromShape(arr.shape(), dtypeSize(arr.dtype())));
+    return Array(arr.dtype(),
+                 std::make_shared<GetElementsNumberPrimitive>(normal_axes,
+                                                              inverted, dtype),
+                 {arr},
+                 // Shape {1} is scalar
+                 output_shape,
+                 getStridesFromShape(output_shape, dtypeSize(arr.dtype())));
 }
 
 std::pair<std::vector<int>, std::vector<int>>
@@ -214,10 +214,11 @@ getReduceShape(const std::vector<int> &axes, const std::vector<int> &shape) {
         } else {
             output_shape.push_back(1);
         }
-        std::vector<int> sorted_axes(axes_set.begin(),
-                                     axes_set.end()); // increase
-        return {output_shape, sorted_axes};
     }
+    std::vector<int> sorted_axes(axes_set.begin(),
+                                 axes_set.end()); // increase
+
+    return {output_shape, sorted_axes};
 }
 
 Array sum(const Array &arr, const std::vector<int> &axes, bool keepdims) {
@@ -226,9 +227,12 @@ Array sum(const Array &arr, const std::vector<int> &axes, bool keepdims) {
     }
     auto [output_shape, sorted_axes] = getReduceShape(axes, arr.shape());
     auto output_type = arr.dtype();
-    auto out = Array(output_type, std::make_shared<ReducePrimitive>(), {arr},
-                     output_shape,
-                     getStridesFromShape(output_shape, dtypeSize(output_type)));
+    auto out = Array(
+        output_type,
+        std::make_shared<ReducePrimitive>(sorted_axes, ReducePrimitive::Sum),
+        {arr}, output_shape,
+        getStridesFromShape(output_shape, dtypeSize(output_type)));
+
     if (keepdims) {
         return out;
     } else {
@@ -267,9 +271,22 @@ Array squeeze(const Array &arr, const std::vector<int> &axes) {
             shape.push_back(arr.shape()[i]);
         }
     }
+    for (auto it : shape) {
+        std::cout << it << std::endl;
+    }
+    // maybe shape = {}
+    if (!shape.size()) {
+        shape.push_back(1);
+    }
     return reshape(arr, shape);
 }
-Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims) {
+
+Array mean(const Array &arr, bool keepdims) {
+    std::vector<int> axes(arr.ndim());
+    std::iota(axes.begin(), axes.end(), 0);
+    return mean(arr, axes, keepdims);
+}
+Array mean(const Array &arr, std::vector<int> &axes, bool keepdims) {
     int ndim = arr.ndim();
     for (int axis : axes) {
         if (axis < -ndim || axis >= ndim) {
@@ -277,18 +294,19 @@ Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims) {
                 "[Ops.cpp mean] axis is out of bounds for array");
         }
     }
-    auto output_type = isFloat(arr.dtype());
+    auto output_type = arr.dtype();
     // sum
-    // return multiply(sum(a, axes, keepdims), normalizer);
-    return Array(output_type, std::make_shared<MeanPrimitive>(axes, keepdims),
-                 {arr}, arr.shape(),
-                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+    auto normalizer = getElementsNumber(arr, axes, true, output_type);
+    return multiply(sum(arr, axes, keepdims), normalizer);
+
+    // return Array(output_type, std::make_shared<MeanPrimitive>(axes,
+    // keepdims),
+    //              {arr}, arr.shape(),
+    //              getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
-Array mean(const Array &arr, bool keepdims) {
-    std::vector<int> axes(arr.shape().size());
-}
+
 Array mean(const Array &arr, int axis, bool keepdims = false) {
-    return mean(arr, std::vector<int>{axis}, keepdims);
+    return mean(arr, {axis}, keepdims);
 }
 
 Array var(const Array &arr, bool keepdims);
@@ -394,7 +412,7 @@ Array conv2d(const Array &input, const Array &weight,
     /* input = astype(input,out_type);
     weight = astype(weight,out_type);*/
 
-    std::vector<int> output_shape = get_output_shape(
+    std::vector<int> output_shape = get_conv2d_output_shape(
         input.shape(), weight.shape(), stride, padding, dilation);
 
     const std::vector<int> stride_vec = {stride.first, stride.second};
@@ -408,19 +426,20 @@ Array conv2d(const Array &input, const Array &weight,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
 }
 
-std::vector<int> get_output_shape(const std::vector<int> &in_shape,
-                                  const std::vector<int> &weight_shape,
-                                  const std::pair<int, int> &stride,
-                                  const std::pair<int, int> &padding,
-                                  const std::pair<int, int> &dilation) {
+std::vector<int> get_conv2d_output_shape(const std::vector<int> &in_shape,
+                                         const std::vector<int> &weight_shape,
+                                         const std::pair<int, int> &stride,
+                                         const std::pair<int, int> &padding,
+                                         const std::pair<int, int> &dilation) {
     // 3 224 224 in channels h w
     // weight shape=(out_channels, *kernel_size, in_channels),
-    // auto [C_in, H_in, W_in] = in_shape;
-    // auto [C_out, KernelSize0, KernelSize1, C_in_] = weight_shape;
-
-    auto C_in = in_shape[0];
-    auto H_in = in_shape[1];
-    auto W_in = in_shape[2];
+    // auto [N, C_in, H_in, W_in] = in_shape;
+    // auto [C_out, KernelSizeH, KernelSizeW, C_in_] = weight_shape;
+    // out [N, C_out, H_out, W_out]
+    auto N = in_shape[0];
+    auto C_in = in_shape[1];
+    auto H_in = in_shape[2];
+    auto W_in = in_shape[3];
     auto C_out = weight_shape[0];
     auto KernelSize0 = weight_shape[1];
     auto KernelSize1 = weight_shape[2];
@@ -433,7 +452,8 @@ std::vector<int> get_output_shape(const std::vector<int> &in_shape,
         (W_in + 2 * padding.second - dilation.second * (KernelSize1 - 1) - 1) /
             stride.second +
         1);
-    return {C_out, H_out, W_out};
+
+    return {N, C_out, H_out, W_out};
 }
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,

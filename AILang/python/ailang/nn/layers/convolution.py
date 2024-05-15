@@ -2,6 +2,7 @@ import ailang as al
 import math
 from ailang.nn.layers.base import Module
 from typing import Union
+import numpy as np
 
 """Applies a 2-dimensional convolution over the multi-channel input image.
 
@@ -42,18 +43,14 @@ class Conv2d(Module):
         )
         if bias:
             raise NotImplementedError()
-        self.weight = al.tensor((out_channels, *kernel_size, in_channels), "Float")
+        self.weight = al.zeros((out_channels, *kernel_size, in_channels))
+        # self.weight = al.tensor((out_channels, *kernel_size, in_channels), "Float")
         self.padding = padding
         self.stride = stride
         # print("type", type(self.weight))
 
     def __call__(self, x):
-        def f_conv(x):
-            return al.convolution(x)
-
-        return f_conv
-        pass
-        y = al.convolution(x)
-        if "bias" in self:
-            y = y + self.bias
+        y = al.conv(x, self.weight, (1, 1), (0, 0), (1, 1))
+        # if "bias" in self:
+        #     y = y + self.biass
         return y

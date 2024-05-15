@@ -1,0 +1,4 @@
+Wed May  8 09:34:56 2024 [Debug] initialized value: 0.000000 on line 49 in /root/AILang/AILang/AILang/src/include/array.h
+Wed May  8 09:34:56 2024 [Debug] [malloc] Fill address 25320272 with value: 0.000000 on line 60 in /root/AILang/AILang/AILang/src/include/array.h
+Wed May  8 09:34:56 2024 [Debug] initialized value: 0.000000 on line 49 in /root/AILang/AILang/AILang/src/include/array.h
+Wed May  8 09:34:56 2024 [Debug] [malloc] Fill address 25532176 with value: 0.000000 on line 60 in /root/AILang/AILang/AILang/src/include/array.h

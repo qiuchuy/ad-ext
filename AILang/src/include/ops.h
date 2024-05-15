@@ -2,7 +2,6 @@
 
 #include "array.h"
 #include "transformation.h"
-
 namespace ainl::core {
 
 // mean var
@@ -43,13 +42,12 @@ Array tanh(const Array &arr);
 Array exp(const Array &arr);
 Array log(const Array &arr);
 Array multiply(const Array &a, const Array &b);
-Array getelementsnumber(const Array &arr, std::vector<int> &axes, bool inverted,
-                        Dtype dtype = Float32);
-Array mean(const Array &a, bool keepdims);
+Array getElementsNumber(const Array &arr, const std::vector<int> &axes,
+                        bool inverted, Dtype dtype);
+Array mean(const Array &arr, bool keepdims = false);
 inline Array mean(const Array &arr) { return mean(arr, false); }
 
-Array mean(const Array &arr, const std::vector<int> &axes,
-           bool keepdims = false);
+Array mean(const Array &arr, std::vector<int> &axes, bool keepdims = false);
 Array mean(const Array &arr, int axis, bool keepdims);
 
 Array var(const Array &arr, bool keepdims = false);
@@ -73,11 +71,11 @@ Array conv2d(const Array &input, const Array &weight,
              const std::pair<int, int> &padding,
              const std::pair<int, int> &dilation);
 
-std::vector<int> get_output_shape(const std::vector<int> &in_shape,
-                                  const std::vector<int> &weight_shape,
-                                  const std::pair<int, int> &stride,
-                                  const std::pair<int, int> &padding,
-                                  const std::pair<int, int> &dilation);
+std::vector<int> get_conv2d_output_shape(const std::vector<int> &in_shape,
+                                         const std::vector<int> &weight_shape,
+                                         const std::pair<int, int> &stride,
+                                         const std::pair<int, int> &padding,
+                                         const std::pair<int, int> &dilation);
 
 #define GENERIC_OP_DECL(name)                                                  \
     std::shared_ptr<Tracer> name(                                              \

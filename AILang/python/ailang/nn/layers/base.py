@@ -38,7 +38,6 @@ class Module:
 
     @staticmethod
     def valid_parameter_filter(module, key, value):
-        # 这里的类别有点奇怪
         return isinstance(value, (Module, list, al.ffi.libailang.Tensor))
 
     @staticmethod
