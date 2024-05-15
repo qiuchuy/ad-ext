@@ -1,10 +1,12 @@
-#include <map>
+#include "array.h"
+
 #include <sstream>
 
-#include "array.h"
-#include "primitive.h"
 #include "graph.h"
+#include "ir/literal.h"
+#include "ir/type.h"
 #include "ops.h"
+#include "primitive.h"
 #include "trace.h"
 #include "utils/logger.h"
 
@@ -42,6 +44,10 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
       dtypeSize(dtype);
 }
 
+Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
+               const std::shared_ptr<Primitive> &prim)
+    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()) {}
+
 void Tracer::eval() {
   LOG_DEBUG("%s", "[eval] Start evaluating tracer");
   auto trace = getCurrentTrace();
@@ -71,28 +77,39 @@ bool Tracer::evaluated() const { return false; }
 
 std::string Tracer::toString() const { return "tracer"; }
 
-std::vector<std::shared_ptr<Tracer>> Tracer::subtracers() const { return {}; }
-
+/*
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
-                          const std::vector<int> &shape) {
+                          const std::vector<int> &shape, const std::vector<int>
+&stride={}) { data_ = other.data_; ptr_ = (char *)other.ptr_ + offset; shape_ =
+std::make_shared<std::vector<int>>(shape); dtype_ = other.dtype_; size_ = size;
+  inputs_ = other.inputs_;
+  prim_ = other.prim_;
+
+  // stride_ = std::make_shared<std::vector<int>>(stride);
+}
+*/
+void Array::copyBySharing(const Array &other, size_t size, size_t offset,
+                          const std::vector<int> &shape,
+                          const std::vector<int> &stride) {
   data_ = other.data_;
-  ptr_ = (char*)other.ptr_ + offset;
+  ptr_ = (char *)other.ptr_ + offset;
   shape_ = std::make_shared<std::vector<int>>(shape);
   dtype_ = other.dtype_;
   size_ = size;
   inputs_ = other.inputs_;
   prim_ = other.prim_;
-  auto stride = std::vector<int>(shape.size(), 1);
-  for (size_t i = 0; i < shape.size(); i++) {
-    if (i == shape.size() - 1) {
-      stride[i] = dtypeSize(dtype_);
-    } else {
+  if (stride.empty()) {
+    stride_ = std::make_shared<std::vector<int>>(shape.size());
+    for (size_t i = 0; i < shape.size(); i++) {
+      stride_->at(i) = 1;
       for (size_t j = i + 1; j < shape.size(); j++) {
-        stride[i] *= shape[j] * dtypeSize(dtype_);
+        stride_->at(i) *= shape[j];
       }
+      stride_->at(i) *= dtypeSize(dtype_);
     }
+  } else {
+    stride_ = std::make_shared<std::vector<int>>(stride);
   }
-  stride_ = std::make_shared<std::vector<int>>(stride);
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)
@@ -145,6 +162,17 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
 std::string Array::toString() const {
   std::ostringstream oss;
   oss << *this;
+}
+
+ir::TypePtr Array::getJITType() {
+  if (!evaluated())
+    eval();
+  auto eleTy = ir::DtypeToTypePtr(dtype_);
+  std::vector<ir::ValuePtr> shape;
+  for (const auto &dim : *shape_) {
+    shape.push_back(ir::Literal::create(dim));
+  }
+  return ir::TensorType::create(eleTy, shape);
 }
 
 } // namespace ainl::core

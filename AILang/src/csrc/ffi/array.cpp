@@ -1,8 +1,11 @@
+#include "array.h"
+
+#include <pybind11/cast.h>
 #include <sstream>
 
-#include "array.h"
 #include "ffi/array.h"
 #include "ops.h"
+#include "pass/stablehlo_lowering.h"
 #include "transformation.h"
 #include "utils/logger.h"
 
@@ -25,20 +28,13 @@ py::list toPyListRec(ainl::core::Array &arr, size_t offset, size_t dim) {
   }
   if (dim == arr.ndim() - 1) {
     for (size_t i = 0; i < arr.shape().at(dim); i++) {
-      result.append(*(arr.data<T>() + offset / arr.itemsize() + i));
+      result.append(*(arr.data<T>() +
+                      (offset + i * arr.strides().at(dim)) / arr.itemsize()));
     }
   } else {
     for (size_t i = 0; i < arr.shape().at(dim); i++) {
-      int dimOffset = 1;
-      for (size_t j = dim + 1; j < arr.shape().size(); j++) {
-        dimOffset *= arr.shape()[j];
-      }
-      // auto dimOffset =
-      //     std::accumulate(arr.shape().begin() + dim, arr.shape().end(), 1,
-      //                     std::multiplies<int>());
-      // [TODO] why this causes a segfault?
-      result.append(toPyListRec<T>(arr, offset + i * dimOffset * arr.itemsize(),
-                                   dim + 1));
+      result.append(
+          toPyListRec<T>(arr, offset + i * arr.strides().at(dim), dim + 1));
     }
   }
   return result;
@@ -87,10 +83,11 @@ void initArray(py::module &_m) {
       .def("__repr__", &ainl::core::Dtype::toString);
   py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
                                                                       "tracer")
-      .def(py::init<>())
       .def("__repr__", &ainl::core::Tracer::toString);
   py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
              std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
+  py::class_<ainl::core::JITTracer, ainl::core::Tracer,
+             std::shared_ptr<ainl::core::JITTracer>>(_m, "jittracer");
   py::class_<ainl::core::Array, ainl::core::Tracer,
              std::shared_ptr<ainl::core::Array>>(_m, "array",
                                                  py::buffer_protocol())
@@ -106,7 +103,6 @@ void initArray(py::module &_m) {
              if (!a.evaluated()) {
                a.eval();
              }
-             LOG_DEBUG("%s", "here");
              std::ostringstream oss;
              oss << a;
              return oss.str();
@@ -227,6 +223,34 @@ void initArray(py::module &_m) {
       throw std::runtime_error("Invalid return type");
     }
   });
+
+  _m.def(
+      "jit_impl",
+      [](py::function &f,
+         std::vector<std::shared_ptr<ainl::core::Tracer>> inputs,
+         const std::string &target) {
+        auto func =
+            [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
+            -> std::shared_ptr<ainl::core::Tracer> {
+          py::tuple posArgs = py::tuple(inputs.size());
+          for (size_t i = 0; i < inputs.size(); i++) {
+            posArgs[i] = inputs[i];
+          }
+          auto result = f(*posArgs);
+          return result.cast<std::shared_ptr<ainl::core::Tracer>>();
+        };
+        auto module =
+            jit(func, py::str(getattr(f, "__name__")), target, inputs);
+        if (target == "ailang") {
+          return py::cast(module);
+        } else if (target == "mlir") {
+          return py::cast(ir::StableHLOLowering(module));
+        } else {
+          throw std::invalid_argument("Invalid jit target");
+        }
+      },
+      "jit compilation of python function", py::arg(), py::arg(),
+      py::arg("target") = "ailang");
 }
 
 } // namespace ainl::ffi

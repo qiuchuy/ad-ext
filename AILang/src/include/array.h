@@ -10,6 +10,7 @@
 #include "device.h"
 #include "dtype.h"
 #include "graph.h"
+#include "ir/type.h"
 #include "primitive.h"
 #include "trace.h"
 #include "utils/logger.h"
@@ -18,33 +19,34 @@ namespace ainl::core {
 
 class Array;
 class Primitive;
+class BaseTrace;
 
 class Tracer : public std::enable_shared_from_this<Tracer> {
 public:
   Tracer() = default;
   virtual ~Tracer() = default;
   Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
-         const std::shared_ptr<Primitive> &prim)
-      : inputs_(inputs), prim_(prim) {}
+         const std::shared_ptr<Primitive> &prim);
   bool isLeaf() { return inputs_.empty(); }
   std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
   std::shared_ptr<Primitive> primitive() const { return prim_; }
   void eval();
-  virtual std::vector<std::shared_ptr<Tracer>> subtracers() const;
-  virtual bool evaluated() const;
-  virtual std::string toString() const;
+  virtual ir::TypePtr getJITType() = 0;
+  virtual std::shared_ptr<Tracer> aval() = 0;
+  virtual bool evaluated() const = 0;
+  virtual std::string toString() const = 0;
 
 protected:
   std::vector<std::shared_ptr<Tracer>> inputs_;
   std::shared_ptr<Primitive> prim_;
+  std::shared_ptr<BaseTrace> trace_;
 };
 
 class Array : public Tracer {
 public:
   /* Construct a scalar array*/
   template <typename T>
-  explicit Array(T val, Dtype dtype = TypeToDtype<T>())
-      : Tracer({}, nullptr) {
+  explicit Array(T val, Dtype dtype = TypeToDtype<T>()) : Tracer({}, nullptr) {
     LOG_DEBUG("initialized value: %f", val);
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
@@ -105,8 +107,11 @@ public:
 
   bool evaluated() const override { return data_ != nullptr; }
 
+  std::shared_ptr<Tracer> aval() override { return shared_from_this(); }
+
   void copyBySharing(const Array &array, size_t size, size_t offset,
-                     const std::vector<int> &shape);
+                     const std::vector<int> &shape,
+                     const std::vector<int> &stride = {});
 
   struct ArrayIterator {
     using iterator_category = std::random_access_iterator_tag;
@@ -165,6 +170,8 @@ public:
     return static_cast<T *>(ptr_);
   };
 
+  ir::TypePtr getJITType() override;
+
   friend std::ostream &operator<<(std::ostream &os, const Array &arr);
 
   std::string toString() const override;
@@ -172,7 +179,7 @@ public:
   template <typename T>
   void print(std::ostream &os, size_t offset, size_t dim) const {
     if (ndim() == 0) {
-      os << (*((char*)data<T>() + offset / itemsize()));
+      os << (*(data<T>() + offset / itemsize()));
       return;
     }
     os << "[";
@@ -180,7 +187,7 @@ public:
       LOG_DEBUG("[print] Printing array at %d with offset %d",
                 reinterpret_cast<uintptr_t>(ptr_), offset);
       for (size_t i = 0; i < shape_->at(dim); i++) {
-        os << (*((char*)data<T>() + offset / itemsize() + i));
+        os << (*(data<T>() + (offset + i * stride_->at(dim)) / itemsize()));
         if (i != shape_->at(dim) - 1) {
           os << ", ";
         }
@@ -188,12 +195,9 @@ public:
 
     } else {
       for (size_t i = 0; i < shape_->at(dim); i++) {
-        auto dimOffset =
-            std::accumulate(shape_->begin() + dim + 1, shape_->end(), 1,
-                            std::multiplies<int>());
-        print<T>(os, offset + i * dimOffset * itemsize(), dim + 1);
+        print<T>(os, offset + i * stride_->at(dim), dim + 1);
         if (i != shape_->at(dim) - 1) {
-          os << "\n";
+          os << ",";
         }
       }
     }

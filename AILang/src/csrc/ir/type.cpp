@@ -1,4 +1,6 @@
 #include "ir/type.h"
+
+#include "dtype.h"
 #include "ir/literal.h"
 
 namespace ainl::ir {
@@ -76,5 +78,19 @@ LiteralType::LiteralType(const ValuePtr &value) { this->value = value; }
 std::string LiteralType::str() { return value->getType()->getName(); }
 
 ValuePtr LiteralType::getValue() { return value; }
+
+TypePtr DtypeToTypePtr(core::Dtype dtype) {
+  switch (dtype.type) {
+  case core::Dtype::DataType::Int32Type:
+    return IntTypePtr::get();
+  case core::Dtype::DataType::Float32Type:
+    return FloatTypePtr::get();
+  case core::Dtype::DataType::Float64Type:
+    return DoubleTypePtr::get();
+  default:
+      // throw AINLError("Unsupported dtype.");
+      ;
+  }
+}
 
 } // namespace ainl::ir

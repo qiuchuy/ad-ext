@@ -17,6 +17,7 @@ namespace ainl::ir {
 class Graph;
 class Block;
 class Signature;
+class IRVisitor;
 using GraphPtr = std::shared_ptr<Graph>;
 using BlockPtr = Block *;
 using SignaturePtr = Signature *;
@@ -60,19 +61,28 @@ public:
     useList.clear();
     useValueList.clear();
     signature = nullptr;
+    setNext(nullptr);
+    setPrev(nullptr);
   }
   ~Node() override = default;
   Node();
   Node(const TypePtr &type, const TypePtr &inType);
 
   explicit operator std::string() const override { return ""; }
+
+  template <typename NodeType, typename... ARGS>
+  static NodePtr create(ARGS &&... args) {
+    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
+    return Node;
+  }
+
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
+  virtual void accept(IRVisitor *visitor);
 
   friend class Graph;
 
   static int LOCAL_COUNT;
 
-public:
   void addBlock();
   void addBlockWithParam(NodePtr param);
   void setUse(ValuePtr value, int idx);
@@ -111,6 +121,7 @@ public:
     ssm << ")";
     return ssm.str();
   }
+  void accept(IRVisitor *visitor) override;
 
 private:
   std::vector<ValuePtr> params;
@@ -124,12 +135,15 @@ public:
   static ReturnOpPtr create(ValuePtr value) { return new ReturnOp(value); }
 
   NodeKind kind() override { return NodeKind::RETURN; }
+  void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override {
     std::stringstream ssm;
     ssm << "return ";
     ssm << value->getName();
     return ssm.str();
   }
+
+  ValuePtr getReturnValue() const { return value; }
 
 private:
   ValuePtr value;
@@ -176,6 +190,7 @@ class Matmul : public Node {
 public:
   Matmul(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
   NodeKind kind() override { return Node::NodeKind::MATMUL; }
+  void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   ValuePtr getLHS() const { return lhs; }
   ValuePtr getRHS() const { return rhs; }
@@ -204,9 +219,11 @@ public:
   // 似乎有同名类
   Transpose(const TypePtr &nodeType, const ValuePtr &inValue);
   NodeKind kind() override { return Node::NodeKind::TRANSPOSE; }
+  void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   // 在需要将 Transpsoe 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
+  std::vector<int> getShape();
 
 private:
   ValuePtr inValue;

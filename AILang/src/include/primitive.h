@@ -3,15 +3,13 @@
 #include "array.h"
 #include "device.h"
 
-class Type;
-using TypePtr = std::shared_ptr<Type>;
-
 namespace ainl::core {
 
 class Array;
 class BaseTrace;
 class Tracer;
 class JVPTracer;
+class JITTracer;
 
 class Primitive {
 public:
@@ -27,7 +25,7 @@ public:
 
   virtual void eval(const std::vector<Array> &inputs, Array &output) = 0;
   virtual void evalCPU(const std::vector<Array> &inputs, Array &output) = 0;
-  virtual TypePtr typeRalation(const std::vector<TypePtr> &inTypes) = 0;
+  virtual void jit(const std::vector<JITTracer> &inputs, JITTracer &output) = 0;
   virtual void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) = 0;
   virtual std::string toString() const = 0;
   operator std::string() const { return toString(); }
@@ -47,7 +45,7 @@ public:
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
@@ -58,7 +56,7 @@ public:
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
@@ -69,7 +67,7 @@ public:
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
@@ -80,7 +78,7 @@ public:
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 };
@@ -99,7 +97,7 @@ public:
       : begin_(begin), end_(end), stride_(stride) {}
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 
@@ -115,13 +113,32 @@ public:
   explicit ReshapePrimitive(const std::vector<int> &shape) : shape_(shape) {}
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-
-  TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   std::string toString() const override;
 
 private:
   std::vector<int> shape_;
+};
+
+class TransposePrimitive : public Primitive {
+public:
+  TransposePrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &output) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  std::string toString() const override;
+};
+
+class MatMulPrimitive : public Primitive {
+public:
+  MatMulPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &output) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  std::string toString() const override;
 };
 
 } // namespace ainl::core

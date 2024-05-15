@@ -30,13 +30,59 @@ void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }
 
 Block::operator std::string() const {
   std::string str;
-  str.append(label + ":\n");
+  str.append("{\n");
+  // str.append(label + ":\n");
   for (auto node = (NodePtr)beginNode->next; node->next != nullptr;
        node = (NodePtr)node->next) {
     str.append("\t");
     str.append(std::string(*node));
     str.append("\n");
   }
+  str.append("}\n");
   return str;
 }
+
+Block::BlockIterator Block::begin() {
+  return BlockIterator(paramNode, paramNode, returnNode, beginNode, endNode);
+}
+
+Block::BlockIterator Block::end() {
+  return BlockIterator(returnNode, paramNode, returnNode, beginNode, endNode);
+}
+
+Block::BlockIterator::BlockIterator(NodePtr node, NodePtr paramNode,
+                                    NodePtr returnNode, NodePtr beginNode,
+                                    NodePtr endNode)
+    : node(node), paramNode(paramNode), returnNode(returnNode),
+      beginNode(beginNode), endNode(endNode) {}
+
+Block::BlockIterator::reference Block::BlockIterator::operator*() {
+  return node;
+}
+
+Block::BlockIterator &Block::BlockIterator::operator++() {
+  if (node == paramNode) {
+    node = (NodePtr)(beginNode->next);
+  } else if (node->next == endNode) {
+    node = (NodePtr)(returnNode);
+  } else {
+    node = (NodePtr)(node->next);
+  }
+  return *this;
+}
+
+Block::BlockIterator Block::BlockIterator::operator++(int) {
+  BlockIterator tmp = *this;
+  ++(*this);
+  return tmp;
+}
+
+bool Block::BlockIterator::operator==(const BlockIterator &rhs) const {
+  return node == rhs.node;
+}
+
+bool Block::BlockIterator::operator!=(const BlockIterator &rhs) const {
+  return node != rhs.node;
+}
+
 } // namespace ainl::ir

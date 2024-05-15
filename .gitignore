@@ -23,6 +23,7 @@ CMakeUserPresets.json
 *.VC.opendb
 *.suo
 *.user
+compile_commands.json
 
 # macOS files
 .DS_Store
@@ -40,3 +41,9 @@ log.txt
 
 local_test/
 cudnn-baseline/
+log
+.clangd/
+.cache/
+AILang/python/ailang/ffi/*.so
+
+

@@ -9,7 +9,7 @@ cmake -G Ninja -B build/ -S . \
     -DIREE_ENABLE_THIN_ARCHIVES=ON \
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_CXX_FLAGS="-fuse-ld=lld" \ 
+    -DCMAKE_CXX_FLAGS="-fuse-ld=lld" \
     -DIREE_ENABLE_LLD=ON \
     -DUSE_CUSTOM_LLVM=ON \
     -DCUSTOM_LLVM_PATH=build/third_party/iree/llvm-project/lib/cmake/llvm \
@@ -20,9 +20,3 @@ cmake -G Ninja -B build/ -S . \
     . 
 cmake --build build/ --target iree-compile libailang -j8
 cd AILang/python && pip install -e .
-
-
-
-
-
-

@@ -1,8 +1,14 @@
+#include "primitive.h"
+
 #include <algorithm>
+#include <memory>
 #include <numeric>
 
+#include "ast/node_contract.h"
+#include "ast/type_contract.h"
+#include "ir/type.h"
 #include "ops.h"
-#include "primitive.h"
+#include "trace.h"
 #include "transformation.h"
 
 namespace ainl::core {
@@ -20,7 +26,8 @@ void IdentityPrimitive::evalCPU(const std::vector<Array> &inputs,
   output.copyBySharing(inputs[0], 0, 0, inputs[0].shape());
 }
 
-TypePtr IdentityPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void IdentityPrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {}
 
 void IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
@@ -51,7 +58,8 @@ void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               std::multiplies<int>());
 }
 
-TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void AddPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 
 void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
@@ -78,7 +86,8 @@ void FlattenPrimitive::evalCPU(const std::vector<Array> &inputs,
   */
 }
 
-TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void FlattenPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 
 void FlattenPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
@@ -101,7 +110,8 @@ void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               std::multiplies<int>());
 }
 
-TypePtr FillPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void FillPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 
 void FillPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
@@ -189,7 +199,8 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
 std::string SlicePrimitive::toString() const { return "Slice"; }
 
-TypePtr SlicePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void SlicePrimitive::jit(const std::vector<JITTracer> &inputs,
+                         JITTracer &output) {}
 
 void SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                          JVPTracer &output) {}
@@ -219,7 +230,9 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
 
   output.copyBySharing(input, size, 0, shape_);
 }
-TypePtr ReshapePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void ReshapePrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 
 void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {
@@ -230,11 +243,130 @@ void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
   auto input = inputs[0];
 
   output.setPrimal(
-      reshape_({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
+      reshape({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
   output.setTangent(
-      reshape_({input.tangent()}, std::make_shared<ReshapePrimitive>(shape_)));
+      reshape({input.tangent()}, std::make_shared<ReshapePrimitive>(shape_)));
 }
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }
+
+void TransposePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TransposePrimitive::evalCPU] expects exactly one input array.");
+  }
+
+  auto input = inputs[0];
+  auto shape = input.shape();
+  auto stride = input.strides();
+  std::reverse(shape.begin(), shape.end());
+  std::reverse(stride.begin(), stride.end());
+  auto size =
+      std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
+  output.copyBySharing(input, size, 0, shape, stride);
+}
+
+void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TransposePrimitive::jit] expects exactly one input tracer.");
+  }
+
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input.value()};
+  auto outputType = ir::resolveContract("transpose", inputType);
+
+  auto module = getTracedModule();
+  output.setValue(
+      ir::resolveContract("transpose", module, outputType, inputValues));
+  output.setTracer(
+      transpose({input.tracer()}, std::make_shared<TransposePrimitive>()));
+}
+
+void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                             JVPTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TransposePrimitive::jvp] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+
+  output.setPrimal(
+      transpose({input.primal()}, std::make_shared<TransposePrimitive>()));
+  output.setTangent(
+      transpose({input.tangent()}, std::make_shared<TransposePrimitive>()));
+}
+
+std::string TransposePrimitive::toString() const { return "Transpose"; }
+
+void MatMulPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void MatMulPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MatMulPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+
+  auto input1 = inputs[0];
+  auto input2 = inputs[1];
+  auto input1Shape = input1.shape();
+  auto input2Shape = input2.shape();
+  if (input1Shape.size() != 2 || input2Shape.size() != 2) {
+    throw std::invalid_argument(
+        "[MatMulPrimitive::evalCPU] input arrays must have exactly two "
+        "dimensions.");
+  }
+
+  if (input1Shape[1] != input2Shape[0]) {
+    throw std::invalid_argument(
+        "[MatMulPrimitive::evalCPU] the second dimension of the first input "
+        "array must be the same as the first dimension of the second input "
+        "array.");
+  }
+
+  auto outputShape = {input1Shape[0], input2Shape[1]};
+  auto size = std::accumulate(outputShape.begin(), outputShape.end(), 1,
+                              std::multiplies<int>());
+  // this is wrong, please update it
+  output.copyBySharing(input1, size, 0, outputShape);
+}
+
+void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MatMulPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
+
+  // type inference
+  auto outputType = ir::resolveContract("matmul", inputType);
+
+  auto module = getTracedModule();
+
+  // ir generation
+  output.setValue(
+      ir::resolveContract("matmul", module, outputType, inputValues));
+  output.setTracer(matmul({input0.tracer(), input1.tracer()},
+                          std::make_shared<MatMulPrimitive>()));
+}
+
+void MatMulPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                          JVPTracer &output) {}
+
+std::string MatMulPrimitive::toString() const { return "MatMul"; }
 
 } // namespace ainl::core

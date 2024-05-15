@@ -1,10 +1,11 @@
 #pragma once
 
+#include <stdio.h>
+
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-#include <stdio.h>
 #include <string>
 #include <unordered_map>
 
