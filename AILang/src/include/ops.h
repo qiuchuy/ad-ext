@@ -27,6 +27,7 @@ Array arange(double begin, double end);
 Array astype(const Array &arr, Dtype dtype);
 Array abs(const Array &arr);
 Array add(const Array &a, const Array &b);
+Array subtract(const Array &a, const Array &b);
 Array arcsin(const Array &arr);
 Array arcsinh(const Array &arr);
 Array arccos(const Array &arr);
@@ -47,15 +48,22 @@ Array getElementsNumber(const Array &arr, const std::vector<int> &axes,
 Array mean(const Array &arr, bool keepdims = false);
 inline Array mean(const Array &arr) { return mean(arr, false); }
 
-Array mean(const Array &arr, std::vector<int> &axes, bool keepdims = false);
+Array mean(const Array &arr, const std::vector<int> &axes,
+           bool keepdims = false);
 Array mean(const Array &arr, int axis, bool keepdims);
-
+Array var(const Array &arr, const std::vector<int> &axes, bool keepdims,
+          int ddof = 0);
 Array var(const Array &arr, bool keepdims = false);
-inline Array var(const Array &arr) { return var(arr, false); }
-Array var(const Array &arr, const std::vector<int> &axes,
-          bool keepdims = false);
-Array var(const Array &arr, int axis, bool keepdims = false);
+Array var(const Array &arr, const std::vector<int> &axes, bool keepdims);
+Array var(const Array &arr, int axis, bool keepdims);
+
+Array maximum(const Array &a, const Array &b);
+Array minimum(const Array &a, const Array &b);
+
 Array softmax(const Array &arr);
+Array square(const Array &arr);
+
+Array sqrt(const Array &arr);
 Array sigmoid(const Array &arr);
 // broadcast
 Array broadcast_to(const Array &arr, const std::vector<int> &shape);

@@ -5,7 +5,7 @@ namespace ainl::core {
 Dtype isFloat(Dtype dtype) { return dtype < Float32 ? Float32 : dtype; }
 
 Array zeros(const std::vector<int> &shape, Dtype dtype = Float64) {
-    return fill(shape, Array(0, dtype), dtype);
+    return fill(shape, Array(0., dtype), dtype);
 }
 
 Array zeros_like(const Array &arr) { return zeros(arr.shape(), arr.dtype()); }
@@ -63,7 +63,26 @@ Array flatten(const Array &input) {
                  flattenShape,
                  getStridesFromShape(flattenShape, input.itemsize()));
 }
+Array maximum(const Array &a, const Array &b) {
+    auto output_type = a.dtype();
+    auto inputs =
+        broadcast_arrays({astype(a, output_type), astype(b, output_type)});
 
+    std::vector<int> output_shape = inputs[0].shape();
+    return Array(output_type, std::make_shared<MaximumPrimitive>(),
+                 std::move(inputs), output_shape,
+                 getStridesFromShape(output_shape, dtypeSize(output_type)));
+}
+Array minimum(const Array &a, const Array &b) {
+    auto output_type = a.dtype();
+    auto inputs =
+        broadcast_arrays({astype(a, output_type), astype(b, output_type)});
+
+    std::vector<int> output_shape = inputs[0].shape();
+    return Array(output_type, std::make_shared<MinimumPrimitive>(),
+                 std::move(inputs), output_shape,
+                 getStridesFromShape(output_shape, dtypeSize(output_type)));
+}
 Array arange(double begin, double end, double stride, Dtype dtype) {
     if (std::isnan(begin) || std::isnan(end) || std::isnan(stride)) {
         std::invalid_argument("[arange] input is NaN, can't compute length.");
@@ -281,12 +300,62 @@ Array squeeze(const Array &arr, const std::vector<int> &axes) {
     return reshape(arr, shape);
 }
 
+//  / n-1
+Array square(const Array &arr) {
+    Dtype output_type = isFloat(arr.dtype());
+    auto input = astype(arr, output_type);
+    return Array(output_type, std::make_shared<SquarePrimitive>(), {input},
+                 arr.shape(),
+                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+}
+Array sqrt(const Array &arr) {
+    Dtype output_type = isFloat(arr.dtype());
+    auto input = astype(arr, output_type);
+    return Array(output_type, std::make_shared<SqrtPrimitive>(), {input},
+                 arr.shape(),
+                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+}
+Array var(const Array &arr, const std::vector<int> &axes, bool keepdims,
+          int ddof) {
+    int ndim = arr.ndim();
+    std::cout << ndim;
+    std::cout << axes[0] << axes[1] << axes[2];
+    for (int axis : axes) {
+        if (axis < -ndim || axis >= ndim) {
+            throw std::invalid_argument(
+                "[Ops.cpp var] axis is out of bounds for array");
+        }
+    }
+    if (ddof != 0) {
+        throw std::invalid_argument("[Ops.cpp var] only suport ddof =0.");
+    }
+    auto output_type = arr.dtype();
+    auto m2 = square(mean(arr, axes, keepdims));
+    auto a2 = mean(square(arr), axes, keepdims);
+
+    auto v = subtract(a2, m2);
+    return v;
+}
+
+Array var(const Array &arr, bool keepdims) {
+    std::vector<int> axes(arr.ndim());
+
+    std::iota(axes.begin(), axes.end(), 0);
+    return var(arr, axes, keepdims, 0);
+}
+Array var(const Array &arr, const std::vector<int> &axes, bool keepdims) {
+    return var(arr, axes, keepdims, 0);
+}
+Array var(const Array &arr, int axis, bool keepdims) {
+    return var(arr, {axis}, keepdims, 0);
+}
+
 Array mean(const Array &arr, bool keepdims) {
     std::vector<int> axes(arr.ndim());
     std::iota(axes.begin(), axes.end(), 0);
     return mean(arr, axes, keepdims);
 }
-Array mean(const Array &arr, std::vector<int> &axes, bool keepdims) {
+Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims) {
     int ndim = arr.ndim();
     for (int axis : axes) {
         if (axis < -ndim || axis >= ndim) {
@@ -308,10 +377,6 @@ Array mean(const Array &arr, std::vector<int> &axes, bool keepdims) {
 Array mean(const Array &arr, int axis, bool keepdims = false) {
     return mean(arr, {axis}, keepdims);
 }
-
-Array var(const Array &arr, bool keepdims);
-Array var(const Array &arr, const std::vector<int> &axes, bool keepdims);
-Array var(const Array &arr, int axis, bool keepdims);
 
 Array sinh(const Array &arr) {
     Dtype output_type = isFloat(arr.dtype());
@@ -383,6 +448,16 @@ Array sigmoid(const Array &arr) {
                  arr.shape(),
                  getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
+Array subtract(const Array &a, const Array &b) {
+    Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
+    auto inputs =
+        broadcast_arrays({astype(a, output_type), astype(b, output_type)});
+
+    std::vector<int> output_shape = inputs[0].shape();
+    return Array(output_type, std::make_shared<SubtractPrimitive>(),
+                 std::move(inputs), output_shape,
+                 getStridesFromShape(output_shape, dtypeSize(output_type)));
+}
 
 Array add(const Array &a, const Array &b) {
     Dtype output_type = a.dtype() < b.dtype() ? a.dtype() : b.dtype();
@@ -394,7 +469,6 @@ Array add(const Array &a, const Array &b) {
                  std::move(inputs), output_shape,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
 }
-
 // Convolution
 
 Array conv2d(const Array &input, const Array &weight,

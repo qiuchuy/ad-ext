@@ -60,6 +60,12 @@ void initOps(py::module_ &m) {
             return ainl::core::sigmoid(input);
         },
         "Get sigmoid of input");
+    m.def(
+        "square",
+        [](const ainl::core::Array &input) {
+            return ainl::core::square(input);
+        },
+        "Get sigmoid of input");
 
     m.def(
         "cos",
@@ -69,6 +75,12 @@ void initOps(py::module_ &m) {
         "Add",
         [](const ainl::core::Array &a, const ainl::core::Array &b) {
             return ainl::core::add(a, b);
+        },
+        "Add the inputs");
+    m.def(
+        "Sub",
+        [](const ainl::core::Array &a, const ainl::core::Array &b) {
+            return ainl::core::subtract(a, b);
         },
         "Add the inputs");
     m.def(
@@ -105,9 +117,24 @@ void initOps(py::module_ &m) {
     m.def(
         "var",
         [](const ainl::core::Array &input, bool keepdims = false) {
-            return ainl::core::mean(input, keepdims);
+            return ainl::core::var(input, keepdims);
         },
-        "compute  array's mean");
+        "compute  array's var");
+    m.def(
+        "maximum",
+        [](const ainl::core::Array &a, const ainl::core::Array &b) {
+            return ainl::core::maximum(a, b);
+        },
+        "compute  maximum. ");
+    m.def(
+        "minimum",
+        [](const ainl::core::Array &a, const ainl::core::Array &b) {
+            return ainl::core::minimum(a, b);
+        },
+        "compute  minimum.");
+    m.def(
+        "sqrt", [](const ainl::core::Array &a) { return ainl::core::sqrt(a); },
+        "compute  sqrt.");
     m.def(
         "conv",
         [](const ainl::core::Array &input, const ainl::core::Array &weight,

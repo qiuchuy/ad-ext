@@ -64,7 +64,137 @@ void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
 std::string AddPrimitive::toString() const { return "Add"; }
+// substract
 
+void SubtractPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void SubtractPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+    if (inputs.size() != 2) {
+        throw std::invalid_argument(
+            "[SubtractPrimitive::evalCPU] expects exactly two input arrays.");
+    }
+
+    auto input1 = inputs[0];
+    auto input2 = inputs[1];
+    auto input1Shape = input1.shape();
+    auto input2Shape = input2.shape();
+    if (input1Shape != input2Shape) {
+        throw std::invalid_argument("[SubtractPrimitive::evalCPU] input arrays "
+                                    "must have the same shape, "
+                                    "broadcasting is not supported yet.");
+    }
+
+    auto size = std::accumulate(input1Shape.begin(), input1Shape.end(), 1,
+                                std::multiplies<int>());
+
+    binary(input1, input2, output, detail::Sub());
+}
+
+TypePtr SubtractPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void SubtractPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
+std::string SubtractPrimitive::toString() const { return "Sub"; }
+// SquarePrimitive
+
+void SquarePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+void SquarePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 0) {
+        std::invalid_argument(
+            "[SquarePrimitive::evalCPU] expects exactly one input array.");
+    }
+    const auto &input = inputs[0];
+    if (output.dtype() == Float32 || output.dtype() == Float64) {
+        unary(input, output, detail::Square());
+    } else {
+        std::invalid_argument("[SquarePrimitive:evalCPU] Dtype must be "
+                              "Float in SquarePrimitive.");
+    }
+}
+void SquarePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                          JVPTracer &output) {}
+TypePtr SquarePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+std::string SquarePrimitive::toString() const { return "Square"; }
+
+// SqrtPrimitive
+
+void SqrtPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 0) {
+        std::invalid_argument(
+            "[SqrtPrimitive::evalCPU] expects exactly one input array.");
+    }
+    const auto &input = inputs[0];
+    if (output.dtype() == Float32 || output.dtype() == Float64) {
+        unary(input, output, detail::Sqrt());
+    } else {
+        std::invalid_argument("[SqrtPrimitive:evalCPU] Dtype must be "
+                              "Float in SqrtPrimitive.");
+    }
+}
+void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+TypePtr SqrtPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+std::string SqrtPrimitive::toString() const { return "Sqrt"; }
+
+// max
+
+void MaximumPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void MaximumPrimitive::evalCPU(const std::vector<Array> &inputs,
+                               Array &output) {
+    if (inputs.size() != 2) {
+        throw std::invalid_argument(
+            "[AddPrimitive::evalCPU] expects exactly two input arrays.");
+    }
+
+    auto input1 = inputs[0];
+    auto input2 = inputs[1];
+    binary(input1, input2, output, detail::Maximum());
+}
+
+TypePtr MaximumPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void MaximumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {}
+
+std::string MaximumPrimitive::toString() const { return "Max"; }
+// min
+
+void MinimumPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void MinimumPrimitive::evalCPU(const std::vector<Array> &inputs,
+                               Array &output) {
+    if (inputs.size() != 2) {
+        throw std::invalid_argument(
+            "[MinimumPrimitive::evalCPU] expects exactly two input arrays.");
+    }
+
+    auto input1 = inputs[0];
+    auto input2 = inputs[1];
+    binary(input1, input2, output, detail::Minimum());
+}
+
+TypePtr MinimumPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void MinimumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                           JVPTracer &output) {}
+
+std::string MinimumPrimitive::toString() const { return "Min"; }
+
+// Flatten
 void FlattenPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }

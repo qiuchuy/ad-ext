@@ -85,7 +85,6 @@ void conv2d_gemm(const Array &input, const Array &weight, Array &output,
     //     }
     // }
     // once lauchn
-    std::cout << "out" << out_ptr[0] << std::endl;
 
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, col_H, 1, col_W, 1.0,
                 vec_col, col_W, wt_ptr, 1, 0.0, out_ptr, 1);

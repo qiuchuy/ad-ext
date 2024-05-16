@@ -129,9 +129,47 @@ struct Sigmoid {
 struct Add {
     template <typename T> T operator()(T x, T y) { return x + y; }
 };
-
+struct Sub {
+    template <typename T> T operator()(T x, T y) { return x - y; }
+};
 struct Multiply {
     template <typename T> T operator()(T x, T y) { return x * y; }
+};
+struct Square {
+    template <typename T> T operator()(T x) { return x * x; };
+};
+
+struct Sqrt {
+    template <typename T> T operator()(T x) { return std::sqrt(x); };
+};
+struct Maximum {
+    template <typename T>
+    std::enable_if_t<std::is_integral_v<T>, T> operator()(T x, T y) {
+        return (x > y) ? x : y;
+    }
+
+    template <typename T>
+    std::enable_if_t<!std::is_integral_v<T>, T> operator()(T x, T y) {
+        if (std::isnan(x)) {
+            return x;
+        }
+        return (x > y) ? x : y;
+    }
+};
+
+struct Minimum {
+    template <typename T>
+    std::enable_if_t<std::is_integral_v<T>, T> operator()(T x, T y) {
+        return x < y ? x : y;
+    }
+
+    template <typename T>
+    std::enable_if_t<!std::is_integral_v<T>, T> operator()(T x, T y) {
+        if (std::isnan(x)) {
+            return x;
+        }
+        return x < y ? x : y;
+    }
 };
 
 }; // namespace ainl::core::detail

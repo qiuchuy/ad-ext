@@ -64,6 +64,38 @@ class AddPrimitive : public Primitive {
     std::string toString() const override;
 };
 
+class SubtractPrimitive : public Primitive {
+  public:
+    SubtractPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &output) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
+
+class SquarePrimitive : public Primitive {
+  public:
+    SquarePrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &output) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
+
+class SqrtPrimitive : public Primitive {
+  public:
+    SqrtPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &output) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+
+    TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
 class FlattenPrimitive : public Primitive {
   public:
     FlattenPrimitive() = default;
