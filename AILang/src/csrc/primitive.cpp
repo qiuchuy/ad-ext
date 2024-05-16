@@ -134,7 +134,11 @@ void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     }
     const auto &input = inputs[0];
     if (output.dtype() == Float32 || output.dtype() == Float64) {
-        unary(input, output, detail::Sqrt());
+        if (reverse_)
+            unary(input, output, detail::Sqrt());
+        else
+            unary(input, output, detail::Rsqrt());
+
     } else {
         std::invalid_argument("[SqrtPrimitive:evalCPU] Dtype must be "
                               "Float in SqrtPrimitive.");

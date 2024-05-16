@@ -311,15 +311,22 @@ Array square(const Array &arr) {
 Array sqrt(const Array &arr) {
     Dtype output_type = isFloat(arr.dtype());
     auto input = astype(arr, output_type);
-    return Array(output_type, std::make_shared<SqrtPrimitive>(), {input},
+    return Array(output_type, std::make_shared<SqrtPrimitive>(false), {input},
                  arr.shape(),
                  getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
+Array rsqrt(const Array &arr) {
+    Dtype output_type = isFloat(arr.dtype());
+    auto input = astype(arr, output_type);
+    return Array(output_type, std::make_shared<SqrtPrimitive>(true), {input},
+                 arr.shape(),
+                 getStridesFromShape(arr.shape(), dtypeSize(output_type)));
+}
+
 Array var(const Array &arr, const std::vector<int> &axes, bool keepdims,
           int ddof) {
     int ndim = arr.ndim();
-    std::cout << ndim;
-    std::cout << axes[0] << axes[1] << axes[2];
+
     for (int axis : axes) {
         if (axis < -ndim || axis >= ndim) {
             throw std::invalid_argument(

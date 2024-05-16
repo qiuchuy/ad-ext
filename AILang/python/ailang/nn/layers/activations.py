@@ -22,3 +22,7 @@ def sigmoid(x):
     """
 
     return al.sigmoid(x)
+
+
+def relu(x):
+    return al.maximum(x, al.zeros((1,)))

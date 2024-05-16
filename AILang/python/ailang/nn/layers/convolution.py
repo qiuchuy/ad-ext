@@ -41,16 +41,19 @@ class Conv2d(Module):
             lambda x: (x, x) if isinstance(x, int) else x,
             (kernel_size, stride, padding),
         )
+        scale = math.sqrt(1 / (in_channels * kernel_size[0] * kernel_size[1]))
+
         if bias:
             raise NotImplementedError()
-        self.weight = al.zeros((out_channels, *kernel_size, in_channels))
-        # self.weight = al.tensor((out_channels, *kernel_size, in_channels), "Float")
+        # self.weight = al.ones((out_channels, *kernel_size, in_channels))
+        self.weight = al.from_numpy(
+            np.random.uniform(-scale, scale, (out_channels, *kernel_size, in_channels))
+        )
+        self.kernel_size = kernel_size
         self.padding = padding
         self.stride = stride
-        # print("type", type(self.weight))
+        self.dilation = (dilation, dilation)
 
     def __call__(self, x):
-        y = al.conv(x, self.weight, (1, 1), (0, 0), (1, 1))
-        # if "bias" in self:
-        #     y = y + self.biass
+        y = al.conv(x, self.weight, self.stride, self.padding, self.dilation)
         return y

@@ -84,6 +84,12 @@ void initOps(py::module_ &m) {
         },
         "Add the inputs");
     m.def(
+        "Multiply",
+        [](const ainl::core::Array &a, const ainl::core::Array &b) {
+            return ainl::core::multiply(a, b);
+        },
+        "Multiply the inputs");
+    m.def(
         "ones",
         [](const std::vector<int> &shape) {
             return ainl::core::ones(shape, ainl::core::Float64);
@@ -134,6 +140,10 @@ void initOps(py::module_ &m) {
         "compute  minimum.");
     m.def(
         "sqrt", [](const ainl::core::Array &a) { return ainl::core::sqrt(a); },
+        "compute  sqrt.");
+    m.def(
+        "rsqrt",
+        [](const ainl::core::Array &a) { return ainl::core::rsqrt(a); },
         "compute  sqrt.");
     m.def(
         "conv",

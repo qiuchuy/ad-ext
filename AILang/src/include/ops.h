@@ -62,7 +62,7 @@ Array minimum(const Array &a, const Array &b);
 
 Array softmax(const Array &arr);
 Array square(const Array &arr);
-
+Array rsqrt(const Array &arr);
 Array sqrt(const Array &arr);
 Array sigmoid(const Array &arr);
 // broadcast

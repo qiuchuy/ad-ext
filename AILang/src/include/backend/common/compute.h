@@ -142,6 +142,12 @@ struct Square {
 struct Sqrt {
     template <typename T> T operator()(T x) { return std::sqrt(x); };
 };
+struct Rsqrt {
+    template <typename T> T operator()(T x) {
+        return static_cast<decltype(x)>(1.0) / std::sqrt(x);
+    };
+};
+
 struct Maximum {
     template <typename T>
     std::enable_if_t<std::is_integral_v<T>, T> operator()(T x, T y) {

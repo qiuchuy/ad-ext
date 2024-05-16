@@ -88,13 +88,19 @@ class SquarePrimitive : public Primitive {
 
 class SqrtPrimitive : public Primitive {
   public:
+  
+    explicit SqrtPrimitive(bool reverse = false) : reverse_(reverse){};
     SqrtPrimitive() = default;
+
     void eval(const std::vector<Array> &inputs, Array &output) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
     TypePtr typeRalation(const std::vector<TypePtr> &inTypes) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
+
+  private:
+    bool reverse_;
 };
 class FlattenPrimitive : public Primitive {
   public:

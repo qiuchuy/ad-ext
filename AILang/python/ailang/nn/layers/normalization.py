@@ -18,7 +18,7 @@ class BatchNorm(Module):
         super().__init__()
 
         self.num_features = num_features
-        self.eps = eps
+        self.eps = al.from_numpy(np.array(eps))
         self.momentum = momentum
         self.track_running_stats = track_running_stats
 
@@ -44,14 +44,15 @@ class BatchNorm(Module):
         Returns:
             tuple: Tuple containing mean and variance.
         """
-        reduction_axes = tuple(range(0, x.ndim - 1))
 
-        mean = al.mean(x, axis=reduction_axes)
-        var = al.var(x, axis=reduction_axes)
+        mean = al.mean(x, False)
+        var = al.var(x, False)
 
         return mean, var
 
     def __call__(self, x):
         mean, var = self._calc_stats(x)
-        x = al.sigmoid(al.add(mean, var))
-        return al.add(x + self.bias) if "weight" in self else x
+        out = al.Sub(x, mean)
+
+        out = al.Multiply(out, al.rsqrt(al.Add(var, self.eps)))
+        return out
