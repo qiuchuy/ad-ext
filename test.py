@@ -1,12 +1,12 @@
 import numpy as np
 import ailang as al
 
-print("============")
+# print("============")
 # a = np.random.randn(2,2,2)
 # b = al.from_numpy(a)
 # c = al.cos(b)
-a = al.ones((3, 4))
-print(a)
+# a = al.ones((3, 4))
+# print(a)
 # a1 = np.random.randn(2,1,2)
 # b1 = al.from_numpy(a1)
 # c1 = al.cos(b1)
@@ -114,9 +114,9 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm(4)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 4, layers[0])
-        self.layer2 = self._make_layer(block, 5, layers[1], stride=1)
-        self.layer3 = self._make_layer(block, 6, layers[2], stride=1)
-        self.layer4 = self._make_layer(block, 7, layers[3], stride=1)
+        self.layer2 = self._make_layer(block, 2, layers[1], stride=1)
+        self.layer3 = self._make_layer(block, 3, layers[2], stride=1)
+        self.layer4 = self._make_layer(block, 4, layers[3], stride=1)
         # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -152,7 +152,6 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         # x = self.layer3(x)
         # x = self.layer4(x)
-
         # x = self.avgpool(x)
         x = al.flatten(x)
         x = self.fc(x)
@@ -167,7 +166,3 @@ def resnet18(num_classes=1000):
 if __name__ == "__main__":
     model = resnet18(num_classes=50)
     print(model(al.from_numpy(np.random.randn(1, 3, 21, 21))))
-
-"""
-# basicblock test
-"""
