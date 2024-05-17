@@ -369,4 +369,22 @@ void MatMulPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string MatMulPrimitive::toString() const { return "MatMul"; }
 
+void LoopPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void LoopPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  while (cond_(inits_)) {
+    inits_ = body_(inits_);
+  }
+}
+
+void LoopPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
+
+void LoopPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
+std::string LoopPrimitive::toString() const { return "Loop"; }
+
 } // namespace ainl::core

@@ -4,6 +4,8 @@
 #include "ops.h"
 #include "primitive.h"
 #include "transformation.h"
+#include <pybind11/pytypes.h>
+#include <stdexcept>
 
 namespace ainl::ffi {
 
@@ -105,6 +107,49 @@ void initOps(py::module_ &m) {
             {lhs, rhs});
       },
       "Matrix multiplication");
+
+  m.def(
+      "while_loop",
+      [](const py::function &cond, const py::function &body, py::tuple &init) {
+        auto initHandlingHelper = [](const py::tuple &init) {
+          std::vector<std::shared_ptr<ainl::core::Tracer>> inits;
+          for (auto &item : init) {
+
+            // cannot use nested structures in while_loop
+            if (py::isinstance<py::dict>(item) ||
+                py::isinstance<py::tuple>(item)) {
+              throw std::runtime_error(
+                  "Unsupported loop variable type in while_loop");
+            }
+
+            // handle scalars, convert them into Array
+            if (py::isinstance<py::int_>(item)) {
+              inits.push_back(
+                  std::make_shared<ainl::core::Array>(item.cast<int>()));
+            } else if (py::isinstance<py::float_>(item)) {
+              inits.push_back(
+                  std::make_shared<ainl::core::Array>(item.cast<float>()));
+            } else if (py::isinstance<py::bool_>(item)) {
+              inits.push_back(
+                  std::make_shared<ainl::core::Array>(item.cast<bool>()));
+            } 
+
+            // Other valid tracers
+            inits.push_back(
+                py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+          }
+          return inits;
+        };
+        auto inits = initHandlingHelper(init);
+        auto bodyImpl = [&body](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
+          return body(inputs);
+        };
+        auto condImpl = [&cond](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
+          return cond(inputs);
+        };
+        return 
+      },
+      "Builtin control flow operator: while loop");
 }
 
 }; // namespace ainl::ffi

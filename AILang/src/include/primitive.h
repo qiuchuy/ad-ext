@@ -141,4 +141,19 @@ public:
   std::string toString() const override;
 };
 
+class LoopPrimitive : public Primitive {
+public:
+  LoopPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &output) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  std::string toString() const override;
+
+private:
+  std::vector<Array> inits_;
+  std::function<bool(const std::vector<Array> &)> cond_;
+  std::function<std::vector<Array>(const std::vector<Array> &)> body_;
+};
+
 } // namespace ainl::core
