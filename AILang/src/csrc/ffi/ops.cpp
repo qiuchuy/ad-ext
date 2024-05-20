@@ -4,12 +4,15 @@
 #include "ops.h"
 #include "primitive.h"
 #include "transformation.h"
+#include <algorithm>
 #include <pybind11/pytypes.h>
 #include <stdexcept>
 
 namespace ainl::ffi {
 
 void initOps(py::module_ &m) {
+  m.def("flatten", [](const ainl::core::Tracer &input) {
+  });
   m.def(
       "flatten",
       [](const ainl::core::Array &input) { return ainl::core::flatten(input); },
@@ -140,14 +143,13 @@ void initOps(py::module_ &m) {
           }
           return inits;
         };
+
         auto inits = initHandlingHelper(init);
-        auto bodyImpl = [&body](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
-          return body(inputs);
-        };
-        auto condImpl = [&cond](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
-          return cond(inputs);
-        };
-        return 
+
+        if (std::all_of(init.begin(), init.end(), [](const py::handle &item) {
+          return py::isinstance<ainl::core::Array>(item);
+        })) {
+        } 
       },
       "Builtin control flow operator: while loop");
 }

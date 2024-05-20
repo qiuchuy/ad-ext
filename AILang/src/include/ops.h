@@ -14,6 +14,10 @@ Array reshape(const Array &input, const std::vector<int> &shape);
 Array transpose(const Array &input);
 Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
+std::vector<Array> loop(const std::function<bool(const std::vector<Array> &)> &cond,
+                         const std::function<std::vector<Array>(const std::vector<Array> &)> &body,
+                         const std::vector<Array> &init);
+
 
 #define GENERIC_OP_DECL(name)                                                  \
   std::shared_ptr<Tracer> name(                                                \

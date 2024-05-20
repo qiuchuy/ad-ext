@@ -15,10 +15,12 @@ namespace ainl::ir {
 // Language builtin Nodes
 // Extend this class to add more Nodes
 class Graph;
+class ALModule;
 class Block;
 class Signature;
 class IRVisitor;
 using GraphPtr = std::shared_ptr<Graph>;
+using ModulePtr = std::shared_ptr<ALModule>;
 using BlockPtr = Block *;
 using SignaturePtr = Signature *;
 
@@ -54,6 +56,7 @@ public:
     MAXPOOL2D,
     CONVOLUTION,
     BATCHNORM2d,
+    WHILE,
     UNKNOWN,
   };
 
@@ -264,4 +267,19 @@ public:
 private:
   ValuePtr inValue;
 };
+
+NODE_PTR_TYPE_DECL(WhileOp)
+class WhileOp : public Node {
+public:
+  WhileOp(const ModulePtr &cond, const ModulePtr &body, const std::vector<ValuePtr>& inits);
+  NodeKind kind() override { return Node::NodeKind::WHILE; }
+  explicit operator std::string() const override;
+private:
+  ModulePtr cond;
+  ModulePtr body;
+  std::vector<ValuePtr> inits;
+};
+
+
+
 } // namespace ainl::ir
