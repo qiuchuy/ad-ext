@@ -1,4 +1,5 @@
 #include "ast/ast_binding.h"
+
 #include "ast/ir_building.h"
 #include "ast/type_infer.h"
 #include "ir/literal.h"

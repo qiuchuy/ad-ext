@@ -5,29 +5,11 @@
 #include <map>
 #include <utility>
 
+#include "ast/type_contract.h"
 #include "ast/visitor.h"
 #include "ir/literal.h"
 
 namespace ainl::ir {
-class TypeContract {
-public:
-  using AnyFunction = std::function<TypePtr(std::vector<TypePtr>)>;
-
-  void registerContract(const std::string &name, AnyFunction func) {
-    functions[name] = std::move(func);
-  }
-
-  TypePtr resolveContract(const std::string &name, std::vector<TypePtr> args) {
-    if (functions.find(name) == functions.end()) {
-      // throw AINLError(
-      // "This operator has not been registered into the library yet.");
-    }
-    return functions[name](std::move(args));
-  }
-
-private:
-  std::map<std::string, AnyFunction> functions;
-};
 
 class TypeInfer : public Visitor {
 public:
@@ -51,12 +33,9 @@ public:
   void visitCompare(CompareNode *node) override;
   void visitIf(IfNode *node) override;
 
-  void initLibraryOperatorTypeContract();
-
 private:
   std::map<std::string, TypePtr> typedParams;
   std::string curFunc;
-  TypeContract contract;
 };
 
 } // namespace ainl::ir

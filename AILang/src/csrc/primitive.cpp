@@ -7,8 +7,17 @@
 #include "ops.h"
 #include "transformation.h"
 #include "unary.h"
+
 #include <algorithm>
+#include <memory>
 #include <numeric>
+
+#include "ast/node_contract.h"
+#include "ast/type_contract.h"
+#include "ir/type.h"
+#include "ops.h"
+#include "trace.h"
+#include "transformation.h"
 
 namespace ainl::core {
 
@@ -25,7 +34,8 @@ void IdentityPrimitive::evalCPU(const std::vector<Array> &inputs,
     output.copyBySharing(inputs[0], 0, 0, inputs[0].shape());
 }
 
-TypePtr IdentityPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void IdentityPrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {}
 
 void IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
@@ -58,7 +68,8 @@ void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     binary(input1, input2, output, detail::Add());
 }
 
-TypePtr AddPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void AddPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 
 void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
@@ -219,6 +230,8 @@ output.copyBySharing(input, size, 0, {size});
 */
 
 TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void FlattenPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 
 void FlattenPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
@@ -246,7 +259,8 @@ void FillPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     }
 }
 
-TypePtr FillPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void FillPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 
 void FillPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
@@ -336,7 +350,8 @@ void SlicePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 
 std::string SlicePrimitive::toString() const { return "Slice"; }
 
-TypePtr SlicePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+void SlicePrimitive::jit(const std::vector<JITTracer> &inputs,
+                         JITTracer &output) {}
 
 void SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                          JVPTracer &output) {}
@@ -370,7 +385,9 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
 
     output.copyBySharing(input, size, 0, shape_);
 }
-TypePtr ReshapePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
+void ReshapePrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 
 void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {
@@ -381,9 +398,9 @@ void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
     auto input = inputs[0];
 
     output.setPrimal(
-        reshape_({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
-    output.setTangent(reshape_({input.tangent()},
-                               std::make_shared<ReshapePrimitive>(shape_)));
+        reshape({input.primal()}, std::make_shared<ReshapePrimitive>(shape_)));
+    output.setTangent(
+        reshape({input.tangent()}, std::make_shared<ReshapePrimitive>(shape_)));
 }
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }

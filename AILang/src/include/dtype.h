@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <ostream>
+#include <string>
 
 namespace ainl::core {
 

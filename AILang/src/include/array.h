@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "allocator.h"
-#include "array.h"
 #include "device.h"
 #include "dtype.h"
 #include "graph.h"
+#include "ir/type.h"
 #include "primitive.h"
 #include "trace.h"
 #include "utils/logger.h"
@@ -19,25 +19,27 @@ namespace ainl::core {
 
 class Array;
 class Primitive;
+class BaseTrace;
 
 class Tracer : public std::enable_shared_from_this<Tracer> {
   public:
     Tracer() = default;
     virtual ~Tracer() = default;
     Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
-           const std::shared_ptr<Primitive> &prim)
-        : inputs_(inputs), prim_(prim) {}
+           const std::shared_ptr<Primitive> &prim);
     bool isLeaf() { return inputs_.empty(); }
     std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
     std::shared_ptr<Primitive> primitive() const { return prim_; }
     void eval();
-    virtual std::vector<std::shared_ptr<Tracer>> subtracers() const;
-    virtual bool evaluated() const;
-    virtual std::string toString() const;
+    virtual ir::TypePtr getJITType() = 0;
+    virtual std::shared_ptr<Tracer> aval() = 0;
+    virtual bool evaluated() const = 0;
+    virtual std::string toString() const = 0;
 
   protected:
     std::vector<std::shared_ptr<Tracer>> inputs_;
     std::shared_ptr<Primitive> prim_;
+    std::shared_ptr<BaseTrace> trace_;
 };
 
 class Array : public Tracer {
@@ -107,12 +109,12 @@ class Array : public Tracer {
 
     bool evaluated() const override { return data_ != nullptr; }
 
-    void copyBySharing(const Array &array, size_t size, size_t offset,
-                       const std::vector<int> &shape);
+    std::shared_ptr<Tracer> aval() override { return shared_from_this(); }
 
-    void SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
-                           const std::vector<int> &shape,
-                           const std::vector<int> &stride);
+    void copyBySharing(const Array &array, size_t size, size_t offset,
+                       const std::vector<int> &shape,
+                       const std::vector<int> &stride = {});
+
     struct ArrayIterator {
         using iterator_category = std::random_access_iterator_tag;
         using difference_type = std::ptrdiff_t;
@@ -160,8 +162,6 @@ class Array : public Tracer {
     std::vector<int> shape() const { return *(shape_); }
     std::vector<int> strides() const { return *(stride_); }
     size_t size() const { return size_; }
-    // TODO fix to member to reduce compute
-    size_t data_size() const { return size_ / itemsize(); }
     size_t itemsize() const { return dtypeSize(dtype_); }
     Dtype dtype() const { return dtype_; }
     size_t ndim() const { return shape_->size(); }
@@ -171,6 +171,8 @@ class Array : public Tracer {
     template <typename T> const T *data() const {
         return static_cast<T *>(ptr_);
     };
+
+    ir::TypePtr getJITType() override;
 
     friend std::ostream &operator<<(std::ostream &os, const Array &arr);
 
@@ -184,10 +186,11 @@ class Array : public Tracer {
         }
         os << "[";
         if (dim == ndim() - 1) {
-            // LOG_DEBUG("[print] Printing array at %d with offset %d",
-            //           reinterpret_cast<uintptr_t>(ptr_), offset);
+            LOG_DEBUG("[print] Printing array at %d with offset %d",
+                      reinterpret_cast<uintptr_t>(ptr_), offset);
             for (size_t i = 0; i < shape_->at(dim); i++) {
-                os << (*(data<T>() + offset / itemsize() + i));
+                os << (*(data<T>() +
+                         (offset + i * stride_->at(dim)) / itemsize()));
                 if (i != shape_->at(dim) - 1) {
                     os << ", ";
                 }
@@ -195,12 +198,9 @@ class Array : public Tracer {
 
         } else {
             for (size_t i = 0; i < shape_->at(dim); i++) {
-                auto dimOffset =
-                    std::accumulate(shape_->begin() + dim + 1, shape_->end(), 1,
-                                    std::multiplies<int>());
-                print<T>(os, offset + i * dimOffset * itemsize(), dim + 1);
+                print<T>(os, offset + i * stride_->at(dim), dim + 1);
                 if (i != shape_->at(dim) - 1) {
-                    os << "\n";
+                    os << ",";
                 }
             }
         }

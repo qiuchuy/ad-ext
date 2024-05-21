@@ -1,8 +1,8 @@
+#include "dtype.h"
+
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
-
-#include "dtype.h"
 
 namespace ainl::core {
 
@@ -33,25 +33,24 @@ template <> TypeToDtype<void>::operator Dtype() {
 }
 
 size_t dtypeSize(Dtype dtype) {
-
-    switch (dtype.type) {
-    case Dtype::DataType::BoolType:
-        return sizeof(bool);
-    case Dtype::DataType::Int8Type:
-        return sizeof(int8_t);
-    case Dtype::DataType::Int16Type:
-        return sizeof(int16_t);
-    case Dtype::DataType::Int32Type:
-        return sizeof(int32_t);
-    case Dtype::DataType::Int64Type:
-        return sizeof(int64_t);
-    case Dtype::DataType::Float32Type:
-        return sizeof(float);
-    case Dtype::DataType::Float64Type:
-        return sizeof(double);
-    default:
-        throw std::invalid_argument("Invalid dtype.");
-    }
+  switch (dtype.type) {
+  case Dtype::DataType::BoolType:
+    return sizeof(bool);
+  case Dtype::DataType::Int8Type:
+    return sizeof(int8_t);
+  case Dtype::DataType::Int16Type:
+    return sizeof(int16_t);
+  case Dtype::DataType::Int32Type:
+    return sizeof(int32_t);
+  case Dtype::DataType::Int64Type:
+    return sizeof(int64_t);
+  case Dtype::DataType::Float32Type:
+    return sizeof(float);
+  case Dtype::DataType::Float64Type:
+    return sizeof(double);
+  default:
+    throw std::invalid_argument("Invalid dtype.");
+  }
 }
 
 std::string Dtype::toString() const {

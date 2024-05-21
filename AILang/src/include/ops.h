@@ -18,6 +18,8 @@ inline Array fill(const std::vector<int> &shape, const Array &value) {
 Array slice(const Array &input, const std::vector<int> &start,
             const std::vector<int> &end, const std::vector<int> &stride);
 Array reshape(const Array &input, const std::vector<int> &shape);
+Array transpose(const Array &input);
+Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
 Array astype(const Array &arr, Dtype dtype);
 // arange
@@ -97,7 +99,9 @@ std::vector<int> get_conv2d_output_shape(const std::vector<int> &in_shape,
         return TracerFactory::createTracer(inputs, prim);                      \
     }
 
-GENERIC_OP_DECL(reshape_)
+GENERIC_OP_DECL(reshape)
+GENERIC_OP_DECL(transpose)
+GENERIC_OP_DECL(matmul)
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize);
