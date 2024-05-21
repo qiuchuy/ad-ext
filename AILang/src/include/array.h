@@ -115,6 +115,10 @@ class Array : public Tracer {
                        const std::vector<int> &shape,
                        const std::vector<int> &stride = {});
 
+    void SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
+                           const std::vector<int> &shape,
+                           const std::vector<int> &stride);
+
     struct ArrayIterator {
         using iterator_category = std::random_access_iterator_tag;
         using difference_type = std::ptrdiff_t;
@@ -162,6 +166,7 @@ class Array : public Tracer {
     std::vector<int> shape() const { return *(shape_); }
     std::vector<int> strides() const { return *(stride_); }
     size_t size() const { return size_; }
+    size_t data_size() const { return size_ / itemsize(); }
     size_t itemsize() const { return dtypeSize(dtype_); }
     Dtype dtype() const { return dtype_; }
     size_t ndim() const { return shape_->size(); }

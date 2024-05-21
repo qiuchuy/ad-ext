@@ -104,8 +104,6 @@ void SubtractPrimitive::evalCPU(const std::vector<Array> &inputs,
     binary(input1, input2, output, detail::Sub());
 }
 
-TypePtr SubtractPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
-
 void SubtractPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
 
@@ -130,7 +128,7 @@ void SquarePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void SquarePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr SquarePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SquarePrimitive::toString() const { return "Square"; }
 
 // SqrtPrimitive
@@ -157,7 +155,7 @@ void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
-TypePtr SqrtPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SqrtPrimitive::toString() const { return "Sqrt"; }
 
 // max
@@ -177,8 +175,6 @@ void MaximumPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto input2 = inputs[1];
     binary(input1, input2, output, detail::Maximum());
 }
-
-TypePtr MaximumPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 void MaximumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
@@ -201,8 +197,6 @@ void MinimumPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto input2 = inputs[1];
     binary(input1, input2, output, detail::Minimum());
 }
-
-TypePtr MinimumPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 void MinimumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
@@ -229,7 +223,6 @@ auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
 output.copyBySharing(input, size, 0, {size});
 */
 
-TypePtr FlattenPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 void FlattenPrimitive::jit(const std::vector<JITTracer> &inputs,
                            JITTracer &output) {}
 
@@ -423,7 +416,6 @@ void AbsPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void AbsPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr AbsPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 
 std::string AbsPrimitive::toString() const { return "Abs"; }
 
@@ -431,7 +423,7 @@ std::string AbsPrimitive::toString() const { return "Abs"; }
 void AddMMPrimitive::eval(const std::vector<Array> &inputs, Array &output) {}
 void AddMMPrimitive::evalCPU(const std::vector<Array> &inputs, Array &outputs) {
 }
-TypePtr AddMMPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 void AddMMPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                          JVPTracer &output) {}
 std::string AddMMPrimitive::toString() const { return "AddMM"; }
@@ -477,7 +469,7 @@ void ArangePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void ArangePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr ArangePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArangePrimitive::toString() const { return "Arange"; }
 // AsType
 void AsTypePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
@@ -491,7 +483,7 @@ void AsTypePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void AsTypePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr AsTypePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string AsTypePrimitive::toString() const { return "AsType"; }
 
 // Trigonometric functions
@@ -513,7 +505,7 @@ void ArcCosPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void ArcCosPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr ArcCosPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcCosPrimitive::toString() const { return "ArcCos"; }
 
 // ArcTan functions
@@ -535,7 +527,7 @@ void ArcTanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void ArcTanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr ArcTanPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcTanPrimitive::toString() const { return "ArcTan"; }
 
 // ArcSin functions
@@ -557,7 +549,7 @@ void ArcSinPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void ArcSinPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
-TypePtr ArcSinPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcSinPrimitive::toString() const { return "ArcSin"; }
 
 // Trigonometric h functions
@@ -580,7 +572,7 @@ void ArcCoshPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 void ArcCoshPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
-TypePtr ArcCoshPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcCoshPrimitive::toString() const { return "ArcCosh"; }
 
 // ArcTanh functions
@@ -603,7 +595,7 @@ void ArcTanhPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 void ArcTanhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
-TypePtr ArcTanhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcTanhPrimitive::toString() const { return "ArcTanh"; }
 
 // ArcSinh functions
@@ -626,7 +618,7 @@ void ArcSinhPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 void ArcSinhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
-TypePtr ArcSinhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ArcSinhPrimitive::toString() const { return "ArcSinh"; }
 
 // not reverse
@@ -648,7 +640,7 @@ void CosPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void CosPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr CosPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string CosPrimitive::toString() const { return "Cos"; }
 
 // Tan functions
@@ -670,7 +662,7 @@ void TanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void TanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr TanPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string TanPrimitive::toString() const { return "Tan"; }
 
 // Sin functions
@@ -692,7 +684,7 @@ void SinPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void SinPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr SinPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SinPrimitive::toString() const { return "Sin"; }
 
 // Trigonometric h functions
@@ -714,7 +706,7 @@ void CoshPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void CoshPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
-TypePtr CoshPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string CoshPrimitive::toString() const { return "Cosh"; }
 
 // Tanh functions
@@ -736,7 +728,7 @@ void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void TanhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
-TypePtr TanhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string TanhPrimitive::toString() const { return "Tanh"; }
 
 // Sinh functions
@@ -758,7 +750,7 @@ void SinhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void SinhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
-TypePtr SinhPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SinhPrimitive::toString() const { return "Sinh"; }
 
 // FIXME BroadCast in Value has error, but with no broadcast and just
@@ -786,7 +778,7 @@ void BroadCastPrimitive::evalCPU(const std::vector<Array> &inputs,
 
 void BroadCastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                              JVPTracer &output) {}
-TypePtr BroadCastPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string BroadCastPrimitive::toString() const { return "BroadCast"; }
 // exp
 void ExpPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
@@ -807,7 +799,7 @@ void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void ExpPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr ExpPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string ExpPrimitive::toString() const { return "Exp"; }
 // log
 void LogPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
@@ -840,7 +832,7 @@ void LogPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
 }
 void LogPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
-TypePtr LogPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string LogPrimitive::toString() const { return "Log"; }
 
 // sigmoid
@@ -863,7 +855,7 @@ void SigmoidPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 void SigmoidPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
-TypePtr SigmoidPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SigmoidPrimitive::toString() const { return "Sigmoid"; }
 // Softmax
 void SoftmaxPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
@@ -877,7 +869,7 @@ void SoftmaxPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 void SoftmaxPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
-TypePtr SoftmaxPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 std::string SoftmaxPrimitive::toString() const { return "Softmax"; }
 
 // GetElementsNumberPrimitive
@@ -931,8 +923,6 @@ void GetElementsNumberPrimitive::evalCPU(const std::vector<Array> &inputs,
         break;
     }
 }
-TypePtr
-GetElementsNumberPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 void GetElementsNumberPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                      JVPTracer &output) {}
 
@@ -954,7 +944,7 @@ void MultiplyPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto &b = inputs[1];
     binary(a, b, output, detail::Multiply());
 }
-TypePtr MultiplyPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
 
@@ -980,7 +970,7 @@ void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                 "[MeanPrimitive] axis is out of bounds for Array.");
     }
 }
-TypePtr MeanPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
@@ -1027,7 +1017,7 @@ void ReducePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
         break;
     }
 }
-TypePtr ReducePrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
+
 void ReducePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -1079,8 +1069,6 @@ void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
         conv2d_dispatch(input, weight, output, stride_, padding_, dilation_);
     }
 }
-TypePtr
-ConvolutionPrimitive::typeRalation(const std::vector<TypePtr> &inTypes) {}
 void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                JVPTracer &output) {}
 std::string ConvolutionPrimitive::toString() const { return "Conv"; }

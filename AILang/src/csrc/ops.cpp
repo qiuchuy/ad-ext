@@ -35,11 +35,13 @@ Array fill(const std::vector<int> &shape, const Array &value, Dtype dtype) {
 
 Array slice(const Array &input, const std::vector<int> &start,
             const std::vector<int> &end, const std::vector<int> &stride) {
-  auto outputShape = std::vector<int>();
-  for (size_t i = 0; i < input.ndim(); i++) {
-    auto s = (end[i] - start[i] + stride[i] - 1) / stride[i];
-    if (s < 0) {
-      s = 0;
+    auto outputShape = std::vector<int>();
+    for (size_t i = 0; i < input.ndim(); i++) {
+        auto s = (end[i] - start[i] + stride[i] - 1) / stride[i];
+        if (s < 0) {
+            s = 0;
+        }
+        outputShape.push_back(s);
     }
 
     return Array(input.dtype(),
@@ -47,21 +49,20 @@ Array slice(const Array &input, const std::vector<int> &start,
                  outputShape,
                  getStridesFromShape(outputShape, input.itemsize()));
 }
-
 Array reshape(const Array &input, const std::vector<int> &shape) {
     return Array(input.dtype(), std::make_shared<ReshapePrimitive>(shape),
                  {input}, shape, getStridesFromShape(shape, input.itemsize()));
 }
 
 Array transpose(const Array &input) {
-  return Array(input.dtype(), std::make_shared<TransposePrimitive>(), {input},
-               input.shape(), input.strides());
+    return Array(input.dtype(), std::make_shared<TransposePrimitive>(), {input},
+                 input.shape(), input.strides());
 }
 
 Array matmul(const Array &lhs, const Array &rhs) {
-  std::vector<int> shape = {*lhs.shape().begin(), *(rhs.shape().end())};
-  return Array(lhs.dtype(), std::make_shared<MatMulPrimitive>(), {lhs, rhs},
-               shape, getStridesFromShape(shape, lhs.itemsize()));
+    std::vector<int> shape = {*lhs.shape().begin(), *(rhs.shape().end())};
+    return Array(lhs.dtype(), std::make_shared<MatMulPrimitive>(), {lhs, rhs},
+                 shape, getStridesFromShape(shape, lhs.itemsize()));
 }
 
 Array flatten(const Array &input) {
