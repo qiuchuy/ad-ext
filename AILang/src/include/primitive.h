@@ -107,9 +107,6 @@ class FlattenPrimitive : public Primitive {
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
-    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-    std::string toString() const override;
 };
 
 class FillPrimitive : public Primitive {
