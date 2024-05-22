@@ -95,7 +95,3 @@ set_target_properties(libailang
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/ailang/ffi
         CXX_VISIBILITY_PRESET "hidden"
 )
-
-
-
-
