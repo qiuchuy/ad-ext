@@ -164,14 +164,14 @@ private:
       std::scoped_lock lock(logMutex);
       printf("%s ", buffer);
       printf(messagePriorityStr);
-      printf(message, args...);
+      // printf(message, args...);
       printf(" on line %d in %s", line_number, sourceFile);
       printf("\n");
 
       if (file) {
         fprintf(file, "%s ", buffer);
         fprintf(file, messagePriorityStr);
-        fprintf(file, message, args...);
+        // fprintf(file, message, args...);
         fprintf(file, " on line %d in %s", line_number, sourceFile);
         fprintf(file, "\n");
       }

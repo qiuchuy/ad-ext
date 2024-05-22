@@ -17,8 +17,10 @@ def jit(f: Union[Callable]):
             module,
             input_type="stablehlo",
             target_backends=["vmvx"]
+            # target_backends=["cuda"]
         )
-
+        
+        # config = ireert.Config("cuda")
         config = ireert.Config("local-task")
         ctx = ireert.SystemContext(config=config)
         vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
