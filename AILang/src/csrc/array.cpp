@@ -25,6 +25,9 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
     prim_ = std::move(prim);
     shape_ = std::make_shared<std::vector<int>>(shape);
     stride_ = std::make_shared<std::vector<int>>(stride);
+    size_ =
+        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
+        dtypeSize(dtype);
 }
 
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
@@ -77,26 +80,13 @@ bool Tracer::evaluated() const { return false; }
 
 std::string Tracer::toString() const { return "tracer"; }
 
-void Array::SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
-                              const std::vector<int> &shape,
-                              const std::vector<int> &stride) {
-    data_ = std::make_shared<Data>(
-        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
-    ptr_ = buffer.ptr();
-    dtype_ = dtype;
-    shape_ = std::make_shared<std::vector<int>>(shape);
-    size_ =
-        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
-        dtypeSize(dtype);
-    stride_ = std::make_shared<std::vector<int>>(stride);
-}
 /*
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
-                          const std::vector<int> &shape, const
-std::vector<int> &stride={}) { data_ = other.data_; ptr_ = (char
-*)other.ptr_ + offset; shape_ = std::make_shared<std::vector<int>>(shape);
-dtype_ = other.dtype_; size_ = size; inputs_ = other.inputs_; prim_ =
-other.prim_;
+                          const std::vector<int> &shape, const std::vector<int>
+&stride={}) { data_ = other.data_; ptr_ = (char *)other.ptr_ + offset; shape_ =
+std::make_shared<std::vector<int>>(shape); dtype_ = other.dtype_; size_ = size;
+  inputs_ = other.inputs_;
+  prim_ = other.prim_;
 
   // stride_ = std::make_shared<std::vector<int>>(stride);
 }
@@ -123,6 +113,20 @@ void Array::copyBySharing(const Array &other, size_t size, size_t offset,
     } else {
         stride_ = std::make_shared<std::vector<int>>(stride);
     }
+}
+
+void Array::SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
+                              const std::vector<int> &shape,
+                              const std::vector<int> &stride) {
+    data_ = std::make_shared<Data>(
+        buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+    ptr_ = buffer.ptr();
+    dtype_ = dtype;
+    shape_ = std::make_shared<std::vector<int>>(shape);
+    size_ =
+        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
+        dtypeSize(dtype);
+    stride_ = std::make_shared<std::vector<int>>(stride);
 }
 
 Array::ArrayIterator::ArrayIterator(const Array &arr, int idx)

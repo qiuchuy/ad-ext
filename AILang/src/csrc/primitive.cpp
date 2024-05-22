@@ -80,7 +80,8 @@ std::string AddPrimitive::toString() const { return "Add"; }
 void SubtractPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
-
+void SubtractPrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {}
 void SubtractPrimitive::evalCPU(const std::vector<Array> &inputs,
                                 Array &output) {
     if (inputs.size() != 2) {
@@ -126,6 +127,8 @@ void SquarePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "Float in SquarePrimitive.");
     }
 }
+void SquarePrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void SquarePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -153,6 +156,8 @@ void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "Float in SqrtPrimitive.");
     }
 }
+void SqrtPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
@@ -175,7 +180,8 @@ void MaximumPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto input2 = inputs[1];
     binary(input1, input2, output, detail::Maximum());
 }
-
+void MaximumPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void MaximumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -197,7 +203,8 @@ void MinimumPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto input2 = inputs[1];
     binary(input1, input2, output, detail::Minimum());
 }
-
+void MinimumPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void MinimumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -209,19 +216,19 @@ void FlattenPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
 }
 
 void FlattenPrimitive::evalCPU(const std::vector<Array> &inputs,
-                               Array &output) {}
-/*
-if (inputs.size() != 1) {
-  throw std::invalid_argument(
-      "[FlattenPrimitive::evalCPU] expects exactly one input array.");
-}
+                               Array &output) {
 
-auto input = inputs[0];
-auto inputShape = input.shape();
-auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
-                            std::multiplies<int>());
-output.copyBySharing(input, size, 0, {size});
-*/
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[FlattenPrimitive::evalCPU] expects exactly one input array.");
+    }
+
+    auto input = inputs[0];
+    auto inputShape = input.shape();
+    auto size = std::accumulate(inputShape.begin(), inputShape.end(), 1,
+                                std::multiplies<int>());
+    output.copyBySharing(input, size, 0, {size});
+}
 
 void FlattenPrimitive::jit(const std::vector<JITTracer> &inputs,
                            JITTracer &output) {}
@@ -352,7 +359,6 @@ void SlicePrimitive::jvp(const std::vector<JVPTracer> &inputs,
 void ReshapePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
-
 void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
                                Array &output) {
     if (inputs.size() != 1) {
@@ -397,6 +403,62 @@ void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
 }
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }
+// transpose
+void TransposePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[TransposePrimitive::evalCPU] expects exactly one input array.");
+    }
+
+    auto input = inputs[0];
+    auto shape = input.shape();
+    auto stride = input.strides();
+    std::reverse(shape.begin(), shape.end());
+    std::reverse(stride.begin(), stride.end());
+    auto size =
+        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
+    output.copyBySharing(input, size, 0, shape, stride);
+}
+
+void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[TransposePrimitive::jit] expects exactly one input tracer.");
+    }
+
+    auto input = inputs[0];
+    std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value()};
+    auto outputType = ir::resolveContract("transpose", inputType);
+
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("transpose", module, outputType, inputValues));
+    output.setTracer(
+        transpose({input.tracer()}, std::make_shared<TransposePrimitive>()));
+}
+
+void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                             JVPTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[TransposePrimitive::jvp] expects exactly one input tracer.");
+    }
+    auto input = inputs[0];
+
+    output.setPrimal(
+        transpose({input.primal()}, std::make_shared<TransposePrimitive>()));
+    output.setTangent(
+        transpose({input.tangent()}, std::make_shared<TransposePrimitive>()));
+}
+
+std::string TransposePrimitive::toString() const { return "Transpose"; }
 
 // Abs
 void AbsPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
@@ -414,6 +476,8 @@ void AbsPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     // TODO unsigned type skip compute
     unary(input, output, detail::Abs());
 }
+void AbsPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void AbsPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -423,7 +487,8 @@ std::string AbsPrimitive::toString() const { return "Abs"; }
 void AddMMPrimitive::eval(const std::vector<Array> &inputs, Array &output) {}
 void AddMMPrimitive::evalCPU(const std::vector<Array> &inputs, Array &outputs) {
 }
-
+void AddMMPrimitive::jit(const std::vector<JITTracer> &inputs,
+                         JITTracer &output) {}
 void AddMMPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                          JVPTracer &output) {}
 std::string AddMMPrimitive::toString() const { return "AddMM"; }
@@ -467,6 +532,8 @@ void ArangePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
         arange<double>(start_, start_ + stride_, output, output.size());
     }
 }
+void ArangePrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void ArangePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -481,6 +548,8 @@ void AsTypePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
     output.SetDataWithBuffer(allocator::malloc(output.size()), dtype_,
                              output.shape(), output.strides());
 }
+void AsTypePrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void AsTypePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -503,6 +572,8 @@ void ArcCosPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "Float in inverse cosine.");
     }
 }
+void ArcCosPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void ArcCosPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -525,6 +596,8 @@ void ArcTanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "Float in inverse Tan.");
     }
 }
+void ArcTanPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void ArcTanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -547,6 +620,8 @@ void ArcSinPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "Float in inverse sine.");
     }
 }
+void ArcSinPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void ArcSinPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -570,6 +645,8 @@ void ArcCoshPrimitive::evalCPU(const std::vector<Array> &inputs,
                               "in inverse cosineh.");
     }
 }
+void ArcCoshPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void ArcCoshPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -593,6 +670,8 @@ void ArcTanhPrimitive::evalCPU(const std::vector<Array> &inputs,
                               "Float in inverse Tanh.");
     }
 }
+void ArcTanhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void ArcTanhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -616,6 +695,8 @@ void ArcSinhPrimitive::evalCPU(const std::vector<Array> &inputs,
                               "Float in inverse sine.");
     }
 }
+void ArcSinhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void ArcSinhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -638,6 +719,8 @@ void CosPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[CosPrimitive:evalCPU] Dtype must be Float in  cosine.");
     }
 }
+void CosPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void CosPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -660,6 +743,8 @@ void TanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[TanPrimitive:evalCPU] Dtype must be Float in  Tan.");
     }
 }
+void TanPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void TanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -682,6 +767,8 @@ void SinPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[SinPrimitive:evalCPU] Dtype must be Float in  sine.");
     }
 }
+void SinPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void SinPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -704,6 +791,8 @@ void CoshPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
                               "in  cosineh.");
     }
 }
+void CoshPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 void CoshPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
@@ -726,6 +815,8 @@ void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[TanhPrimitive:evalCPU] Dtype must be Float in  Tanh.");
     }
 }
+void TanhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 void TanhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
@@ -748,6 +839,8 @@ void SinhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[SinhPrimitive:evalCPU] Dtype must be Float in  sineh.");
     }
 }
+void SinhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {}
 void SinhPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
@@ -775,7 +868,8 @@ void BroadCastPrimitive::evalCPU(const std::vector<Array> &inputs,
                              shape_, output.strides());
     BroadCast_dispatch(input, output);
 }
-
+void BroadCastPrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {}
 void BroadCastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                              JVPTracer &output) {}
 
@@ -797,6 +891,8 @@ void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[ExpPrimitive:evalCPU] Dtype must be Float in  sineh.");
     }
 }
+void ExpPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void ExpPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -830,6 +926,8 @@ void LogPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
             "[LogPrimitive:evalCPU] Dtype must be Float in log.");
     }
 }
+void LogPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {}
 void LogPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
@@ -853,6 +951,8 @@ void SigmoidPrimitive::evalCPU(const std::vector<Array> &inputs,
             "[SigmoidPrimitive:evalCPU] Dtype must be Float in  Sigmoid.");
     }
 }
+void SigmoidPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void SigmoidPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -867,6 +967,8 @@ void SoftmaxPrimitive::evalCPU(const std::vector<Array> &inputs,
         std::invalid_argument("[SoftmaxPrimitive::evalCPU] not implement.");
     }
 }
+void SoftmaxPrimitive::jit(const std::vector<JITTracer> &inputs,
+                           JITTracer &output) {}
 void SoftmaxPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
@@ -923,6 +1025,8 @@ void GetElementsNumberPrimitive::evalCPU(const std::vector<Array> &inputs,
         break;
     }
 }
+void GetElementsNumberPrimitive::jit(const std::vector<JITTracer> &inputs,
+                                     JITTracer &output) {}
 void GetElementsNumberPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                      JVPTracer &output) {}
 
@@ -944,37 +1048,12 @@ void MultiplyPrimitive::evalCPU(const std::vector<Array> &inputs,
     auto &b = inputs[1];
     binary(a, b, output, detail::Multiply());
 }
-
+void MultiplyPrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {}
 void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
 
 std::string MultiplyPrimitive::toString() const { return "multiply"; }
-
-// Mean
-void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
-    evalCPU(inputs, out);
-}
-void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-    if (inputs.size() != 1) {
-        throw std::invalid_argument(
-            "[MeanPrimitive] inputs of mean shoule be one.");
-    }
-    auto input = inputs[0];
-    double numbel = 1;
-
-    int ndim = input.ndim();
-    for (int axis : axes_) {
-        numbel *= input.shape()[axis];
-        if (axis < -ndim || axis >= ndim)
-            throw std::invalid_argument(
-                "[MeanPrimitive] axis is out of bounds for Array.");
-    }
-}
-
-void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                        JVPTracer &output) {}
-
-std::string MeanPrimitive::toString() const { return "Mean"; }
 
 // Reduce
 
@@ -1017,7 +1096,8 @@ void ReducePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
         break;
     }
 }
-
+void ReducePrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
 void ReducePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
@@ -1069,10 +1149,21 @@ void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
         conv2d_dispatch(input, weight, output, stride_, padding_, dilation_);
     }
 }
+
+void ConvolutionPrimitive::jit(const std::vector<JITTracer> &inputs,
+                               JITTracer &output) {}
 void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                JVPTracer &output) {}
 std::string ConvolutionPrimitive::toString() const { return "Conv"; }
 
-// TODO MKL
+void MatMulPrimitive::eval(const std::vector<Array> &inputs, Array &output) {}
+void MatMulPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+}
+void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {}
+void MatMulPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                          JVPTracer &output) {}
+std::string MatMulPrimitive::toString() const { return "Matmul"; }
+
 // add::std
 } // namespace ainl::core

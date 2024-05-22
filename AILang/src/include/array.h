@@ -114,11 +114,9 @@ class Array : public Tracer {
     void copyBySharing(const Array &array, size_t size, size_t offset,
                        const std::vector<int> &shape,
                        const std::vector<int> &stride = {});
-
     void SetDataWithBuffer(allocator::Buffer buffer, Dtype dtype,
                            const std::vector<int> &shape,
                            const std::vector<int> &stride);
-
     struct ArrayIterator {
         using iterator_category = std::random_access_iterator_tag;
         using difference_type = std::ptrdiff_t;

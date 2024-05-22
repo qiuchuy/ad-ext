@@ -2,7 +2,7 @@ import numpy as np
 import ailang as al
 
 # print("============")
-# a = np.random.randn(2,2,2)
+# a = np.random.randn(2, 2, 2)
 # b = al.from_numpy(a)
 # c = al.cos(b)
 # a = al.ones((3, 4))
@@ -165,4 +165,5 @@ def resnet18(num_classes=1000):
 
 if __name__ == "__main__":
     model = resnet18(num_classes=50)
-    print(model(al.from_numpy(np.random.randn(1, 3, 21, 21))))
+    x = al.from_numpy(np.random.randn(1, 3, 21, 21))
+    print(model(x))

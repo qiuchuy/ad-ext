@@ -16,7 +16,7 @@ template <typename T, typename Op> struct contiguousReduce {
 template <typename T, typename Op>
 void reduction_op(const Array &input, Array &output,
                   const std::vector<int> &axes, Op op) {
-    // TODO axes not implement
+
     contiguousReduce<T, Op> opc(op);
     output.SetDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
                              output.shape(), output.strides());

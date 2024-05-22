@@ -405,16 +405,6 @@ class LogPrimitive : public Primitive {
   private:
     LogBase base_;
 };
-class MatmulPrimitive : public Primitive {
-  public:
-    MatmulPrimitive() = default;
-    void eval(const std::vector<Array> &inputs, Array &out) override;
-    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
-    std::string toString() const override;
-};
 
 class MaximumPrimitive : public Primitive {
   public:
@@ -511,7 +501,6 @@ class TransposePrimitive : public Primitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
 
     std::string toString() const override;
@@ -549,23 +538,7 @@ class GetElementsNumberPrimitive : public Primitive {
     Dtype dtype_;
 };
 
-// MeanPrimitive
-class MeanPrimitive : public Primitive {
-  public:
-    explicit MeanPrimitive(const std::vector<int> &axes, bool keepdims)
-        : axes_(axes), keepdims_(keepdims) {}
-    MeanPrimitive() = default;
-    void eval(const std::vector<Array> &inputs, Array &out) override;
-    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
 
-    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-    std::string toString() const override;
-
-  private:
-    std::vector<int> axes_;
-    bool keepdims_;
-};
 class ReducePrimitive : public Primitive {
   public:
     enum ReduceType { And, Or, Sum, Prod, Min, Max };

@@ -246,6 +246,7 @@ getReduceShape(const std::vector<int> &axes, const std::vector<int> &shape) {
             output_shape.push_back(1);
         }
     }
+
     std::vector<int> sorted_axes(axes_set.begin(),
                                  axes_set.end()); // increase
 
@@ -263,7 +264,6 @@ Array sum(const Array &arr, const std::vector<int> &axes, bool keepdims) {
         std::make_shared<ReducePrimitive>(sorted_axes, ReducePrimitive::Sum),
         {arr}, output_shape,
         getStridesFromShape(output_shape, dtypeSize(output_type)));
-
     if (keepdims) {
         return out;
     } else {
@@ -386,11 +386,6 @@ Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims) {
     // sum
     auto normalizer = getElementsNumber(arr, axes, true, output_type);
     return multiply(sum(arr, axes, keepdims), normalizer);
-
-    // return Array(output_type, std::make_shared<MeanPrimitive>(axes,
-    // keepdims),
-    //              {arr}, arr.shape(),
-    //              getStridesFromShape(arr.shape(), dtypeSize(output_type)));
 }
 
 Array mean(const Array &arr, int axis, bool keepdims = false) {
