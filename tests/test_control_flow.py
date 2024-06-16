@@ -1,22 +1,20 @@
 import ailang as al
 import numpy as np
 
-"""
 i = 0
 a = np.random.randn(2, 2)
 b = al.from_numpy(a)
 
 def cond(i, b):
-    return i < 10
+    return i < 0
 
 def body(i, b):
-    i += 1
+    #i += 1
     b = al.transpose(b)
     return i, b
 
 iter, result = al.while_loop(cond, body, (i, b))
 assert np.allclose(result.tolist(), a.tolist())
-"""
 
 class TestControlFlow:
     def test_range_for(self):

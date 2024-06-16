@@ -23,6 +23,7 @@ public:
   friend class Node;
   friend class Graph;
   explicit operator std::string() const override;
+  Value::ValueKind getValueKind() const override;
   static int blockCount;
 
   struct BlockIterator {

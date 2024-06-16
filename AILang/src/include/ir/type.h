@@ -15,10 +15,16 @@
 namespace ainl::ir {
 
 class Value;
+class Type;
 using ValuePtr = Value *;
+using TypePtr = std::shared_ptr<Type>;
 
 #define SAFE_TYPE_DOWNCAST(shared_ptr, derived_type)                           \
   std::dynamic_pointer_cast<derived_type>(shared_ptr)
+
+template <typename T> std::shared_ptr<T> asType(std::shared_ptr<Type> type) {
+  return std::dynamic_pointer_cast<T>(type);
+}
 
 template <typename T> class SingletonTypePtr {
 public:

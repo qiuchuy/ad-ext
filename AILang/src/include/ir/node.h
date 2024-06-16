@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <utility>
 
 #include "ir/block.h"
@@ -58,20 +59,24 @@ public:
     BATCHNORM2d,
     WHILE,
     UNKNOWN,
+    COMPARE,
   };
 
   void init() {
     useList.clear();
     useValueList.clear();
-    signature = nullptr;
     setNext(nullptr);
     setPrev(nullptr);
   }
   ~Node() override = default;
   Node();
-  Node(const TypePtr &type, const TypePtr &inType);
+  Node(const TypePtr &type);
 
   explicit operator std::string() const override { return ""; }
+  static Node *create(const TypePtr &type) { return new Node(type); }
+  Value::ValueKind getValueKind() const override {
+    return Value::ValueKind::Node;
+  }
 
   template <typename NodeType, typename... ARGS>
   static NodePtr create(ARGS &&... args) {
@@ -81,25 +86,19 @@ public:
 
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
   virtual void accept(IRVisitor *visitor);
+  virtual std::vector<ValuePtr> getOutputValues() { return {this}; }
 
   friend class Graph;
 
   static int LOCAL_COUNT;
 
   void addBlock();
-  void addBlockWithParam(NodePtr param);
+  void addBlockWithParam(NodePtr param, GraphPtr graph);
   void setUse(ValuePtr value, int idx);
 
 protected:
   std::vector<ValuePtr> useValueList;
   std::vector<UsePtr> useList;
-
-  // They are actually not created by the constructor
-  // Created by Graph
-  SignaturePtr signature{};
-  // GraphPtr graph;
-  // Created when creating a new local scope
-  // BlockPtr block;
 };
 
 NODE_PTR_TYPE_DECL(Param)
@@ -150,42 +149,6 @@ public:
 
 private:
   ValuePtr value;
-};
-
-NODE_PTR_TYPE_DECL(Alloca)
-class Alloca : public Node {
-public:
-  explicit Alloca(const TypePtr &type);
-  NodeKind kind() override { return Node::NodeKind::ALLOCA; }
-  explicit operator std::string() const override {
-    return getName() + " = alloca " + contentType->str();
-  }
-
-private:
-  TypePtr contentType;
-};
-
-NODE_PTR_TYPE_DECL(Load)
-class Load : public Node {
-public:
-  Load(const ValuePtr &inValue);
-  ValuePtr getAddress() const;
-  NodeKind kind() override { return Node::NodeKind::LOAD; }
-  explicit operator std::string() const override {
-    return getName() + " = load " + getAddress()->getName();
-  }
-};
-
-NODE_PTR_TYPE_DECL(Store)
-class Store : public Node {
-public:
-  Store(const ValuePtr &inValue, const ValuePtr &address);
-  ValuePtr getAddress() const;
-  ValuePtr getValue() const;
-  NodeKind kind() override { return Node::NodeKind::STORE; }
-  explicit operator std::string() const override {
-    return "store " + getValue()->getName() + ", " + getAddress()->getName();
-  }
 };
 
 NODE_PTR_TYPE_DECL(Matmul)
@@ -271,15 +234,44 @@ private:
 NODE_PTR_TYPE_DECL(WhileOp)
 class WhileOp : public Node {
 public:
-  WhileOp(const ModulePtr &cond, const ModulePtr &body, const std::vector<ValuePtr>& inits);
+  WhileOp(const TypePtr &nodeType, const ModulePtr &cond, const ModulePtr &body,
+          const std::vector<ValuePtr> &inits);
   NodeKind kind() override { return Node::NodeKind::WHILE; }
   explicit operator std::string() const override;
+  std::vector<ValuePtr> getOutputValues() override { return outs; }
+
 private:
   ModulePtr cond;
   ModulePtr body;
   std::vector<ValuePtr> inits;
+  std::vector<ValuePtr> outs;
 };
 
+NODE_PTR_TYPE_DECL(CompareOp)
+class CompareOp : public Node {
+public:
+  enum struct CompareType {
+    EQ = 0,
+    NE,
+    GE,
+    GT,
+    LE,
+    LT,
+    COMPARETYPE,
+  };
+  CompareOp(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs,
+            CompareType compareType);
+  NodeKind kind() override { return Node::NodeKind::COMPARE; }
+  explicit operator std::string() const override;
 
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+  CompareType op;
+};
+
+const std::array<std::string,
+                 static_cast<size_t>(CompareOp::CompareType::COMPARETYPE)>
+    compareOpString = {"eq", "ne", "ge", "gt", "le", "lt"};
 
 } // namespace ainl::ir

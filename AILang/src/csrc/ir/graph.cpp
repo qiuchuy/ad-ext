@@ -7,7 +7,7 @@
 
 namespace ainl::ir {
 
-Graph::Graph(std::string name) : name(std::move(name)) {
+Graph::Graph() {
   this->beginBlock = new Block();
   this->endBlock = new Block();
   this->beginBlock->setNext(this->endBlock);
@@ -23,8 +23,6 @@ void Graph::insertNodeAtEnd(NodePtr Node) {
   }
 }
 
-std::string Graph::getName() const { return name; }
-
 std::string Graph::str() {
   std::string str;
   for (auto bb = (BlockPtr)beginBlock->next; bb->next != nullptr;
@@ -35,6 +33,8 @@ std::string Graph::str() {
 }
 
 int Graph::GraphParam::FPARAM_COUNT = 0;
+
+Value::ValueKind Graph::getValueKind() const { return Value::ValueKind::Graph; }
 
 Graph::GraphParam::operator std::string() const {
   return type->getName() + " " + getName();

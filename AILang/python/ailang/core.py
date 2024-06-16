@@ -9,29 +9,45 @@ from iree import runtime as ireert
 
 from .ast_converter import parse_pycallable
 
-def jit(f: Union[Callable]):
-    def jitted_f(*args, **kwargs):
-        module = al.jit_impl(f, args, target="mlir")
-        print(module)
-        compiled_flatbuffer = ireec.tools.compile_str(
-            module,
-            input_type="stablehlo",
-            target_backends=["vmvx"]
-        )
+def jit(debug: bool = False):
+    """
+    Decorator that performs just-in-time (JIT) compilation of a function.
 
-        config = ireert.Config("local-task")
-        ctx = ireert.SystemContext(config=config)
-        vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
-        ctx.add_vm_module(vm_module)
+    Args:
+        debug (bool, optional): If True, the function will be compiled using the "ailang" target
+            and the compiled module will be printed. If False (default), the function will be
+            compiled using the "mlir" target.
 
-        numpy_args = [np.array(arg.tolist(), dtype=np.float32) for arg in args]
-        _jitted_f = ctx.modules.main[f.__name__]
-        results = _jitted_f(*numpy_args).to_host()
-        return results
+    Returns:
+        The decorated function, which is the JIT-compiled version of the original function.
+    """
+    def _jit(f: Union[Callable]):
+        def jitted_f(*args, **kwargs):
+            if debug:
+                module = al.jit_impl(f, args, target="ailang")
+                print(module)
+                return f(*args, **kwargs)
 
-    return jitted_f
+            module = al.jit_impl(f, args, target="mlir")
+            print(module)
+            compiled_flatbuffer = ireec.tools.compile_str(
+                module,
+                input_type="stablehlo",
+                target_backends=["vmvx"]
+            )
 
+            config = ireert.Config("local-task")
+            ctx = ireert.SystemContext(config=config)
+            vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
+            ctx.add_vm_module(vm_module)
 
+            numpy_args = [np.array(arg.tolist(), dtype=np.float32) for arg in args]
+            _jitted_f = ctx.modules.main[f.__name__]
+            results = _jitted_f(*numpy_args).to_host()
+            return results
+
+        return jitted_f
+    return _jit
 
 def compile(f: Union[Callable]):
     """

@@ -5,111 +5,36 @@
 #include "primitive.h"
 #include "transformation.h"
 #include <algorithm>
+#include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <stdexcept>
 
 namespace ainl::ffi {
 
 void initOps(py::module_ &m) {
-  m.def("flatten", [](const ainl::core::Tracer &input) {
+  m.def("flatten", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    return unary<ainl::core::FlattenPrimitive>({input});
   });
-  m.def(
-      "flatten",
-      [](const ainl::core::Array &input) { return ainl::core::flatten(input); },
-      "Flatten the input");
 
-  m.def(
-      "flatten",
-      [](const ainl::core::JVPTracer &input) {
-        return op<ainl::core::JVPTracer, ainl::core::FlattenPrimitive>({input});
-      },
-      "Flatten the input");
+  m.def("reshape", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                      const std::vector<int> &shape) {
+    return unary<ainl::core::ReshapePrimitive>({input}, shape);
+  });
 
-  m.def(
-      "reshape",
-      [](const ainl::core::Array &input, const std::vector<int> &shape) {
-        return ainl::core::reshape(input, shape);
-      },
-      "Reshape the input");
+  m.def("slice", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                    const std::vector<int> &start, const std::vector<int> &end,
+                    const std::vector<int> &stride) {
+    return unary<ainl::core::SlicePrimitive>({input}, start, end, stride);
+  });
 
-  m.def(
-      "reshape",
-      [](const ainl::core::JVPTracer &input, const std::vector<int> &shape) {
-        return op<ainl::core::JVPTracer, ainl::core::ReshapePrimitive>({input},
-                                                                       shape);
-      },
-      "Reshape the input");
+  m.def("transpose", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    return unary<ainl::core::TransposePrimitive>({input});
+  });
 
-  m.def(
-      "reshape",
-      [](const ainl::core::JITTracer &input, const std::vector<int> &shape) {
-        return op<ainl::core::JITTracer, ainl::core::ReshapePrimitive>({input},
-                                                                       shape);
-      },
-      "Reshape the input");
-
-  m.def(
-      "slice",
-      [](const ainl::core::Array &input, const std::vector<int> &start,
-         const std::vector<int> &end, const std::vector<int> &stride) {
-        return ainl::core::slice(input, start, end, stride);
-      },
-      "Slice the input");
-
-  m.def(
-      "slice",
-      [](const ainl::core::JVPTracer &input, const std::vector<int> &start,
-         const std::vector<int> &end, const std::vector<int> &stride) {
-        return op<ainl::core::JVPTracer, ainl::core::SlicePrimitive>(
-            {input}, start, end, stride);
-      },
-      "Slice the input");
-
-  m.def(
-      "transpose",
-      [](const ainl::core::Array &input) {
-        return ainl::core::transpose(input);
-      },
-      "Transpose the input");
-
-  m.def(
-      "transpose",
-      [](const ainl::core::JVPTracer &input) {
-        return op<ainl::core::JVPTracer, ainl::core::TransposePrimitive>(
-            {input});
-      },
-      "Transpose the input");
-
-  m.def(
-      "transpose",
-      [](const ainl::core::JITTracer &input) {
-        return op<ainl::core::JITTracer, ainl::core::TransposePrimitive>(
-            {input});
-      },
-      "Transpose the input");
-
-  m.def(
-      "matmul",
-      [](const ainl::core::Array &lhs, const ainl::core::Array &rhs) {
-        return ainl::core::matmul(lhs, rhs);
-      },
-      "Matrix multiplication");
-
-  m.def(
-      "matmul",
-      [](const ainl::core::JITTracer &lhs, const ainl::core::JITTracer &rhs) {
-        return op<ainl::core::JITTracer, ainl::core::MatMulPrimitive>(
-            {lhs, rhs});
-      },
-      "Matrix multiplication");
-
-  m.def(
-      "matmul",
-      [](const ainl::core::JVPTracer &lhs, const ainl::core::JVPTracer &rhs) {
-        return op<ainl::core::JVPTracer, ainl::core::MatMulPrimitive>(
-            {lhs, rhs});
-      },
-      "Matrix multiplication");
+  m.def("matmul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                     const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return unary<ainl::core::MatMulPrimitive>({lhs, rhs});
+  });
 
   m.def(
       "while_loop",
@@ -135,23 +60,46 @@ void initOps(py::module_ &m) {
             } else if (py::isinstance<py::bool_>(item)) {
               inits.push_back(
                   std::make_shared<ainl::core::Array>(item.cast<bool>()));
-            } 
-
-            // Other valid tracers
-            inits.push_back(
-                py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+            } else {
+              inits.push_back(item.cast<std::shared_ptr<ainl::core::Tracer>>());
+            }
           }
           return inits;
         };
 
         auto inits = initHandlingHelper(init);
 
-        if (std::all_of(init.begin(), init.end(), [](const py::handle &item) {
-          return py::isinstance<ainl::core::Array>(item);
-        })) {
-        } 
+        auto bodyImpl =
+            [body](
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &args) {
+              auto iteration = body(*createPythonTupleFromTracerVector(args));
+              std::vector<std::shared_ptr<ainl::core::Tracer>> result;
+              for (auto &item : iteration) {
+                result.push_back(
+                    py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+              }
+              return result;
+            };
+
+        auto condImpl =
+            [cond](
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &args) {
+              auto judge = cond(*createPythonTupleFromTracerVector(args));
+              return judge.cast<std::shared_ptr<ainl::core::Tracer>>();
+            };
+
+        return loop<ainl::core::LoopPrimitive>(inits, condImpl, bodyImpl);
       },
       "Builtin control flow operator: while loop");
 }
 
-}; // namespace ainl::ffi
+py::tuple createPythonTupleFromTracerVector(
+    const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
+  py::tuple tuple(inputs.size());
+  for (size_t i = 0; i < inputs.size(); i++) {
+    tuple[i] = inputs[i];
+  }
+  return tuple;
+}
+
+} // namespace ainl::ffi

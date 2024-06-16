@@ -4,6 +4,11 @@ import numpy as np
 
 from ailang import array
 
+a = np.random.randn(2, 2)
+b = al.from_numpy(a)
+c = al.flatten(b)
+print(c)
+
 class TestOp:
     @staticmethod
     def numeric_check(a: array, b: np.ndarray):

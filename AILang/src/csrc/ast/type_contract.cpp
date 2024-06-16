@@ -1,6 +1,6 @@
 #include "ast/type_contract.h"
-
 #include "ir/literal.h"
+#include "ir/type.h"
 
 namespace ainl::ir {
 
@@ -217,6 +217,10 @@ TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
   return TensorType::create(elementType, inTensorShape);
 }
 
+TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
+  return SingletonTypePtr<BoolType>::get();
+}
+
 TypeContract::TypeContract() {
   registerContract("matmul", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
@@ -279,6 +283,48 @@ TypeContract::TypeContract() {
           "Invalid argument number for operator bacthnorm2d");
     }
     return batchnorm2dTypeContract((args[0]));
+  });
+  registerContract("eq", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("ne", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("gt", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("ge", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("le", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("lt", [](std::vector<TypePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError(
+          "Invalid argument number for operator compare");
+    }
+    return compareTypeContract((args[0]), (args[1]));
   });
 }
 

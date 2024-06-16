@@ -21,6 +21,13 @@ ValuePtr convolutionNodeContract(const ModulePtr &module,
 ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
                                  const ValuePtr &inValue);
+ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                               const GraphPtr &condGraph,
+                               const GraphPtr &bodyGraph,
+                               std::vector<ValuePtr> args);
+ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                             const ValuePtr &lhs, const ValuePtr &rhs,
+                             CompareOp::CompareType op);
 
 class NodeContract {
 public:

@@ -1,5 +1,6 @@
 #include <numeric>
 #include <sstream>
+#include <stdexcept>
 
 #include "array.h"
 #include "graph.h"
@@ -15,16 +16,17 @@ namespace ainl::core {
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
              const std::vector<Array> &inputs, const std::vector<int> &shape,
              const std::vector<int> &stride)
-    : dtype_(dtype) {
+    : Tracer({}, prim) {
   std::vector<std::shared_ptr<Tracer>> inputTracers;
   for (const auto &input : inputs) {
     inputTracers.push_back(
         std::dynamic_pointer_cast<Tracer>(std::make_shared<Array>(input)));
   }
+  dtype_ = dtype;
   inputs_ = inputTracers;
-  prim_ = std::move(prim);
   shape_ = std::make_shared<std::vector<int>>(shape);
   stride_ = std::make_shared<std::vector<int>>(stride);
+  idx_ = 0;
 }
 
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
@@ -46,14 +48,18 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 
 Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
                const std::shared_ptr<Primitive> &prim)
-    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()) {}
+    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(0) {}
+
+Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
+               const std::shared_ptr<Primitive> &prim, uint64_t idx)
+    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(idx) {}
 
 void Tracer::eval() {
-  LOG_DEBUG("%s", "[eval] Start evaluating tracer");
-  auto trace = getCurrentTrace();
+  LOG_DEBUG("%s", "Starting evaluating tracers as a subgraph.");
+  auto trace = findTopTrace(inputs());
   std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
-      [&](std::shared_ptr<Tracer> tracer) -> void {
-    if (evaluated()) {
+      [&recursion, &trace](std::shared_ptr<Tracer> tracer) -> void {
+    if (tracer->evaluated()) {
       return;
     } else {
       for (auto &input : tracer->inputs()) {
@@ -62,7 +68,8 @@ void Tracer::eval() {
       if (!tracer->isLeaf()) {
         LOG_DEBUG("[eval] Evaluating tracer with primitive %s",
                   tracer->primitive()->toString().c_str());
-        trace->process(tracer->primitive(), tracer->inputs(), tracer);
+        trace->process(tracer->primitive(), tracer->inputs(),
+                       tracer->outputs());
       }
     }
   };
@@ -78,29 +85,24 @@ bool Tracer::evaluated() const { return false; }
 std::string Tracer::toString() const { return "tracer"; }
 
 bool Tracer::operator==(Tracer &other) {
-  if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
-    if (auto another =
-            std::dynamic_pointer_cast<Array>(other.shared_from_this())) {
+  if (auto array = asTracer<Array>(shared_from_this())) {
+    if (auto another = asTracer<Array>(other.shared_from_this())) {
       return array->operator==(*another);
     } else {
-      throw std::invalid_argument(
-          "Cannot compare an abstract Tracer with an Array.");
+
+      return aval() == other.aval();
     }
   }
-  return aval() == other.aval();
 }
 
 bool Tracer::operator>(Tracer &other) {
-  if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
-    if (auto another =
-            std::dynamic_pointer_cast<Array>(other.shared_from_this())) {
+  if (auto array = asTracer<Array>(shared_from_this())) {
+    if (auto another = asTracer<Array>(other.shared_from_this())) {
       return array->operator>(*another);
     } else {
-      throw std::invalid_argument(
-          "Cannot compare an abstract Tracer with an Array.");
+      return aval() == other.aval();
     }
   }
-  return aval() > other.aval();
 }
 
 void Array::copyBySharing(const Array &other, size_t size, size_t offset,
@@ -177,11 +179,23 @@ std::ostream &operator<<(std::ostream &os, const Array &arr) {
 std::string Array::toString() const {
   std::ostringstream oss;
   oss << *this;
+  return oss.str();
 }
 
 ir::TypePtr Array::getJITType() {
   if (!evaluated())
     eval();
+  if (shape_->empty()) {
+    // tensor which has empty shape_ will be jitted into literals
+    switch (dtype_.type) {
+    case Dtype::DataType::Int32Type:
+      return ir::IntTypePtr::get();
+    case Dtype::DataType::Float32Type:
+      return ir::FloatTypePtr::get();
+    default:
+      throw std::invalid_argument("Unsupported jit dtype");
+    }
+  }
   auto eleTy = ir::DtypeToTypePtr(dtype_);
   std::vector<ir::ValuePtr> shape;
   for (const auto &dim : *shape_) {

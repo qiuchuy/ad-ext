@@ -43,7 +43,7 @@ using SignaturePtr = Signature *;
 
 class ALModule;
 using ModulePtr = std::shared_ptr<ALModule>;
-class ALModule : public std::enable_shared_from_this<ALModule> {
+class ALModule : public std::enable_shared_from_this<ALModule>, public Value {
 public:
   ALModule() = default;
   ALModule(std::string name, const TypePtr &inputType,
@@ -51,6 +51,10 @@ public:
   static ModulePtr create(std::string name, const TypePtr &inputType,
                           const TypePtr &returnType = nullptr) {
     return std::make_shared<ALModule>(name, inputType, returnType);
+  }
+  static ModulePtr create(const TypePtr &inputType,
+                          const TypePtr &returnType = nullptr) {
+    return std::make_shared<ALModule>("", inputType, returnType);
   }
   std::vector<ValuePtr> getParams();
   std::vector<TypePtr> getParamTypes();
@@ -61,6 +65,7 @@ public:
   GraphPtr getGraph() { return graph; }
   std::string getName() { return name; }
   std::string str();
+  explicit operator std::string() { return str(); }
 
 private:
   SignaturePtr signature;

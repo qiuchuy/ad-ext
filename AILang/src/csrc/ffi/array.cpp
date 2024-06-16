@@ -1,10 +1,13 @@
 #include <pybind11/cast.h>
+#include <pybind11/pytypes.h>
 #include <sstream>
 
 #include "array.h"
 #include "ffi/array.h"
 #include "ops.h"
 #include "pass/stablehlo_lowering.h"
+#include "primitive.h"
+#include "trace.h"
 #include "transformation.h"
 #include "utils/logger.h"
 
@@ -84,44 +87,59 @@ void initArray(py::module &_m) {
                                                                       "tracer")
       .def("__repr__", &ainl::core::Tracer::toString)
       .def("__bool__",
-           [](ainl::core::Tracer &tracer) {
-             throw std::runtime_error(
-                 "Cannot convert a abstract Tracer to bool, try to use .item() "
-                 "in conditions instead");
+           [](std::shared_ptr<ainl::core::Tracer> &tracer) {
+             auto array =
+                 ainl::core::asTracer<ainl::core::Array>(tracer->aval());
+             return array->item<bool>();
            })
       .def("__len__",
            [](ainl::core::Tracer &tracer) {
              throw std::runtime_error(
                  "Cannot get the length of an abstract Tracer.");
            })
-      .def("__gt__",
-           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
-             return tracer > other && !(tracer == other);
+      .def("__eq__",
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::EQ);
            })
-      .def("__gt__", [](ainl::core::Tracer &tracer,
-                        int scalar) { return tracer > scalar; })
+      .def("__ne__",
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::NE);
+           })
       .def("__lt__",
-           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
-             return !(tracer > other) && !(tracer == other);
-           })
-      .def("__ge__",
-           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
-             return tracer > other || tracer == other;
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::LT);
            })
       .def("__le__",
-           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
-             return !(tracer > other) || tracer == other;
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::LE);
            })
-      .def("__eq__", [](ainl::core::Tracer &tracer,
-                        ainl::core::Tracer &other) { return tracer == other; })
-      .def("__ne__",
-           [](ainl::core::Tracer &tracer, ainl::core::Tracer &other) {
-             return !(tracer == other);
+      .def("__gt__",
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::GT);
            })
-
+      .def("__ge__",
+           [](const std::shared_ptr<ainl::core::Tracer> &tracer,
+              const std::shared_ptr<ainl::core::Tracer> &other) {
+             return ainl::core::unary<ainl::core::ComparePrimitive>(
+                 {tracer, other}, ainl::ir::CompareOp::CompareType::GE);
+           }) DEFINE_COMPARE_OPERATOR_ON_SCALAR(bool)
           DEFINE_COMPARE_OPERATOR_ON_SCALAR(int)
-              DEFINE_COMPARE_OPERATOR_ON_SCALAR(float)
-                  DEFINE_COMPARE_OPERATOR_ON_SCALAR(double);
+              DEFINE_COMPARE_OPERATOR_ON_SCALAR(int8_t)
+                  DEFINE_COMPARE_OPERATOR_ON_SCALAR(int16_t)
+                      DEFINE_COMPARE_OPERATOR_ON_SCALAR(int32_t)
+                          DEFINE_COMPARE_OPERATOR_ON_SCALAR(int64_t)
+                              DEFINE_COMPARE_OPERATOR_ON_SCALAR(float)
+                                  DEFINE_COMPARE_OPERATOR_ON_SCALAR(double);
 
   py::class_<ainl::core::JVPTracer, ainl::core::Tracer,
              std::shared_ptr<ainl::core::JVPTracer>>(_m, "jvptracer");
@@ -160,6 +178,7 @@ void initArray(py::module &_m) {
              assert(a.ndim() >= 1);
              return a.shape().at(0);
            })
+      .def("__bool__", [](ainl::core::Array &a) { return a.item<bool>(); })
       .def("__getitem__",
            [](ainl::core::Array &a, const py::object &object) {
              if (!a.evaluated()) {
@@ -289,14 +308,27 @@ void initArray(py::module &_m) {
          const std::string &target) {
         auto func =
             [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
-            -> std::shared_ptr<ainl::core::Tracer> {
+            -> std::vector<std::shared_ptr<ainl::core::Tracer>> {
           py::tuple posArgs = py::tuple(inputs.size());
           for (size_t i = 0; i < inputs.size(); i++) {
             posArgs[i] = inputs[i];
           }
           auto result = f(*posArgs);
-          return result.cast<std::shared_ptr<ainl::core::Tracer>>();
+          if (py::isinstance<py::tuple>(result)) {
+            std::vector<std::shared_ptr<ainl::core::Tracer>> resultVec;
+            for (auto &item : result.cast<py::tuple>()) {
+              resultVec.push_back(
+                  item.cast<std::shared_ptr<ainl::core::Tracer>>());
+            }
+            return resultVec;
+          }
+          auto containedResult =
+              std::vector<std::shared_ptr<ainl::core::Tracer>>();
+          containedResult.push_back(
+              result.cast<std::shared_ptr<ainl::core::Tracer>>());
+          return containedResult;
         };
+
         auto module =
             jit(func, py::str(getattr(f, "__name__")), target, inputs);
         if (target == "ailang") {

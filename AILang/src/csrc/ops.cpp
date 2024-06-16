@@ -72,8 +72,4 @@ std::vector<int> getStridesFromShape(const std::vector<int> &shape,
   return strides;
 }
 
-GENERIC_OP_IMPL(reshape)
-GENERIC_OP_IMPL(transpose)
-GENERIC_OP_IMPL(matmul)
-
 }; // namespace ainl::core

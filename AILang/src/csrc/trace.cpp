@@ -1,13 +1,17 @@
 #include "trace.h"
 
+#include "array.h"
 #include "ir/function.h"
 #include "primitive.h"
 #include "transformation.h"
 #include "utils/logger.h"
+#include <memory>
 
 namespace ainl::core {
 
-EvaluationTrace::EvaluationTrace() {}
+BaseTrace::BaseTrace(int level) : level(level) {}
+
+EvaluationTrace::EvaluationTrace(int level) : BaseTrace(level) {}
 
 void EvaluationTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 
@@ -16,19 +20,32 @@ void EvaluationTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 void EvaluationTrace::process(
     const std::shared_ptr<Primitive> &prim,
     const std::vector<std::shared_ptr<Tracer>> &inputs,
-    std::shared_ptr<Tracer> &output) {
-  auto arrays = tracerVectorConversion<Array, Tracer>(inputs);
-  if (auto primOutput = std::dynamic_pointer_cast<Array>(output)) {
-    prim->eval(arrays, *primOutput);
-  } else {
-    throw std::runtime_error("[eval] Output is not an array.");
-  }
+    const std::vector<std::shared_ptr<Tracer>> &outputs) {
+  auto outputArrays = convertTracerVector<Array>(outputs);
+  prim->eval(convertTracerVector<Array>(inputs), outputArrays);
+  // in order not to change the interface of `prim->eval`
+  // we need to perform the update here
+  // another options is to change the interface of `prim->eval` with pointer to
+  // avoid a object copy
+  update(outputs, outputArrays);
 }
 
 std::string EvaluationTrace::toString() const { return "eval"; }
 
+void EvaluationTrace::update(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                             const std::vector<Array> &output) {
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (auto array = std::dynamic_pointer_cast<Array>(inputs[i])) {
+      *array = output[i];
+    } else {
+      throw std::runtime_error(
+          "Input is not an array when updating in evaluation trace.");
+    }
+  }
+}
+
 TraceManager::TraceManager() {
-  auto evalTrace = std::make_shared<EvaluationTrace>();
+  auto evalTrace = std::make_shared<EvaluationTrace>(0);
   traceStack.push(std::dynamic_pointer_cast<BaseTrace>(evalTrace));
 }
 
@@ -59,4 +76,21 @@ ir::ModulePtr getTracedModule() {
   }
 }
 
+size_t getTraceStackSize() { return traceManager().getStackSize(); }
+
+std::shared_ptr<BaseTrace>
+findTopTrace(const std::vector<std::shared_ptr<Tracer>> &tracers) {
+  if (tracers.size() == 0) {
+    return getCurrentTrace();
+  }
+  std::vector<size_t> levels;
+  for (const auto &tracer : tracers) {
+    levels.push_back(tracer->trace()->level);
+  }
+
+  auto maxIndex = std::distance(levels.begin(),
+                                std::max_element(levels.begin(), levels.end()));
+
+  return tracers[maxIndex]->trace();
+}
 } // namespace ainl::core

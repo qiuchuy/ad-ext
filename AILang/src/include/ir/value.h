@@ -15,6 +15,10 @@ namespace ainl::ir {
 #define SAFE_VALUE_DOWNCAST(value, derived_type)                               \
   dynamic_cast<derived_type *>(value)
 
+template <typename ValueTy> ValueTy *asValueType(Value *value) {
+  return dynamic_cast<ValueTy *>(value);
+}
+
 class Attribute;
 class Value;
 class Use;
@@ -110,6 +114,7 @@ public:
     Graph,
     Block,
     Literal,
+    Tuple,
   };
 
   std::string prefix;
@@ -126,12 +131,12 @@ public:
 public:
   Value();
   explicit Value(const TypePtr &type);
-  Value(const std::vector<TypePtr> &types);
+  static Value *create(const TypePtr &type) { return new Value(type); }
   ~Value() override = default;
-  virtual std::string getName() const;
   TypePtr getType() const { return type; }
 
-  virtual bool isLiteral() const { return "false"; }
+  virtual ValueKind getValueKind() const { return ValueKind::Value; }
+  virtual std::string getName() const;
 
   bool operator==(const Value &other) const;
 
@@ -140,6 +145,7 @@ public:
   friend class Block;
   friend class ALModule;
   friend class Node;
+  friend class Graph;
 
 public:
   void insertUseAtEnd(UsePtr use);
@@ -154,9 +160,6 @@ protected:
   // Use-def chain
   UsePtr beginUse;
   UsePtr endUse;
-
-  // This value could be a tuple which stores other values
-  std::vector<ValuePtr> values;
 
   // the Graph & Block which this value belongs to
   GraphPtr graph;

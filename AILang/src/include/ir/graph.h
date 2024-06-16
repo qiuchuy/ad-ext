@@ -26,13 +26,36 @@ public:
     static int FPARAM_COUNT;
     int idx;
     explicit operator std::string() const override;
-    // friend class Graph;
-    // friend class ALModule;
+
   public:
     GraphParam(TypePtr type, int idx);
     ~GraphParam() override = default;
   };
-  explicit Graph(std::string name);
+  explicit Graph();
+
+  static std::shared_ptr<Graph> create(const TypePtr &inputType,
+                                       const TypePtr &returnType) {
+    auto graph = std::make_shared<Graph>();
+    std::vector<ValuePtr> params;
+    if (inputType->isTupleType()) {
+      std::vector<TypePtr> paramTypes =
+          asType<TupleType>(inputType)->getTypes();
+      for (int idx = 0; (size_t)idx < paramTypes.size(); idx++) {
+        auto param = new Graph::GraphParam(paramTypes[idx], idx);
+        params.push_back(param);
+      }
+    } else {
+      params.push_back(new Graph::GraphParam(inputType, 0));
+    }
+    for (auto &param : params) {
+      param->graph = graph;
+    }
+    ParamPtr paramNode = Param::create(params, inputType);
+    paramNode->graph = graph;
+    paramNode->addBlockWithParam(paramNode, graph);
+    return graph;
+  }
+
   std::vector<ValuePtr> getParams() {
     return ((BlockPtr)(beginBlock->next))->getParams();
   }
@@ -44,7 +67,7 @@ public:
     insertNodeAtEnd(Node);
     return Node;
   }
-  std::string getName() const override;
+  Value::ValueKind getValueKind() const override;
   friend class Node;
   friend class ALModule;
   // friend std::ostream &operator<<(std::ostream &stream, const GraphPtr &g);
@@ -109,7 +132,6 @@ private:
 
   BlockPtr beginBlock;
   BlockPtr endBlock;
-  std::string name;
 };
 using GraphPtr = std::shared_ptr<Graph>;
 } // namespace ainl::ir

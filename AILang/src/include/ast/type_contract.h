@@ -14,6 +14,7 @@ TypePtr reluTypeContract(const TypePtr &inType);
 TypePtr maxpool2dTypeContract(const TypePtr &inType);
 TypePtr convolutionTypeContract(const TypePtr &inType);
 TypePtr batchnorm2dTypeContract(const TypePtr &inType);
+TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 
 class TypeContract {
 public:
