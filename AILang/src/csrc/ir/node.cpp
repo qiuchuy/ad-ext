@@ -211,4 +211,49 @@ CompareOp::operator std::string() const {
          "): " + std::string(*getType());
 }
 
+void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
+           const ModulePtr &falseBranch)
+    : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch) {
+  if (nodeType->isTupleType()) {
+    auto types = asType<TupleType>(nodeType)->getTypes();
+    for (const auto &type : types) {
+      outs.push_back(Node::create(type));
+    }
+  } else {
+    outs.push_back(Node::create(nodeType));
+  }
+}
+
+IfOp::operator std::string() const {
+  std::string result;
+  std::string lhs;
+  std::string indent = "\t\t";
+
+  auto addIndent = [&indent](const std::string &str) {
+    std::stringstream ss(str);
+    std::string line;
+    std::string result;
+    while (std::getline(ss, line)) {
+      result += indent + line + "\n";
+    }
+    return result;
+  };
+
+  lhs += "(";
+  for (size_t i = 0; i < outs.size(); i++) {
+    if (i == outs.size() - 1) {
+      lhs += outs[i]->getName() + ") ";
+    } else {
+      lhs += outs[i]->getName() + ", ";
+    }
+  }
+  result += lhs + " = ailang::if (";
+  result += getType()->getName();
+  result += " {\n" + addIndent(std::string(*trueBody)) + "\n\t} else {\n" +
+            addIndent(std::string(*elseBody)) + "\n\t}";
+  return result;
+}
+
 } // namespace ainl::ir

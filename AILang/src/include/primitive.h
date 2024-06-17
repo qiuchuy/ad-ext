@@ -194,6 +194,33 @@ private:
       body_;
 };
 
+class IfPrimitive : public Primitive {
+public:
+  IfPrimitive() = default;
+  IfPrimitive(const std::function<std::vector<std::shared_ptr<Tracer>>(
+                  const std::vector<std::shared_ptr<Tracer>> &)> &trueBranch,
+              const std::function<std::vector<std::shared_ptr<Tracer>>(
+                  const std::vector<std::shared_ptr<Tracer>> &)> &falseBranch)
+      : trueBranch(trueBranch), falseBranch(falseBranch) {}
+  void eval(const std::vector<Array> &inputs,
+            std::vector<Array> &output) override;
+  void evalCPU(const std::vector<Array> &inputs,
+               std::vector<Array> &output) override;
+  void jit(const std::vector<JITTracer> &inputs,
+           std::vector<JITTracer> &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs,
+           std::vector<JVPTracer> &output) override;
+  std::string toString() const override;
+
+private:
+  std::function<std::vector<std::shared_ptr<Tracer>>(
+      const std::vector<std::shared_ptr<Tracer>> &)>
+      trueBranch;
+  std::function<std::vector<std::shared_ptr<Tracer>>(
+      const std::vector<std::shared_ptr<Tracer>> &)>
+      falseBranch;
+};
+
 class ComparePrimitive : public UnaryPrimitive {
 
 public:
@@ -207,6 +234,7 @@ public:
 
 private:
   template <typename T> void compare(Array &lhs, Array &rhs, Array &output) {
+    // [yuqiuchu] replace with elementwise comparison
     auto lval = lhs.template item<T>();
     auto rval = rhs.template item<T>();
     bool result;

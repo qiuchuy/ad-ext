@@ -444,12 +444,9 @@ void LoopPrimitive::jit(const std::vector<JITTracer> &inputs,
       };
 
   auto condModule = ainl::core::jit(condWrapper, "cond", "", tracers);
-  std::cout << condModule->str() << std::endl;
 
   auto bodyModule = ainl::core::jit(body_, "body", "", tracers);
-  std::cout << bodyModule->str() << std::endl;
 
-  // now we are back
   *module = savedModule;
 
   inputValues.push_back(condModule.get());
@@ -489,6 +486,10 @@ void ComparePrimitive::evalCPU(const std::vector<Array> &inputs,
   if (dtype1.type != dtype2.type) {
     throw std::invalid_argument(
         "[ComparePrimitive::evalCPU] input arrays must have the same dtype.");
+  }
+  if (lhs.shape() != rhs.shape()) {
+    throw std::invalid_argument(
+        "[ComparePrimitive::evalCPU] input arrays must have the same shape.");
   }
 
   switch (dtype1.type) {
@@ -552,4 +553,64 @@ void ComparePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
 std::string ComparePrimitive::toString() const { return "Compare"; }
+
+void IfPrimitive::eval(const std::vector<Array> &inputs,
+                       std::vector<Array> &output) {
+  evalCPU(inputs, output);
+}
+
+void IfPrimitive::evalCPU(const std::vector<Array> &inputs,
+                          std::vector<Array> &output) {}
+
+void IfPrimitive::jit(const std::vector<JITTracer> &inputs,
+                      std::vector<JITTracer> &outputs) {
+  std::vector<ir::TypePtr> inputsTypes;
+  // for if primitive, we enforce the type of output variables match the type
+  // of input variables at the top level
+  for (auto &input : inputs) {
+    inputsTypes.push_back(input.value()->getType());
+  }
+  auto outputTypes = ir::TupleType::createUnnamedTuple(inputsTypes);
+  std::vector<ir::ValuePtr> inputValues;
+  for (auto &input : inputs) {
+    inputValues.push_back(input.value());
+  }
+
+  auto inits = convertTracerSharedPtrVector(inputs);
+  std::vector<std::shared_ptr<Tracer>> tracers;
+  for (const auto &input : inputs) {
+    tracers.push_back(input.tracer());
+  }
+
+  auto module = getTracedModule();
+  auto savedModule = *module;
+
+  auto trueBranchModule =
+      ainl::core::jit(trueBranch, "trueBranch", "", tracers);
+
+  auto falseBranchModule =
+      ainl::core::jit(falseBranch, "falseBranch", "", tracers);
+
+  *module = savedModule;
+
+  inputValues.push_back(trueBranchModule.get());
+  inputValues.push_back(falseBranchModule.get());
+
+  auto ifOp = ir::asValueType<ir::IfOp>(
+      ir::resolveContract("if", module, outputTypes, inputValues));
+
+  getCurrentTrace()->unpack(inits);
+  auto outputTracers = op<IfPrimitive>(inits, trueBranch, falseBranch);
+
+  for (size_t i = 0; i < ifOp->getOutputValues().size(); i++) {
+    outputs[i].setValue(ifOp->getOutputValues()[i]);
+    outputs[i].setTracer(outputTracers[i]);
+  }
+}
+
+void IfPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                      std::vector<JVPTracer> &output) {}
+
+std::string IfPrimitive::toString() const { return "If"; }
+
 } // namespace ainl::core

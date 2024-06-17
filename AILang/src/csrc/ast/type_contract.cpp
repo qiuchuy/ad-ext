@@ -1,6 +1,7 @@
 #include "ast/type_contract.h"
 #include "ir/literal.h"
 #include "ir/type.h"
+#include "ir/value.h"
 
 namespace ainl::ir {
 
@@ -218,7 +219,13 @@ TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
 }
 
 TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
-  return SingletonTypePtr<BoolType>::get();
+  if (!lhsType->isTensorType() || !rhsType->isTensorType()) {
+    throw ainl::core::AINLError(
+        "[typeinfer] compare operator type infer only applies to two tensors.");
+  }
+  auto tensorType = asType<TensorType>(lhsType);
+  return TensorType::create(SingletonTypePtr<BoolType>::get(),
+                            tensorType->getShape());
 }
 
 TypeContract::TypeContract() {

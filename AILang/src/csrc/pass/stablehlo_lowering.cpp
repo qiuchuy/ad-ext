@@ -1,3 +1,4 @@
+#include "ir/value.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
@@ -132,6 +133,23 @@ void StableHLOLoweringPass::visit(MatmulPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(CompareOpPtr node) {
+  auto lhs = valueMap[node->getLHS()];
+  auto rhs = valueMap[node->getRHS()];
+  auto direction =
+      mlir::stablehlo::ComparisonDirection(node->getCompareDirection());
+  mlir::stablehlo::ComparisonType compareType;
+  if (auto tensorType = asType<TensorType>(node->getLHS()->getType())) {
+    auto elementType = tensorType->getElementType();
+    if (elementType->isFloatType())
+      compareType = mlir::stablehlo::ComparisonType::FLOAT;
+  }
+  compareType = mlir::stablehlo::ComparisonType::SIGNED;
+  auto op = builder.create<mlir::stablehlo::CompareOp>(
+      builder.getUnknownLoc(), lhs, rhs, direction, compareType);
+  insertValueMapping(node, op);
+}
+
 mlir::RankedTensorType
 createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
@@ -147,13 +165,14 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
         createTypeFromElementType(tensorType->getElementType(), context);
     return mlir::RankedTensorType::get(shape, elementType);
   } else {
-    throw std::runtime_error(
-        "Unsupported tensor type when lowering to mlir type.");
+    throw std::runtime_error("Unsupported type when lowering to mlir type.");
   }
 }
 
 mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {
   switch (type->kind()) {
+  case Type::TypeKind::BoolType:
+    return mlir::IntegerType::get(&context, 1);
   case Type::TypeKind::IntType:
     return mlir::IntegerType::get(&context, 32);
   case Type::TypeKind::FloatType:

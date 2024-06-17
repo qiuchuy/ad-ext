@@ -11,6 +11,7 @@ public:
   virtual void visit(ReturnOpPtr node) = 0;
   virtual void visit(TransposePtr node) = 0;
   virtual void visit(MatmulPtr node) = 0;
+  virtual void visit(CompareOpPtr node) = 0;
   ~IRVisitor() = default;
 };
 

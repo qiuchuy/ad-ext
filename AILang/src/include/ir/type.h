@@ -160,7 +160,7 @@ public:
 
   bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
 
-  std::string str() override { return "bool"; }
+  std::string str() override { return "i1"; }
 
   bool isBoolType() override { return true; }
 

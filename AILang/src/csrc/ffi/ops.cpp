@@ -88,9 +88,77 @@ void initOps(py::module_ &m) {
               return judge.cast<std::shared_ptr<ainl::core::Tracer>>();
             };
 
-        return loop<ainl::core::LoopPrimitive>(inits, condImpl, bodyImpl);
+        return prim<ainl::core::LoopPrimitive>(inits, condImpl, bodyImpl);
       },
       "Builtin control flow operator: while loop");
+
+  m.def(
+      "ifop",
+      [](const py::function &trueBranch, const py::function &falseBranch,
+         py::object &cond) {
+        auto initHandlingHelper = [](const py::object &cond) {
+          std::vector<std::shared_ptr<ainl::core::Tracer>> inits;
+          if (py::isinstance<py::dict>(cond) ||
+              py::isinstance<py::tuple>(cond)) {
+            throw std::runtime_error("Unsupported variable type in ifop");
+          }
+
+          // handle scalars, convert them into Array
+          if (py::isinstance<py::int_>(cond)) {
+            inits.push_back(
+                std::make_shared<ainl::core::Array>(cond.cast<int>()));
+          } else if (py::isinstance<py::float_>(cond)) {
+            inits.push_back(
+                std::make_shared<ainl::core::Array>(cond.cast<float>()));
+          } else if (py::isinstance<py::bool_>(cond)) {
+            inits.push_back(
+                std::make_shared<ainl::core::Array>(cond.cast<bool>()));
+          } else {
+            inits.push_back(cond.cast<std::shared_ptr<ainl::core::Tracer>>());
+          }
+
+          return inits;
+        };
+
+        auto ifCond = initHandlingHelper(cond);
+
+        auto condImpl =
+            [cond](
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &args) {
+              auto judge = cond(*createPythonTupleFromTracerVector(args));
+              return judge.cast<std::shared_ptr<ainl::core::Tracer>>();
+            };
+
+        auto trueBranchImpl =
+            [trueBranch](
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &args) {
+              auto result =
+                  trueBranch(*createPythonTupleFromTracerVector(args));
+              std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
+              for (auto &item : result) {
+                tracers.push_back(
+                    py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+              }
+              return tracers;
+            };
+
+        auto falseBranchImpl =
+            [falseBranch](
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &args) {
+              auto result =
+                  falseBranch(*createPythonTupleFromTracerVector(args));
+              std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
+              for (auto &item : result) {
+                tracers.push_back(
+                    py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+              }
+              return tracers;
+            };
+
+        return prim<ainl::core::IfPrimitive>(ifCond, trueBranchImpl,
+                                             falseBranchImpl);
+      },
+      "Builtin control flow operator: if");
 }
 
 py::tuple createPythonTupleFromTracerVector(

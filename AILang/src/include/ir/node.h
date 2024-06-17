@@ -58,6 +58,7 @@ public:
     CONVOLUTION,
     BATCHNORM2d,
     WHILE,
+    IF,
     UNKNOWN,
     COMPARE,
   };
@@ -247,10 +248,25 @@ private:
   std::vector<ValuePtr> outs;
 };
 
+NODE_PTR_TYPE_DECL(IfOp)
+class IfOp : public Node {
+public:
+  IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
+       const ModulePtr &falseBranch);
+  NodeKind kind() override { return Node::NodeKind::IF; }
+  explicit operator std::string() const override;
+  std::vector<ValuePtr> getOutputValues() override { return outs; }
+
+private:
+  ModulePtr trueBody;
+  ModulePtr elseBody;
+  std::vector<ValuePtr> outs;
+};
+
 NODE_PTR_TYPE_DECL(CompareOp)
 class CompareOp : public Node {
 public:
-  enum struct CompareType {
+  enum struct CompareType : size_t {
     EQ = 0,
     NE,
     GE,
@@ -262,6 +278,10 @@ public:
   CompareOp(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs,
             CompareType compareType);
   NodeKind kind() override { return Node::NodeKind::COMPARE; }
+  ValuePtr getLHS() { return lhs; }
+  ValuePtr getRHS() { return rhs; }
+  size_t getCompareDirection() { return static_cast<size_t>(op); }
+  void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
 
 private:

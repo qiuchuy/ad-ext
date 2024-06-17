@@ -86,7 +86,7 @@ staticPrim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
 }
 
 template <typename PrimTy, typename... Args>
-py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
+py::object prim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
                 Args &&... args) {
   assert(!inputs.empty());
   auto promotedInputs = inputs;
@@ -127,7 +127,7 @@ py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
   } else if (tracers.size()) {
     return py::cast(tracers[0]);
   } else {
-    throw std::runtime_error("Expect returned variables in a loop.");
+    throw std::runtime_error("Expect returned variables in a prim.");
   }
 }
 

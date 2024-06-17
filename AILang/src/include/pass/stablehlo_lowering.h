@@ -32,6 +32,7 @@ public:
   void visit(ReturnOpPtr node) override;
   void visit(TransposePtr node) override;
   void visit(MatmulPtr node) override;
+  void visit(CompareOpPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

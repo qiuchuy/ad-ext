@@ -33,7 +33,9 @@ def jit(debug: bool = False):
             compiled_flatbuffer = ireec.tools.compile_str(
                 module,
                 input_type="stablehlo",
-                target_backends=["vmvx"]
+                target_backends=["vmvx"],
+                extra_args=["--mlir-print-ir-before-all"],
+                output_mlir_debuginfo=True,
             )
 
             config = ireert.Config("local-task")
