@@ -16,8 +16,8 @@ public:
   Signature(TypePtr inputType, TypePtr returnType)
       : inputType(std::move(inputType)), returnType(std::move(returnType)) {}
   bool match(const Signature &rhs) {
-    return (inputType->equals(*rhs.inputType) &&
-            returnType->equals(*rhs.returnType));
+    return (inputType->equals(rhs.inputType) &&
+            returnType->equals(rhs.returnType));
   }
   explicit operator std::string() const {
     std::stringstream ssm;
@@ -52,13 +52,16 @@ public:
                           const TypePtr &returnType = nullptr) {
     return std::make_shared<ALModule>(name, inputType, returnType);
   }
+  static ALModule *createModuleValue(const ALModule &module) {
+    return new ALModule(module);
+  }
   static ModulePtr create(const TypePtr &inputType,
                           const TypePtr &returnType = nullptr) {
     return std::make_shared<ALModule>("", inputType, returnType);
   }
   std::vector<ValuePtr> getParams();
   std::vector<TypePtr> getParamTypes();
-  std::vector<TypePtr> getReturnTypes();
+  TypePtr getReturnType();
   void setReturnType(const TypePtr &returnType) {
     signature->returnType = returnType;
   }

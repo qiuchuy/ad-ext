@@ -449,8 +449,8 @@ void LoopPrimitive::jit(const std::vector<JITTracer> &inputs,
 
   *module = savedModule;
 
-  inputValues.push_back(condModule.get());
-  inputValues.push_back(bodyModule.get());
+  inputValues.push_back(ir::ALModule::createModuleValue(*condModule));
+  inputValues.push_back(ir::ALModule::createModuleValue(*bodyModule));
 
   auto whileOp = ir::asValueType<ir::WhileOp>(
       ir::resolveContract("loop", module, outputTypes, inputValues));
@@ -564,26 +564,24 @@ void IfPrimitive::evalCPU(const std::vector<Array> &inputs,
 
 void IfPrimitive::jit(const std::vector<JITTracer> &inputs,
                       std::vector<JITTracer> &outputs) {
+  auto ifInputs = inputs;
+  auto ifCond = ifInputs.front();
+  ifInputs.erase(ifInputs.begin());
   std::vector<ir::TypePtr> inputsTypes;
-  // for if primitive, we enforce the type of output variables match the type
-  // of input variables at the top level
-  for (auto &input : inputs) {
-    inputsTypes.push_back(input.value()->getType());
-  }
-  auto outputTypes = ir::TupleType::createUnnamedTuple(inputsTypes);
+  inputsTypes.push_back(ifCond.value()->getType());
+
   std::vector<ir::ValuePtr> inputValues;
-  for (auto &input : inputs) {
+  for (auto &input : ifInputs) {
     inputValues.push_back(input.value());
   }
 
-  auto inits = convertTracerSharedPtrVector(inputs);
+  auto inits = convertTracerSharedPtrVector(ifInputs);
   std::vector<std::shared_ptr<Tracer>> tracers;
-  for (const auto &input : inputs) {
+  for (const auto &input : ifInputs) {
     tracers.push_back(input.tracer());
   }
 
   auto module = getTracedModule();
-  auto savedModule = *module;
 
   auto trueBranchModule =
       ainl::core::jit(trueBranch, "trueBranch", "", tracers);
@@ -591,13 +589,16 @@ void IfPrimitive::jit(const std::vector<JITTracer> &inputs,
   auto falseBranchModule =
       ainl::core::jit(falseBranch, "falseBranch", "", tracers);
 
-  *module = savedModule;
+  inputsTypes.push_back(trueBranchModule->getReturnType());
+  inputsTypes.push_back(falseBranchModule->getReturnType());
+  auto outputType = ir::resolveContract("ifop", inputsTypes);
 
-  inputValues.push_back(trueBranchModule.get());
-  inputValues.push_back(falseBranchModule.get());
+  inputValues.push_back(ifCond.value());
+  inputValues.push_back(ir::ALModule::createModuleValue(*trueBranchModule));
+  inputValues.push_back(ir::ALModule::createModuleValue(*falseBranchModule));
 
   auto ifOp = ir::asValueType<ir::IfOp>(
-      ir::resolveContract("if", module, outputTypes, inputValues));
+      ir::resolveContract("ifop", module, outputType, inputValues));
 
   getCurrentTrace()->unpack(inits);
   auto outputTracers = op<IfPrimitive>(inits, trueBranch, falseBranch);

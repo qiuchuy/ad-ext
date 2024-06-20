@@ -228,6 +228,16 @@ TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
                             tensorType->getShape());
 }
 
+TypePtr ifTypeContract(const TypePtr &condType, const TypePtr &trueType,
+                       const TypePtr &falseType) {
+  if (trueType->equals(falseType)) {
+    throw ainl::core::AINLError(
+        "[typeinfer] if operator type infer only applies to two tensors with "
+        "the same type.");
+  }
+  return trueType;
+}
+
 TypeContract::TypeContract() {
   registerContract("matmul", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
@@ -293,45 +303,45 @@ TypeContract::TypeContract() {
   });
   registerContract("eq", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator eq");
     }
     return compareTypeContract((args[0]), (args[1]));
   });
   registerContract("ne", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator ne");
     }
     return compareTypeContract((args[0]), (args[1]));
   });
   registerContract("gt", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator gt");
     }
     return compareTypeContract((args[0]), (args[1]));
   });
   registerContract("ge", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator ge");
     }
     return compareTypeContract((args[0]), (args[1]));
   });
   registerContract("le", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator le");
     }
     return compareTypeContract((args[0]), (args[1]));
   });
   registerContract("lt", [](std::vector<TypePtr> args) {
     if (args.size() != 2) {
-      throw ainl::core::AINLError(
-          "Invalid argument number for operator compare");
+      throw ainl::core::AINLError("Invalid argument number for operator lt");
     }
     return compareTypeContract((args[0]), (args[1]));
+  });
+  registerContract("ifop", [](std::vector<TypePtr> args) {
+    if (args.size() != 3) {
+      throw ainl::core::AINLError("Invalid argument number for operator ifop");
+    }
+    return ifTypeContract((args[0]), (args[1]), (args[2]));
   });
 }
 

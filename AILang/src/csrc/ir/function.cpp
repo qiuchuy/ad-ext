@@ -21,15 +21,7 @@ std::vector<TypePtr> ALModule::getParamTypes() {
   return paramTypes;
 }
 
-std::vector<TypePtr> ALModule::getReturnTypes() {
-  std::vector<TypePtr> returnTypes;
-  if (auto tupleType =
-          std::dynamic_pointer_cast<TupleType>(signature->returnType)) {
-    return tupleType->getTypes();
-  }
-  returnTypes.push_back(signature->returnType);
-  return returnTypes;
-}
+TypePtr ALModule::getReturnType() { return signature->returnType; }
 
 std::string ALModule::str() {
   std::stringstream ss;

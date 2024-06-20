@@ -1,5 +1,6 @@
 #include "ast/node_contract.h"
 #include "ast/ast_node.h"
+#include "ir/node.h"
 #include "ir/value.h"
 
 namespace ainl::ir {
@@ -61,6 +62,14 @@ ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                                std::vector<ValuePtr> args) {
   return module->getGraph()->create<WhileOp>(nodeType, condGraph, bodyGraph,
                                              args);
+}
+
+ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                        const ModulePtr &trueModule,
+                        const ModulePtr &falseModule, const ValuePtr &cond,
+                        const std::vector<ValuePtr> &args) {
+  return module->getGraph()->create<IfOp>(nodeType, trueModule, falseModule,
+                                          cond, args);
 }
 
 ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
@@ -135,6 +144,19 @@ NodeContract::NodeContract() {
         std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
     args.pop_back();
     return whileLoopNodeContract(module, nodeType, condGraph, bodyGraph, args);
+  });
+  registerContract("ifop", [](const ModulePtr &module, const TypePtr &nodeType,
+                              std::vector<ValuePtr> args) {
+    auto falseModule =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    auto trueModule =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    auto ifCond = *args.rbegin();
+    args.pop_back();
+    return ifNodeContract(module, nodeType, trueModule, falseModule, ifCond,
+                          args);
   });
   registerContract("eq", [](const ModulePtr &module, const TypePtr &nodeType,
                             std::vector<ValuePtr> args) {

@@ -70,7 +70,7 @@ DependentTupleType::DependentTupleType(const std::vector<ValuePtr> &values) {
   this->values = values;
 }
 
-bool LiteralType::equals(const Type &rhs) {
+bool LiteralType::equals(const TypePtr &rhs) {
   return value->getType()->equals(rhs);
 }
 

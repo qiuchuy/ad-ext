@@ -214,8 +214,10 @@ CompareOp::operator std::string() const {
 void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
-           const ModulePtr &falseBranch)
-    : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch) {
+           const ModulePtr &falseBranch, const ValuePtr &cond,
+           const std::vector<ValuePtr> &inputs)
+    : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond),
+      inputs(inputs) {
   if (nodeType->isTupleType()) {
     auto types = asType<TupleType>(nodeType)->getTypes();
     for (const auto &type : types) {
@@ -241,15 +243,22 @@ IfOp::operator std::string() const {
     return result;
   };
 
-  lhs += "(";
   for (size_t i = 0; i < outs.size(); i++) {
     if (i == outs.size() - 1) {
-      lhs += outs[i]->getName() + ") ";
+      lhs += outs[i]->getName();
     } else {
       lhs += outs[i]->getName() + ", ";
     }
   }
   result += lhs + " = ailang::if (";
+  result += cond->getName() + ") (";
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (i == inputs.size() - 1) {
+      result += inputs[i]->getName() + "): ";
+    } else {
+      result += inputs[i]->getName() + ", ";
+    }
+  }
   result += getType()->getName();
   result += " {\n" + addIndent(std::string(*trueBody)) + "\n\t} else {\n" +
             addIndent(std::string(*elseBody)) + "\n\t}";

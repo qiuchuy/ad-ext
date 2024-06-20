@@ -51,7 +51,13 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
         paramType, *theModule->getContext()));
   }
 
-  for (auto returnType : module->getReturnTypes()) {
+  auto returnType = module->getReturnType();
+  if (auto tuple = asType<ir::TupleType>(returnType)) {
+    for (auto type : tuple->getTypes()) {
+      returnTypes.push_back(
+          createRankedTensorTypeFromTensorType(type, *theModule->getContext()));
+    }
+  } else {
     returnTypes.push_back(createRankedTensorTypeFromTensorType(
         returnType, *theModule->getContext()));
   }

@@ -314,19 +314,21 @@ void initArray(py::module &_m) {
             posArgs[i] = inputs[i];
           }
           auto result = f(*posArgs);
-          if (py::isinstance<py::tuple>(result)) {
+          if (py::isinstance<py::tuple>(result) ||
+              py::isinstance<py::list>(result)) {
             std::vector<std::shared_ptr<ainl::core::Tracer>> resultVec;
             for (auto &item : result.cast<py::tuple>()) {
               resultVec.push_back(
                   item.cast<std::shared_ptr<ainl::core::Tracer>>());
             }
             return resultVec;
+          } else {
+            auto containedResult =
+                std::vector<std::shared_ptr<ainl::core::Tracer>>();
+            containedResult.push_back(
+                result.cast<std::shared_ptr<ainl::core::Tracer>>());
+            return containedResult;
           }
-          auto containedResult =
-              std::vector<std::shared_ptr<ainl::core::Tracer>>();
-          containedResult.push_back(
-              result.cast<std::shared_ptr<ainl::core::Tracer>>());
-          return containedResult;
         };
 
         auto module =

@@ -86,7 +86,7 @@ staticPrim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
 }
 
 template <typename PrimTy, typename... Args>
-py::object prim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
+py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
                 Args &&... args) {
   assert(!inputs.empty());
   auto promotedInputs = inputs;
@@ -130,6 +130,14 @@ py::object prim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
     throw std::runtime_error("Expect returned variables in a prim.");
   }
 }
+
+py::object ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
+                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
+                    trueBranch,
+                std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
+                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
+                    falseBranch,
+                const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs);
 
 py::tuple createPythonTupleFromTracerVector(
     const std::vector<std::shared_ptr<ainl::core::Tracer>> &args);

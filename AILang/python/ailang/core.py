@@ -34,8 +34,8 @@ def jit(debug: bool = False):
                 module,
                 input_type="stablehlo",
                 target_backends=["vmvx"],
-                extra_args=["--mlir-print-ir-before-all"],
-                output_mlir_debuginfo=True,
+                #extra_args=["--mlir-print-ir-before-all"],
+                #output_mlir_debuginfo=True,
             )
 
             config = ireert.Config("local-task")

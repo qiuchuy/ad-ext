@@ -199,7 +199,6 @@ ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
     throw std::runtime_error("JIT function must return at least one value");
   }
   eval(result);
-
   if (result.size() > 1) {
     std::vector<ir::TypePtr> resultTypes;
     std::vector<ir::ValuePtr> resultValues;
@@ -216,7 +215,6 @@ ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
     module->setReturnType(returnValue->getType());
   }
   popLastTrace();
-
   return module;
 }
 

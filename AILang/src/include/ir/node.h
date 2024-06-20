@@ -252,7 +252,8 @@ NODE_PTR_TYPE_DECL(IfOp)
 class IfOp : public Node {
 public:
   IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
-       const ModulePtr &falseBranch);
+       const ModulePtr &falseBranch, const ValuePtr &cond,
+       const std::vector<ValuePtr> &inputs);
   NodeKind kind() override { return Node::NodeKind::IF; }
   explicit operator std::string() const override;
   std::vector<ValuePtr> getOutputValues() override { return outs; }
@@ -260,6 +261,8 @@ public:
 private:
   ModulePtr trueBody;
   ModulePtr elseBody;
+  ValuePtr cond;
+  std::vector<ValuePtr> inputs;
   std::vector<ValuePtr> outs;
 };
 
