@@ -46,12 +46,12 @@ import ailang as al
 # b = al.from_numpy(a)
 # c = al.mean(b, (1, 2, 0), False)
 # print(c)
-# a = np.random.randn(2, 3)
-# b = al.from_numpy(a)
-# c = np.random.randn(2, 3)
-# d = al.from_numpy(c)
-# e = al.Sub(b, d)
-# f = al.square(e)
+a = np.random.randn(2, 3)
+b = al.from_numpy(a)
+c = np.random.randn(2, 3)
+d = al.from_numpy(c)
+e = al.Sub(b, d)
+f = al.square(e)
 # print(e)
 # print(f)
 # a = np.random.randn(2, 3, 5)
@@ -109,8 +109,8 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block: BasicBlock, layers, num_classes=1000):
         super(ResNet, self).__init__()
-        self.in_channels = 2
-        self.conv1 = nn.Conv2d(3, 4, kernel_size=7, stride=2, padding=3, bias=False)
+        self.in_channels = 4
+        self.conv1 = nn.Conv2d(4, 4, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm(4)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 4, layers[0])
@@ -118,7 +118,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 3, layers[2], stride=1)
         self.layer4 = self._make_layer(block, 4, layers[3], stride=1)
         # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(242 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, blocks, stride=1):
         downsample = None
@@ -150,9 +150,9 @@ class ResNet(nn.Module):
 
         x = self.layer1(x)
         x = self.layer2(x)
-        # x = self.layer3(x)
-        # x = self.layer4(x)
-        # x = self.avgpool(x)
+            # x = self.layer3(x)
+            # x = self.layer4(x)
+            # x = self.avgpool(x)
         x = al.flatten(x)
         x = self.fc(x)
 
@@ -165,5 +165,5 @@ def resnet18(num_classes=1000):
 
 if __name__ == "__main__":
     model = resnet18(num_classes=50)
-    x = al.from_numpy(np.random.randn(1, 3, 21, 21))
+    x = al.from_numpy(np.random.randn(1, 4, 224, 224))
     print(model(x))

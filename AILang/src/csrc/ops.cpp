@@ -610,7 +610,7 @@ std::vector<Array> broadcast_arrays(const std::vector<Array> &inputs) {
 }
 
 GENERIC_OP_IMPL(reshape)
-GENERIC_OP_IMPL(transpose)
+GENERIC_OP_IMPL(transpose)  
 GENERIC_OP_IMPL(matmul)
 
 }; // namespace ainl::core

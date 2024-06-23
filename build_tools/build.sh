@@ -19,4 +19,6 @@ cmake -G Ninja -B build/ -S . \
     -DPython3_EXECUTABLE="$(which python)" \
     . 
 cmake --build build/ --target iree-compile libailang -j8
+
+
 cd AILang/python && pip install -e .
