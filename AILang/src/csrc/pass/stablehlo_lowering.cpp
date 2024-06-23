@@ -156,6 +156,38 @@ void StableHLOLoweringPass::visit(CompareOpPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(IfOpPtr node) {
+  auto op = builder.create<mlir::stablehlo::IfOp>(
+      builder.getUnknownLoc(),
+      createRankedTensorTypeFromTensorType(node->getType(),
+                                           *theModule->getContext()),
+      valueMap[node->getCond()]);
+
+  auto thenBlock = builder.createBlock(&op.getTrueBranch());
+  builder.setInsertionPointToStart(thenBlock);
+  for (auto block : *node->getThenBranch()->getGraph()) {
+    for (auto node : *block) {
+      node->accept(this);
+    }
+  }
+
+  auto falseBlock = builder.createBlock(&op.getFalseBranch());
+  builder.setInsertionPointToEnd(falseBlock);
+  for (auto block : *node->getFalseBranch()->getGraph()) {
+    for (auto node : *block) {
+      node->accept(this);
+    }
+  }
+
+  for (const auto &result : op.getResults()) {
+    insertValueMapping(node, result);
+  }
+
+  for (size_t i = 0; i < op.getResults().size(); i++) {
+    insertValueMapping(node->getOutputValue(i), op.getResult(i));
+  }
+}
+
 mlir::RankedTensorType
 createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
@@ -171,7 +203,8 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
         createTypeFromElementType(tensorType->getElementType(), context);
     return mlir::RankedTensorType::get(shape, elementType);
   } else {
-    throw std::runtime_error("Unsupported type when lowering to mlir type.");
+    throw std::runtime_error("Unsupported type when lowering to mlir type, "
+                             "expect AINL tensor type.");
   }
 }
 

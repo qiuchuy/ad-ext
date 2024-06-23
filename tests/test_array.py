@@ -15,6 +15,12 @@ class TestArray:
         assert c.strides == d.strides
         assert c.tolist() == d.tolist()
 
+        e = np.array(True)
+        f = al.from_numpy(e)
+        assert e.shape == f.shape
+        assert e.strides == f.strides
+        assert e.tolist() == f.tolist()
+
     def test_from_numpy_scalar(self):
         a = np.array(3)
         b = al.from_numpy(a)

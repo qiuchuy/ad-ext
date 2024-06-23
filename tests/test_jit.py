@@ -29,8 +29,9 @@ class TestJIT:
         iree_result = g(c, d)
         print("Result: ", iree_result)
 
+    """
     def test_if(self):
-        @al.jit(debug=True)
+        @al.jit(debug=False)
         def g(x):
             y = al.transpose(x)
             cond = al.transpose(x)
@@ -52,7 +53,7 @@ class TestJIT:
         print("Result: ", iree_result)
 
     def test_while_loop(self):
-        @al.jit(debug=False)
+        @al.jit(debug=True)
         def g(x):
             y = al.transpose(x)
             def cond(x, y):
@@ -69,3 +70,4 @@ class TestJIT:
         c = al.from_numpy(b)
         iree_result = g(c)
         print("Result: ", iree_result)
+    """

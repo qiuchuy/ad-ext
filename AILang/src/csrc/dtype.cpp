@@ -103,8 +103,6 @@ Dtype getDtypeFromFormat(const std::string &formatStr) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Dtype &dtype) {
-#include <ostream> // Include the <ostream> header
-
   switch (dtype.type) {
   case Dtype::DataType::BoolType:
     os << "bool";

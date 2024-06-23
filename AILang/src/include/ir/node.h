@@ -88,6 +88,7 @@ public:
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
   virtual void accept(IRVisitor *visitor);
   virtual std::vector<ValuePtr> getOutputValues() { return {this}; }
+  ValuePtr getOutputValue(size_t i) { return getOutputValues()[i]; }
 
   friend class Graph;
 
@@ -257,6 +258,9 @@ public:
   NodeKind kind() override { return Node::NodeKind::IF; }
   explicit operator std::string() const override;
   std::vector<ValuePtr> getOutputValues() override { return outs; }
+  ValuePtr getCond() const { return cond; }
+  ModulePtr getThenBranch() const { return trueBody; }
+  ModulePtr getFalseBranch() const { return elseBody; }
 
 private:
   ModulePtr trueBody;

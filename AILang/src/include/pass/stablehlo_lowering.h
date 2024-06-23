@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ir/node.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -33,6 +34,7 @@ public:
   void visit(TransposePtr node) override;
   void visit(MatmulPtr node) override;
   void visit(CompareOpPtr node) override;
+  void visit(IfOpPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);
