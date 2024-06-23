@@ -49,6 +49,10 @@ public:
       return std::to_string(std::get<(size_t)LiteralType::Bool>(value));
   }
 
+  Value::ValueKind getValueKind() const override {
+    return Value::ValueKind::Literal;
+  }
+
 private:
   std::variant<int, float, bool> value;
 };

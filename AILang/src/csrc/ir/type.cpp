@@ -45,8 +45,9 @@ bool Type::compare(Type &other) {
 
 std::vector<int> TensorType::getConcreteShape() {
   auto shape = getShape();
-  if (std::all_of(shape.begin(), shape.end(),
-                  [](ValuePtr value) { return value->isLiteral(); })) {
+  if (std::all_of(shape.begin(), shape.end(), [](ValuePtr value) {
+        return value->getValueKind() == Value::ValueKind::Literal;
+      })) {
     std::vector<int> concreteShape;
     for (const auto &value : shape) {
       assert(value->getType()->isIntType());
@@ -69,7 +70,7 @@ DependentTupleType::DependentTupleType(const std::vector<ValuePtr> &values) {
   this->values = values;
 }
 
-bool LiteralType::equals(const Type &rhs) {
+bool LiteralType::equals(const TypePtr &rhs) {
   return value->getType()->equals(rhs);
 }
 

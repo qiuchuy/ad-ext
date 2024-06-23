@@ -14,6 +14,9 @@ TypePtr reluTypeContract(const TypePtr &inType);
 TypePtr maxpool2dTypeContract(const TypePtr &inType);
 TypePtr convolutionTypeContract(const TypePtr &inType);
 TypePtr batchnorm2dTypeContract(const TypePtr &inType);
+TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
+TypePtr ifTypeContract(const TypePtr &condType, const TypePtr &trueType,
+                       const TypePtr &falseType);
 
 class TypeContract {
 public:
@@ -26,10 +29,8 @@ public:
 
   TypePtr resolveContract(const std::string &name, std::vector<TypePtr> args) {
     if (functions.find(name) == functions.end()) {
-      // throw AINLError(
-      // "This operator has not been registered into the library yet.");
-      throw std::runtime_error(
-          "This operator has not been registered into the library yet.");
+      throw std::runtime_error("The type contract of operator [" + name +
+                               "] has not been registered yet.");
     }
     return functions[name](std::move(args));
   }

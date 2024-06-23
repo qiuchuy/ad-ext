@@ -1,4 +1,4 @@
-#include "ir/type.h"
+#include "ir/value.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
@@ -20,6 +20,7 @@
 #include "stablehlo/reference/Api.h"
 
 #include "ir/tensor.h"
+#include "ir/type.h"
 #include "pass/stablehlo_lowering.h"
 
 namespace ainl::ir {
@@ -50,7 +51,13 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
         paramType, *theModule->getContext()));
   }
 
-  for (auto returnType : module->getReturnTypes()) {
+  auto returnType = module->getReturnType();
+  if (auto tuple = asType<ir::TupleType>(returnType)) {
+    for (auto type : tuple->getTypes()) {
+      returnTypes.push_back(
+          createRankedTensorTypeFromTensorType(type, *theModule->getContext()));
+    }
+  } else {
     returnTypes.push_back(createRankedTensorTypeFromTensorType(
         returnType, *theModule->getContext()));
   }
@@ -132,6 +139,55 @@ void StableHLOLoweringPass::visit(MatmulPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(CompareOpPtr node) {
+  auto lhs = valueMap[node->getLHS()];
+  auto rhs = valueMap[node->getRHS()];
+  auto direction =
+      mlir::stablehlo::ComparisonDirection(node->getCompareDirection());
+  mlir::stablehlo::ComparisonType compareType;
+  if (auto tensorType = asType<TensorType>(node->getLHS()->getType())) {
+    auto elementType = tensorType->getElementType();
+    if (elementType->isFloatType())
+      compareType = mlir::stablehlo::ComparisonType::FLOAT;
+  }
+  compareType = mlir::stablehlo::ComparisonType::SIGNED;
+  auto op = builder.create<mlir::stablehlo::CompareOp>(
+      builder.getUnknownLoc(), lhs, rhs, direction, compareType);
+  insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(IfOpPtr node) {
+  auto op = builder.create<mlir::stablehlo::IfOp>(
+      builder.getUnknownLoc(),
+      createRankedTensorTypeFromTensorType(node->getType(),
+                                           *theModule->getContext()),
+      valueMap[node->getCond()]);
+
+  auto thenBlock = builder.createBlock(&op.getTrueBranch());
+  builder.setInsertionPointToStart(thenBlock);
+  for (auto block : *node->getThenBranch()->getGraph()) {
+    for (auto node : *block) {
+      node->accept(this);
+    }
+  }
+
+  auto falseBlock = builder.createBlock(&op.getFalseBranch());
+  builder.setInsertionPointToEnd(falseBlock);
+  for (auto block : *node->getFalseBranch()->getGraph()) {
+    for (auto node : *block) {
+      node->accept(this);
+    }
+  }
+
+  for (const auto &result : op.getResults()) {
+    insertValueMapping(node, result);
+  }
+
+  for (size_t i = 0; i < op.getResults().size(); i++) {
+    insertValueMapping(node->getOutputValue(i), op.getResult(i));
+  }
+}
+
 mlir::RankedTensorType
 createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
@@ -147,13 +203,15 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
         createTypeFromElementType(tensorType->getElementType(), context);
     return mlir::RankedTensorType::get(shape, elementType);
   } else {
-    throw std::runtime_error(
-        "Unsupported tensor type when lowering to mlir type.");
+    throw std::runtime_error("Unsupported type when lowering to mlir type, "
+                             "expect AINL tensor type.");
   }
 }
 
 mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {
   switch (type->kind()) {
+  case Type::TypeKind::BoolType:
+    return mlir::IntegerType::get(&context, 1);
   case Type::TypeKind::IntType:
     return mlir::IntegerType::get(&context, 32);
   case Type::TypeKind::FloatType:

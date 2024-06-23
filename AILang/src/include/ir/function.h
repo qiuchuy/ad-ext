@@ -16,8 +16,8 @@ public:
   Signature(TypePtr inputType, TypePtr returnType)
       : inputType(std::move(inputType)), returnType(std::move(returnType)) {}
   bool match(const Signature &rhs) {
-    return (inputType->equals(*rhs.inputType) &&
-            returnType->equals(*rhs.returnType));
+    return (inputType->equals(rhs.inputType) &&
+            returnType->equals(rhs.returnType));
   }
   explicit operator std::string() const {
     std::stringstream ssm;
@@ -43,7 +43,7 @@ using SignaturePtr = Signature *;
 
 class ALModule;
 using ModulePtr = std::shared_ptr<ALModule>;
-class ALModule : public std::enable_shared_from_this<ALModule> {
+class ALModule : public std::enable_shared_from_this<ALModule>, public Value {
 public:
   ALModule() = default;
   ALModule(std::string name, const TypePtr &inputType,
@@ -52,15 +52,23 @@ public:
                           const TypePtr &returnType = nullptr) {
     return std::make_shared<ALModule>(name, inputType, returnType);
   }
+  static ALModule *createModuleValue(const ALModule &module) {
+    return new ALModule(module);
+  }
+  static ModulePtr create(const TypePtr &inputType,
+                          const TypePtr &returnType = nullptr) {
+    return std::make_shared<ALModule>("", inputType, returnType);
+  }
   std::vector<ValuePtr> getParams();
   std::vector<TypePtr> getParamTypes();
-  std::vector<TypePtr> getReturnTypes();
+  TypePtr getReturnType();
   void setReturnType(const TypePtr &returnType) {
     signature->returnType = returnType;
   }
   GraphPtr getGraph() { return graph; }
   std::string getName() { return name; }
   std::string str();
+  explicit operator std::string() { return str(); }
 
 private:
   SignaturePtr signature;

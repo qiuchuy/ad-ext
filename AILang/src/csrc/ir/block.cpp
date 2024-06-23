@@ -1,4 +1,5 @@
 #include "ir/block.h"
+#include "ir/value.h"
 
 namespace ainl::ir {
 int Block::blockCount = 0;
@@ -27,6 +28,8 @@ Block::Block(int idx) {
 std::vector<ValuePtr> Block::getParams() { return paramNode->getParams(); }
 void Block::insertNodeAtHead(NodePtr Node) { beginNode->insertAfter(Node); }
 void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }
+
+Value::ValueKind Block::getValueKind() const { return Value::ValueKind::Block; }
 
 Block::operator std::string() const {
   std::string str;

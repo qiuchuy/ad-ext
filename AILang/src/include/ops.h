@@ -15,21 +15,66 @@ Array transpose(const Array &input);
 Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
 
-#define GENERIC_OP_DECL(name)                                                  \
-  std::shared_ptr<Tracer> name(                                                \
-      const std::vector<std::shared_ptr<Tracer>> &inputs,                      \
-      const std::shared_ptr<Primitive> &prim);
+template <typename PrimTy, typename... Args>
+std::shared_ptr<Tracer>
+unary(const std::vector<std::shared_ptr<Tracer>> &inputs, Args &&... args) {
+  assert(!inputs.empty());
+  auto promotedInputs = inputs;
+  // [todo] debug this
+  // ainl::core::getCurrentTrace()->pack(promotedInputs);
+  auto tracerType = promotedInputs[0]->getTracerTy();
+  switch (tracerType) {
+  case ainl::core::Tracer::TracerTy::ArrayTy:
+    return (std::make_shared<ainl::core::Array>(
+        promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+  case ainl::core::Tracer::TracerTy::JVPTracerTy:
+    return (std::make_shared<ainl::core::JVPTracer>(
+        promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+  case ainl::core::Tracer::TracerTy::JITTracerTy:
+    return (std::make_shared<ainl::core::JITTracer>(
+        promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+  default:
+    throw std::runtime_error("Unsupported tracer type in op unary.");
+  }
+}
 
-#define GENERIC_OP_IMPL(name)                                                  \
-  std::shared_ptr<Tracer> name(                                                \
-      const std::vector<std::shared_ptr<Tracer>> &inputs,                      \
-      const std::shared_ptr<Primitive> &prim) {                                \
-    return TracerFactory::createTracer(inputs, prim);                          \
+template <typename PrimTy, typename... Args>
+std::vector<std::shared_ptr<Tracer>>
+op(const std::vector<std::shared_ptr<Tracer>> &inputs, Args &&... args) {
+  auto promotedInputs = inputs;
+  // ainl::core::getCurrentTrace()->pack(promotedInputs);
+  auto tracerType = promotedInputs[0]->getTracerTy();
+  std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
+  for (const auto &input : inputs) {
+    switch (tracerType) {
+    case ainl::core::Tracer::TracerTy::ArrayTy:
+      tracers.push_back(std::make_shared<ainl::core::Array>(
+          promotedInputs,
+          std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+      break;
+    case ainl::core::Tracer::TracerTy::JVPTracerTy:
+      tracers.push_back(std::make_shared<ainl::core::JVPTracer>(
+          promotedInputs,
+          std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+      break;
+    case ainl::core::Tracer::TracerTy::JITTracerTy:
+      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+          promotedInputs,
+          std::make_shared<PrimTy>(std::forward<Args>(args)...)));
+      break;
+    default:
+      throw std::runtime_error("Unsupported tracer type in op prim.");
+    }
+  }
+  for (size_t i = 0; i < tracers.size(); i++) {
+    auto siblings = tracers;
+    siblings.erase(siblings.begin() + i);
+    tracers[i]->setSiblings(siblings);
+    tracers[i]->setIdx(i);
   }
 
-GENERIC_OP_DECL(reshape)
-GENERIC_OP_DECL(transpose)
-GENERIC_OP_DECL(matmul)
+  return tracers;
+}
 
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize);

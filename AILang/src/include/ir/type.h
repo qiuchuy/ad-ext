@@ -15,10 +15,16 @@
 namespace ainl::ir {
 
 class Value;
+class Type;
 using ValuePtr = Value *;
+using TypePtr = std::shared_ptr<Type>;
 
 #define SAFE_TYPE_DOWNCAST(shared_ptr, derived_type)                           \
   std::dynamic_pointer_cast<derived_type>(shared_ptr)
+
+template <typename T> std::shared_ptr<T> asType(std::shared_ptr<Type> type) {
+  return std::dynamic_pointer_cast<T>(type);
+}
 
 template <typename T> class SingletonTypePtr {
 public:
@@ -70,7 +76,9 @@ public:
   explicit operator std::string() { return str(); }
 
   virtual TypeKind kind() const { return TypeKind::VoidType; }
-  virtual bool equals(const Type &rhs) { return true; }
+  virtual bool equals(const TypePtr &rhs) {
+    return getName() == rhs->getName();
+  }
   virtual std::string str() { return "void"; }
   virtual bool isVoidType() { return true; }
   virtual bool isIntType() { return false; }
@@ -86,17 +94,15 @@ public:
   virtual bool isLinearType() { return false; }
   virtual TypePtr getTypePtr() { return shared_from_this(); }
 
-  bool operator==(const Type &other) { return equals(other); }
-  bool operator!=(const Type &other) { return !equals(other); }
-  bool operator<(const Type &other) const { return kind() < other.kind(); }
+  bool operator==(const TypePtr &other) { return equals(other); }
+  bool operator!=(const TypePtr &other) { return !equals(other); }
+  bool operator<(const TypePtr &other) const { return kind() < other->kind(); }
   bool compare(Type &other);
 };
 
 class VoidType : public Type {
 public:
   TypeKind kind() const override { return Type::TypeKind::IntType; }
-
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
 
   std::string str() override { return "void"; }
 
@@ -110,8 +116,6 @@ class IntType : public Type {
 public:
   TypeKind kind() const override { return Type::TypeKind::IntType; }
 
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
-
   std::string str() override { return "i32"; }
 
   bool isIntType() override { return true; }
@@ -123,8 +127,6 @@ using IntTypePtr = SingletonTypePtr<IntType>;
 class FloatType : public Type {
 public:
   TypeKind kind() const override { return Type::TypeKind::FloatType; }
-
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
 
   std::string str() override { return "f32"; }
 
@@ -138,8 +140,6 @@ class DoubleType : public Type {
 public:
   TypeKind kind() const override { return Type::TypeKind::DoubleType; }
 
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
-
   std::string str() override { return "f64"; }
 
   bool isDoubleType() override { return true; }
@@ -152,9 +152,7 @@ class BoolType : public Type {
 public:
   TypeKind kind() const override { return Type::TypeKind::BoolType; }
 
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
-
-  std::string str() override { return "bool"; }
+  std::string str() override { return "i1"; }
 
   bool isBoolType() override { return true; }
 
@@ -172,15 +170,13 @@ public:
   static FunctionTypePtr create(const TypePtr &inType, const TypePtr &retType) {
     return std::make_shared<FunctionType>(inType, retType);
   }
-  bool equals(const Type &rhs) override {
-    if (kind() != rhs.kind()) {
+  bool equals(const TypePtr &rhs) override {
+    if (kind() != rhs->kind()) {
       return false;
     } else {
-      Type rhsType = rhs;
-      FunctionTypePtr rhsPtr =
-          std::dynamic_pointer_cast<FunctionType>(rhsType.getTypePtr());
-      return argType->equals(*rhsPtr->argType) &&
-             returnType->equals(*rhsPtr->returnType);
+      FunctionTypePtr rhsPtr = std::dynamic_pointer_cast<FunctionType>(rhs);
+      return argType->equals(rhsPtr->argType) &&
+             returnType->equals(rhsPtr->argType);
     }
   }
   std::string str() override {
@@ -218,18 +214,16 @@ public:
   }
 
   TypeKind kind() const override { return TypeKind::TupleType; }
-  bool equals(const Type &rhs) override {
-    if (kind() != rhs.kind()) {
+  bool equals(const TypePtr &rhs) override {
+    if (kind() != rhs->kind()) {
       return false;
     } else {
-      Type rhsType = rhs;
-      TupleTypePtr rhsPtr =
-          std::dynamic_pointer_cast<TupleType>(rhsType.getTypePtr());
+      TupleTypePtr rhsPtr = std::dynamic_pointer_cast<TupleType>(rhs);
       if (types.size() != rhsPtr->types.size()) {
         return false;
       }
       for (size_t i = 0; i < types.size(); i++) {
-        if (!types[i]->equals(*(rhsPtr->types[i])))
+        if (!types[i]->equals(rhsPtr->types[i]))
           return false;
       }
       return true;
@@ -273,14 +267,12 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::PointerType; }
-  bool equals(const Type &rhs) override {
-    if (kind() != rhs.kind()) {
+  bool equals(const TypePtr &rhs) override {
+    if (kind() != rhs->kind()) {
       return false;
     } else {
-      Type rhsType = rhs;
-      PointerTypePtr rhsPtr =
-          std::dynamic_pointer_cast<PointerType>(rhsType.getTypePtr());
-      return (*pointeeType).equals(*rhsPtr->getPointeeType());
+      PointerTypePtr rhsPtr = std::dynamic_pointer_cast<PointerType>(rhs);
+      return (*pointeeType).equals(rhsPtr->getPointeeType());
     }
   }
   std::string str() override {
@@ -313,13 +305,11 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::TensorType; }
-  bool equals(const Type &rhs) override {
-    if (kind() != rhs.kind()) {
+  bool equals(const TypePtr &rhs) override {
+    if (kind() != rhs->kind()) {
       return false;
     } else {
-      Type rhsType = rhs;
-      TensorTypePtr rhsPtr =
-          std::dynamic_pointer_cast<TensorType>(rhsType.getTypePtr());
+      TensorTypePtr rhsPtr = std::dynamic_pointer_cast<TensorType>(rhs);
       if (shape.size() != rhsPtr->shape.size()) {
         return false;
       }
@@ -375,7 +365,7 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::LiteralType; }
-  bool equals(const Type &rhs) override;
+  bool equals(const TypePtr &rhs) override;
   bool isLiteralType() override { return true; }
   std::string str() override;
   TypePtr getTypePtr() override { return shared_from_this(); }
@@ -385,20 +375,6 @@ public:
 private:
   ValuePtr value;
 };
-
-class LinearType : public Type {
-public:
-  TypeKind kind() const override { return Type::TypeKind::LinearType; }
-
-  bool equals(const Type &rhs) override { return kind() == rhs.kind(); }
-
-  std::string str() override { return "linear"; }
-
-  bool isLinearType() override { return true; }
-
-  TypePtr getTypePtr() override { return SingletonTypePtr<LinearType>::get(); }
-};
-using LinearTypePtr = SingletonTypePtr<LinearType>;
 
 TypePtr DtypeToTypePtr(core::Dtype dtype);
 

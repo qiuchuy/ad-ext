@@ -2,7 +2,10 @@
 
 #include <memory>
 
+#include "array.h"
+#include "ir/container.h"
 #include "ir/function.h"
+#include "ir/literal.h"
 #include "ir/node.h"
 #include "ir/type.h"
 #include "trace.h"
@@ -46,17 +49,26 @@ void JVPTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
 void JVPTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 void JVPTrace::process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &inputs,
-                       std::shared_ptr<Tracer> &output) {
-  auto arrays = tracerVectorConversion<JVPTracer, Tracer>(inputs);
-
-  if (auto primOutput = std::dynamic_pointer_cast<JVPTracer>(output)) {
-    prim->jvp(arrays, *primOutput);
-  } else {
-    throw std::runtime_error("[jvp] Output is not an jvp tracer");
-  }
+                       const std::vector<std::shared_ptr<Tracer>> &outputs) {
+  auto arrays = convertTracerVector<JVPTracer>(inputs);
+  auto outputTracers = convertTracerVector<JVPTracer>(outputs);
+  prim->jvp(arrays, outputTracers);
+  update(outputs, outputTracers);
 }
 
 std::string JVPTrace::toString() const { return "jvp"; }
+
+void JVPTrace::update(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                      const std::vector<JVPTracer> &output) {
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (auto array = std::dynamic_pointer_cast<JVPTracer>(inputs[i])) {
+      *array = output[i];
+    } else {
+      throw std::runtime_error(
+          "Input is not an array when updating in JVP trace.");
+    }
+  }
+}
 
 std::shared_ptr<Tracer>
 jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
@@ -66,7 +78,7 @@ jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
   if (primals.size() != tangents.size()) {
     throw std::runtime_error("Number of primals and tangents must match");
   }
-  pushTrace(std::make_shared<JVPTrace>());
+  pushTrace(std::make_shared<JVPTrace>(getTraceStackSize()));
 
   size_t inputSize = primals.size();
 
@@ -101,37 +113,71 @@ std::shared_ptr<Tracer> JITTracer::aval() {
 std::string JITTracer::toString() const { return "jittracer"; }
 
 void JITTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
-  /*
   for (auto &input : inputs) {
-  auto array = std::dynamic_pointer_cast<Array>(input);
-  if (array) {
-    input = std::make_shared<JITTracer>(input);
+    ir::Value *value;
+    if (!asTracer<JITTracer>(input)) {
+      LOG_DEBUG("%s", "[jit] wrapping inputs with JITTracer");
+      auto type = input->getJITType();
+      if (!type->isTensorType()) {
+        // as `getJITType` will evaluate the inner tracer
+        // we can safely assume that the input is a literal when the type is not
+        // a tensor type (todo) find a more precise way way to do this?
+        auto array = asTracer<Array>(input->aval());
+        switch (type->kind()) {
+        case ir::Type::TypeKind::FloatType:
+          value = ir::Literal::create(array->item<float>());
+          break;
+        case ir::Type::TypeKind::IntType:
+          value = ir::Literal::create(array->item<int32_t>());
+          break;
+        default:
+          throw std::runtime_error("Unsupported data type in JIT trace");
+        }
+      } else {
+        value = ir::Node::create(type);
+      }
+      auto tracer = input->clone();
+      input = std::make_shared<JITTracer>(tracer, value);
+    }
   }
-  }
-  */
 }
 
-void JITTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
+void JITTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {
+  for (auto &input : inputs) {
+    if (auto array = asTracer<JITTracer>(input)) {
+      input = array->tracer();
+    }
+  }
+}
 
 void JITTrace::process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &inputs,
-                       std::shared_ptr<Tracer> &output) {
-  auto arrays = tracerVectorConversion<JITTracer, Tracer>(inputs);
+                       const std::vector<std::shared_ptr<Tracer>> &outputs) {
+  auto arrays = convertTracerVector<JITTracer>(inputs);
+  auto outputTracers = convertTracerVector<JITTracer>(outputs);
+  prim->jit(arrays, outputTracers);
+  update(outputs, outputTracers);
+}
 
-  if (auto primOutput = std::dynamic_pointer_cast<JITTracer>(output)) {
-    prim->jit(arrays, *primOutput);
-  } else {
-    throw std::runtime_error("[jit] Output is not an jit tracer");
+void JITTrace::update(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                      const std::vector<JITTracer> &output) {
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (auto array = std::dynamic_pointer_cast<JITTracer>(inputs[i])) {
+      *array = output[i];
+    } else {
+      throw std::runtime_error(
+          "Input is not an array when updating in JIT trace.");
+    }
   }
 }
 
 std::string JITTrace::toString() const { return "jit"; }
 
-ir::ModulePtr
-jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
-        f,
-    std::string funcName, std::string target,
-    const std::vector<std::shared_ptr<Tracer>> &inputs) {
+ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
+                      std::vector<std::shared_ptr<Tracer>>)>
+                      f,
+                  std::string funcName, std::string target,
+                  const std::vector<std::shared_ptr<Tracer>> &inputs) {
   std::vector<ir::TypePtr> types;
   for (auto &input : inputs) {
     types.push_back(input->getJITType());
@@ -140,7 +186,7 @@ jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
   auto module = ir::ALModule::create(funcName, argType);
   auto params = module->getParams();
 
-  pushTrace(std::make_shared<JITTrace>(module));
+  pushTrace(std::make_shared<JITTrace>(module, getTraceStackSize()));
   std::vector<std::shared_ptr<Tracer>> jittracers;
 
   for (size_t i = 0; i < params.size(); i++) {
@@ -148,16 +194,36 @@ jit(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
     jittracers.push_back(jittracer);
   }
 
-  auto result = std::dynamic_pointer_cast<JITTracer>(f(jittracers));
-  result->eval();
-  popLastTrace();
-  module->setReturnType(result->value()->getType());
-  module->getGraph()->create<ir::ReturnOp>(
-      std::dynamic_pointer_cast<JITTracer>(result)->value());
-  if ("target" == "mlir") {
-    // return
+  auto result = (f(jittracers));
+  if (result.size() == 0) {
+    throw std::runtime_error("JIT function must return at least one value");
   }
+  eval(result);
+  if (result.size() > 1) {
+    std::vector<ir::TypePtr> resultTypes;
+    std::vector<ir::ValuePtr> resultValues;
+    for (auto &input : result) {
+      resultTypes.push_back(asTracer<JITTracer>(input)->value()->getType());
+      resultValues.push_back(asTracer<JITTracer>(input)->value());
+    }
+    auto returnValue = ir::TupleContainer::create(resultValues);
+    module->setReturnType(returnValue->getType());
+    module->getGraph()->create<ir::ReturnOp>(returnValue);
+  } else {
+    auto returnValue = asTracer<JITTracer>(result[0])->value();
+    module->getGraph()->create<ir::ReturnOp>(returnValue);
+    module->setReturnType(returnValue->getType());
+  }
+  popLastTrace();
   return module;
+}
+
+void eval(const std::vector<std::shared_ptr<Tracer>> &inputs) {
+  for (auto &input : inputs) {
+    // inputs should be siblings on computation graph
+    // so actually this loop will only be executed once
+    input->eval();
+  }
 }
 
 } // namespace ainl::core

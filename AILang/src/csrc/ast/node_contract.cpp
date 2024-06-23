@@ -1,4 +1,7 @@
 #include "ast/node_contract.h"
+#include "ast/ast_node.h"
+#include "ir/node.h"
+#include "ir/value.h"
 
 namespace ainl::ir {
 
@@ -53,6 +56,28 @@ ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
   return module->getGraph()->create<BatchNorm2d>(nodeType, inValue);
 }
 
+ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                               const ModulePtr &condGraph,
+                               const ModulePtr &bodyGraph,
+                               std::vector<ValuePtr> args) {
+  return module->getGraph()->create<WhileOp>(nodeType, condGraph, bodyGraph,
+                                             args);
+}
+
+ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                        const ModulePtr &trueModule,
+                        const ModulePtr &falseModule, const ValuePtr &cond,
+                        const std::vector<ValuePtr> &args) {
+  return module->getGraph()->create<IfOp>(nodeType, trueModule, falseModule,
+                                          cond, args);
+}
+
+ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                             const ValuePtr &lhs, const ValuePtr &rhs,
+                             CompareOp::CompareType op) {
+  return module->getGraph()->create<CompareOp>(nodeType, lhs, rhs, op);
+}
+
 NodeContract::NodeContract() {
   registerContract("matmul", [](const ModulePtr &module,
                                 const TypePtr &nodeType,
@@ -105,6 +130,81 @@ NodeContract::NodeContract() {
           "Invalid argument number for operator batchnorm2d");
     }
     return batchnorm2dNodeContract(module, nodeType, (args[0]));
+  });
+  registerContract("loop", [](const ModulePtr &module, const TypePtr &nodeType,
+                              std::vector<ValuePtr> args) {
+    if (args.size() < 2) {
+      throw ainl::core::AINLError(
+          "Expect at least cond graph and body graph for loop ir node.");
+    }
+    auto bodyGraph =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    auto condGraph =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    return whileLoopNodeContract(module, nodeType, condGraph, bodyGraph, args);
+  });
+  registerContract("ifop", [](const ModulePtr &module, const TypePtr &nodeType,
+                              std::vector<ValuePtr> args) {
+    auto falseModule =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    auto trueModule =
+        std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
+    args.pop_back();
+    auto ifCond = *args.rbegin();
+    args.pop_back();
+    return ifNodeContract(module, nodeType, trueModule, falseModule, ifCond,
+                          args);
+  });
+  registerContract("eq", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator eq");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::EQ);
+  });
+  registerContract("ne", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator ne");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::NE);
+  });
+  registerContract("lt", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator lt");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::LT);
+  });
+  registerContract("le", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator le");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::LE);
+  });
+  registerContract("gt", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator gt");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::GT);
+  });
+  registerContract("ge", [](const ModulePtr &module, const TypePtr &nodeType,
+                            std::vector<ValuePtr> args) {
+    if (args.size() != 2) {
+      throw ainl::core::AINLError("Invalid argument number for operator ge");
+    }
+    return compareNodeContract(module, nodeType, (args[0]), (args[1]),
+                               CompareOp::CompareType::GE);
   });
 }
 

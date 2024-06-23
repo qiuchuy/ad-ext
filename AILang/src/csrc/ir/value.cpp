@@ -27,18 +27,9 @@ Value::Value(const TypePtr &type) {
   endUse->setPrev(beginUse);
 }
 
-Value::Value(const std::vector<TypePtr> &types) {
-  beginUse = new Use();
-  endUse = new Use();
-  this->type = TupleType::createUnnamedTuple(types);
-  for (const auto &inType : types) {
-    auto value = new Value(inType);
-    values.push_back(value);
-  }
-}
-
 bool Value::operator==(const Value &other) const {
-  if (!this->isLiteral() || !other.isLiteral())
+  if (!(this->getValueKind() == ValueKind::Literal) ||
+      !(other.getValueKind() == ValueKind::Literal))
     return false;
   if (this->getType()->kind() != other.getType()->kind())
     return false;

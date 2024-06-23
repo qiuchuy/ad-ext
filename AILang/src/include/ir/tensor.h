@@ -30,8 +30,9 @@ public:
   }
   std::vector<int> getConcreteShape() {
     auto shape = type->getShape();
-    if (std::all_of(shape.begin(), shape.end(),
-                    [](ValuePtr value) { return value->isLiteral(); })) {
+    if (std::all_of(shape.begin(), shape.end(), [](ValuePtr value) {
+          return value->getValueKind() == Value::ValueKind::Literal;
+        })) {
       std::vector<int> concreteShape;
       for (const auto &value : shape) {
         assert(value->getType()->isIntType());

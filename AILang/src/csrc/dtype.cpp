@@ -14,12 +14,28 @@ template <> TypeToDtype<bool>::operator Dtype() {
   return Dtype(Dtype::DataType::BoolType);
 }
 
+template <> TypeToDtype<int8_t>::operator Dtype() {
+  return Dtype(Dtype::DataType::Int8Type);
+}
+
+template <> TypeToDtype<int16_t>::operator Dtype() {
+  return Dtype(Dtype::DataType::Int16Type);
+}
+
 template <> TypeToDtype<int>::operator Dtype() {
   return Dtype(Dtype::DataType::Int32Type);
 }
 
+template <> TypeToDtype<int64_t>::operator Dtype() {
+  return Dtype(Dtype::DataType::Int64Type);
+}
+
 template <> TypeToDtype<float>::operator Dtype() {
   return Dtype(Dtype::DataType::Float32Type);
+}
+
+template <> TypeToDtype<double>::operator Dtype() {
+  return Dtype(Dtype::DataType::Float64Type);
 }
 
 template <> TypeToDtype<void>::operator Dtype() {
@@ -87,8 +103,6 @@ Dtype getDtypeFromFormat(const std::string &formatStr) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Dtype &dtype) {
-#include <ostream> // Include the <ostream> header
-
   switch (dtype.type) {
   case Dtype::DataType::BoolType:
     os << "bool";

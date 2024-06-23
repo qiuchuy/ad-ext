@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <numeric>
+#include <sys/types.h>
 #include <variant>
 #include <vector>
 
@@ -23,23 +24,65 @@ class BaseTrace;
 
 class Tracer : public std::enable_shared_from_this<Tracer> {
 public:
+  enum class TracerTy {
+    ArrayTy = 0,
+    JVPTracerTy,
+    JITTracerTy,
+  };
   Tracer() = default;
   virtual ~Tracer() = default;
   Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
          const std::shared_ptr<Primitive> &prim);
+  Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
+         const std::shared_ptr<Primitive> &prim, uint64_t idx);
   bool isLeaf() { return inputs_.empty(); }
   std::vector<std::shared_ptr<Tracer>> inputs() { return inputs_; }
   std::shared_ptr<Primitive> primitive() const { return prim_; }
   void eval();
+  virtual TracerTy getTracerTy() const = 0;
   virtual ir::TypePtr getJITType() = 0;
   virtual std::shared_ptr<Tracer> aval() = 0;
   virtual bool evaluated() const = 0;
   virtual std::string toString() const = 0;
+  virtual std::shared_ptr<Tracer> clone() = 0;
+  std::vector<std::shared_ptr<Tracer>> outputs() {
+    std::vector<std::shared_ptr<Tracer>> outputs;
+    outputs.reserve(siblings_.size() + 1);
+    outputs.insert(outputs.end(), siblings_.begin(), siblings_.begin() + idx_);
+    outputs.push_back(shared_from_this());
+    outputs.insert(outputs.end(), siblings_.begin() + idx_, siblings_.end());
+    return outputs;
+  }
+  std::shared_ptr<BaseTrace> trace() { return trace_; }
+  void setSiblings(const std::vector<std::shared_ptr<Tracer>> &siblings) {
+    siblings_ = siblings;
+  }
+  void setIdx(uint64_t idx) { idx_ = idx; }
+  bool operator==(Tracer &other);
+  bool operator>(Tracer &other);
+
+  template <typename T> bool operator==(T scalar) {
+    if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+      return *array == scalar;
+    }
+    return aval()->operator==(scalar);
+  }
+
+  template <typename T> bool operator>(T scalar) {
+    if (auto array = std::dynamic_pointer_cast<Array>(shared_from_this())) {
+      return *array > scalar;
+    }
+    return aval()->operator>(scalar);
+  }
+
+  operator std::string() { return toString(); }
 
 protected:
   std::vector<std::shared_ptr<Tracer>> inputs_;
+  std::vector<std::shared_ptr<Tracer>> siblings_;
   std::shared_ptr<Primitive> prim_;
   std::shared_ptr<BaseTrace> trace_;
+  uint64_t idx_ = 0;
 };
 
 class Array : public Tracer {
@@ -107,6 +150,8 @@ public:
 
   bool evaluated() const override { return data_ != nullptr; }
 
+  Tracer::TracerTy getTracerTy() const override { return TracerTy::ArrayTy; }
+
   std::shared_ptr<Tracer> aval() override { return shared_from_this(); }
 
   void copyBySharing(const Array &array, size_t size, size_t offset,
@@ -164,6 +209,16 @@ public:
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
 
+  template <typename T> T item() {
+    if (!evaluated()) {
+      eval();
+    }
+    if (ndim() != 0) {
+      throw std::runtime_error("Item() is only supported for scalar array.");
+    }
+    return *(data<T>());
+  }
+
   template <typename T> T *data() { return static_cast<T *>(ptr_); };
 
   template <typename T> const T *data() const {
@@ -171,6 +226,10 @@ public:
   };
 
   ir::TypePtr getJITType() override;
+
+  std::shared_ptr<Tracer> clone() override {
+    return std::make_shared<Array>(*this);
+  }
 
   friend std::ostream &operator<<(std::ostream &os, const Array &arr);
 
@@ -204,6 +263,79 @@ public:
     os << "]";
   }
 
+  bool operator==(Array &other) {
+    if (!evaluated())
+      eval();
+    if (!other.evaluated())
+      other.eval();
+
+    bool shapeEqual =
+        std::equal(shape_->begin(), shape_->end(), other.shape_->begin());
+    bool strideEqual =
+        std::equal(stride_->begin(), stride_->end(), other.stride_->begin());
+    if (!shapeEqual || !strideEqual || dtype_.type != other.dtype_.type ||
+        size_ != other.size_) {
+      return false;
+    }
+
+    if (ndim() == 0) {
+      throw std::runtime_error(
+          "Comparison is only supported for scalar array.");
+    }
+
+    switch (dtype_.type) {
+    case Dtype::DataType::BoolType:
+      return item<bool>() == other.item<bool>();
+    case Dtype::DataType::Int16Type:
+      return item<int16_t>() == other.item<int16_t>();
+    case Dtype::DataType::Int32Type:
+      return item<int32_t>() == other.item<int32_t>();
+    case Dtype::DataType::Int64Type:
+      return item<int64_t>() == other.item<int64_t>();
+    case Dtype::DataType::Float32Type:
+      return item<float>() == other.item<float>();
+    case Dtype::DataType::Float64Type:
+      return item<double>() == other.item<double>();
+    default:
+      throw std::runtime_error("Unsupported data type.");
+    }
+  }
+
+  bool operator>(Array &other) {
+    if (!evaluated())
+      eval();
+    if (!other.evaluated())
+      other.eval();
+
+    if (ndim() != 0) {
+      throw std::runtime_error(
+          "Comparison is only supported for scalar array.");
+    }
+
+    switch (dtype_.type) {
+    case Dtype::DataType::BoolType:
+      return item<bool>() > other.item<bool>();
+    case Dtype::DataType::Int16Type:
+      return item<int16_t>() > other.item<int16_t>();
+    case Dtype::DataType::Int32Type:
+      return item<int32_t>() > other.item<int32_t>();
+    case Dtype::DataType::Int64Type:
+      return item<int64_t>() > other.item<int64_t>();
+    case Dtype::DataType::Float32Type:
+      return item<float>() > other.item<float>();
+    case Dtype::DataType::Float64Type:
+      return item<double>() > other.item<double>();
+    default:
+      throw std::runtime_error("Unsupported data type.");
+    }
+  }
+
+  template <typename T> bool operator==(T scalar) {
+    return item<T>() == scalar;
+  }
+
+  template <typename T> bool operator>(T scalar) { return item<T>() > scalar; }
+
 protected:
   std::shared_ptr<Data> data_;
   Dtype dtype_;
@@ -213,18 +345,35 @@ protected:
   void *ptr_;
 };
 
-template <typename T1, typename T2>
-std::vector<T1>
-tracerVectorConversion(const std::vector<std::shared_ptr<T2>> &tracers) {
-  std::vector<T1> arrays;
-  for (auto &tracer : tracers) {
-    if (auto array = std::dynamic_pointer_cast<T1>(tracer)) {
-      arrays.push_back(*(std::dynamic_pointer_cast<T1>(tracer)));
-    } else {
-      throw std::runtime_error("Cannot convert one tracer to another.");
-    }
+template <typename T>
+std::vector<T>
+convertTracerVector(const std::vector<std::shared_ptr<Tracer>> &sharedPtrVec) {
+  std::vector<T> result;
+  result.reserve(sharedPtrVec.size());
+
+  for (auto &ptr : sharedPtrVec) {
+    result.push_back(*std::dynamic_pointer_cast<T>(ptr));
   }
-  return arrays;
+  return result;
+}
+
+template <typename T>
+std::vector<std::shared_ptr<Tracer>>
+convertTracerSharedPtrVector(const std::vector<T> &inputs) {
+  std::vector<std::shared_ptr<Tracer>> result;
+  for (auto &input : inputs) {
+    result.push_back(std::make_shared<T>(input));
+  }
+  return result;
+}
+
+template <typename T>
+std::shared_ptr<T> asTracer(const std::shared_ptr<Tracer> &tracer) {
+  if (auto array = std::dynamic_pointer_cast<T>(tracer)) {
+    return array;
+  } else {
+    return nullptr;
+  }
 }
 
 } // namespace ainl::core

@@ -2,8 +2,10 @@
 
 #include <functional>
 #include <map>
+#include <stdexcept>
 
 #include "ir/function.h"
+#include "ir/type.h"
 
 namespace ainl::ir {
 
@@ -21,6 +23,17 @@ ValuePtr convolutionNodeContract(const ModulePtr &module,
 ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
                                  const ValuePtr &inValue);
+ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                               const ModulePtr &condGraph,
+                               const ModulePtr &bodyGraph,
+                               std::vector<ValuePtr> args);
+ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                             const ValuePtr &lhs, const ValuePtr &rhs,
+                             CompareOp::CompareType op);
+ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                        const ModulePtr &trueModule,
+                        const ModulePtr &falseModule, const ValuePtr &cond,
+                        const std::vector<ValuePtr> &args);
 
 class NodeContract {
 public:
@@ -35,8 +48,8 @@ public:
   ValuePtr resolveContract(const std::string &name, ModulePtr module,
                            TypePtr nodeType, std::vector<ValuePtr> args) {
     if (functions.find(name) == functions.end()) {
-      // throw AINLError(
-      // "This operator has not been registered into the library yet.");
+      throw std::runtime_error("The node contract of operator [" + name +
+                               "] has not been registered yet.");
     }
     return functions[name](std::move(module), std::move(nodeType),
                            std::move(args));

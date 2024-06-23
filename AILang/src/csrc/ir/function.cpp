@@ -6,26 +6,9 @@ namespace ainl::ir {
 
 ALModule::ALModule(std::string name, const TypePtr &inputType,
                    const TypePtr &returnType) {
-  this->graph = std::make_shared<Graph>(name);
-  std::vector<ValuePtr> params;
-  if (inputType->isTupleType()) {
-    std::vector<TypePtr> paramTypes =
-        SAFE_TYPE_DOWNCAST(inputType, TupleType)->getTypes();
-    for (int idx = 0; (size_t)idx < paramTypes.size(); idx++) {
-      auto param = new Graph::GraphParam(paramTypes[idx], idx);
-      params.push_back(param);
-    }
-  } else {
-    params.push_back(new Graph::GraphParam(inputType, 0));
-  }
-  for (auto &param : params) {
-    param->graph = graph;
-  }
-  ParamPtr paramNode = Param::create(params, inputType);
-  paramNode->graph = this->graph;
-  paramNode->addBlockWithParam(paramNode);
+  this->graph = Graph::create(inputType, returnType);
+  this->name = name;
   this->signature = new Signature(inputType, returnType);
-  this->name = std::move(name);
 }
 
 std::vector<ValuePtr> ALModule::getParams() { return graph->getParams(); }
@@ -38,15 +21,7 @@ std::vector<TypePtr> ALModule::getParamTypes() {
   return paramTypes;
 }
 
-std::vector<TypePtr> ALModule::getReturnTypes() {
-  std::vector<TypePtr> returnTypes;
-  if (auto tupleType =
-          std::dynamic_pointer_cast<TupleType>(signature->returnType)) {
-    return tupleType->getTypes();
-  }
-  returnTypes.push_back(signature->returnType);
-  return returnTypes;
-}
+TypePtr ALModule::getReturnType() { return signature->returnType; }
 
 std::string ALModule::str() {
   std::stringstream ss;
