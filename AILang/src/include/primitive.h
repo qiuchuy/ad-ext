@@ -197,10 +197,9 @@ private:
 class IfPrimitive : public Primitive {
 public:
   IfPrimitive() = default;
-  IfPrimitive(const std::function<std::vector<std::shared_ptr<Tracer>>(
-                  const std::vector<std::shared_ptr<Tracer>> &)> &trueBranch,
-              const std::function<std::vector<std::shared_ptr<Tracer>>(
-                  const std::vector<std::shared_ptr<Tracer>> &)> &falseBranch)
+  IfPrimitive(
+      const std::function<std::vector<std::shared_ptr<Tracer>>()> &trueBranch,
+      const std::function<std::vector<std::shared_ptr<Tracer>>()> &falseBranch)
       : trueBranch(trueBranch), falseBranch(falseBranch) {}
   void eval(const std::vector<Array> &inputs,
             std::vector<Array> &output) override;
@@ -213,12 +212,8 @@ public:
   std::string toString() const override;
 
 private:
-  std::function<std::vector<std::shared_ptr<Tracer>>(
-      const std::vector<std::shared_ptr<Tracer>> &)>
-      trueBranch;
-  std::function<std::vector<std::shared_ptr<Tracer>>(
-      const std::vector<std::shared_ptr<Tracer>> &)>
-      falseBranch;
+  std::function<std::vector<std::shared_ptr<Tracer>>()> trueBranch;
+  std::function<std::vector<std::shared_ptr<Tracer>>()> falseBranch;
 };
 
 class ComparePrimitive : public UnaryPrimitive {

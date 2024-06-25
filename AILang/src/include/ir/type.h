@@ -76,9 +76,7 @@ public:
   explicit operator std::string() { return str(); }
 
   virtual TypeKind kind() const { return TypeKind::VoidType; }
-  virtual bool equals(const TypePtr &rhs) {
-    return getName() == rhs->getName();
-  }
+  bool equals(const TypePtr &rhs) { return getName() == rhs->getName(); }
   virtual std::string str() { return "void"; }
   virtual bool isVoidType() { return true; }
   virtual bool isIntType() { return false; }
@@ -170,15 +168,6 @@ public:
   static FunctionTypePtr create(const TypePtr &inType, const TypePtr &retType) {
     return std::make_shared<FunctionType>(inType, retType);
   }
-  bool equals(const TypePtr &rhs) override {
-    if (kind() != rhs->kind()) {
-      return false;
-    } else {
-      FunctionTypePtr rhsPtr = std::dynamic_pointer_cast<FunctionType>(rhs);
-      return argType->equals(rhsPtr->argType) &&
-             returnType->equals(rhsPtr->argType);
-    }
-  }
   std::string str() override {
     return argType->getName() + " -> " + returnType->getName();
   }
@@ -214,21 +203,6 @@ public:
   }
 
   TypeKind kind() const override { return TypeKind::TupleType; }
-  bool equals(const TypePtr &rhs) override {
-    if (kind() != rhs->kind()) {
-      return false;
-    } else {
-      TupleTypePtr rhsPtr = std::dynamic_pointer_cast<TupleType>(rhs);
-      if (types.size() != rhsPtr->types.size()) {
-        return false;
-      }
-      for (size_t i = 0; i < types.size(); i++) {
-        if (!types[i]->equals(rhsPtr->types[i]))
-          return false;
-      }
-      return true;
-    }
-  }
 
   std::string str() override {
     std::stringstream ssm;
@@ -236,11 +210,12 @@ public:
     ssm << "(";
     for (size_t i = 0; i < size; i++) {
       if (i == size - 1) {
-        ssm << types[i]->str() << ")";
+        ssm << types[i]->str() << " ";
       } else {
         ssm << types[i]->str() << ", ";
       }
     }
+    ssm << ")";
     return ssm.str();
   }
 
@@ -267,14 +242,6 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::PointerType; }
-  bool equals(const TypePtr &rhs) override {
-    if (kind() != rhs->kind()) {
-      return false;
-    } else {
-      PointerTypePtr rhsPtr = std::dynamic_pointer_cast<PointerType>(rhs);
-      return (*pointeeType).equals(rhsPtr->getPointeeType());
-    }
-  }
   std::string str() override {
     std::stringstream ssm;
     ssm << pointeeType->str() << " *";
@@ -305,21 +272,6 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::TensorType; }
-  bool equals(const TypePtr &rhs) override {
-    if (kind() != rhs->kind()) {
-      return false;
-    } else {
-      TensorTypePtr rhsPtr = std::dynamic_pointer_cast<TensorType>(rhs);
-      if (shape.size() != rhsPtr->shape.size()) {
-        return false;
-      }
-      for (size_t i = 0; i < shape.size(); i++) {
-        if (shape[i] != rhsPtr->shape[i])
-          return false;
-      }
-      return true;
-    }
-  }
   std::string str() override;
   bool isTensorType() override { return true; }
   TypePtr getTypePtr() override { return shared_from_this(); }
@@ -365,7 +317,6 @@ public:
 
 public:
   TypeKind kind() const override { return Type::TypeKind::LiteralType; }
-  bool equals(const TypePtr &rhs) override;
   bool isLiteralType() override { return true; }
   std::string str() override;
   TypePtr getTypePtr() override { return shared_from_this(); }

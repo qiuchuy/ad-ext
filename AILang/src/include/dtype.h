@@ -23,7 +23,9 @@ struct Dtype {
   constexpr explicit Dtype(DataType type) : type(type) {}
   bool operator<(const Dtype &other) const;
   std::string toString() const;
+  size_t hash() const;
   friend std::ostream &operator<<(std::ostream &os, const Dtype &dtype);
+  bool operator==(const Dtype &other) const;
 };
 
 template <typename T> struct TypeToDtype { operator Dtype(); };

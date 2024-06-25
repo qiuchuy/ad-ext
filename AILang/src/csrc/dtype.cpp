@@ -1,8 +1,9 @@
-#include "dtype.h"
 
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
+
+#include "dtype.h"
 
 namespace ainl::core {
 
@@ -68,24 +69,30 @@ std::string Dtype::toString() const {
   case DataType::BoolType:
     return "bool";
   case DataType::Int8Type:
-    return "int8";
+    return "i8";
   case DataType::Int16Type:
-    return "int16";
+    return "i16";
   case DataType::Int32Type:
-    return "int32";
+    return "i32";
   case DataType::Int64Type:
-    return "int64";
+    return "i64";
   case DataType::Float32Type:
-    return "float32";
+    return "f32";
   case DataType::Float64Type:
-    return "float64";
+    return "f64";
   default:
     return "unknown";
   }
 }
 
+size_t Dtype::hash() const { return static_cast<size_t>(type); }
+
+bool Dtype::operator==(const Dtype &other) const { return type == other.type; }
+
 Dtype getDtypeFromFormat(const std::string &formatStr) {
-  if (formatStr == "b" || formatStr == "B") {
+  if (formatStr == "?") {
+    return Bool;
+  } else if (formatStr == "b" || formatStr == "B") {
     return Int8;
   } else if (formatStr == "h" || formatStr == "H") {
     return Int16;
@@ -98,7 +105,7 @@ Dtype getDtypeFromFormat(const std::string &formatStr) {
   } else if (formatStr == "d") {
     return Float64;
   } else {
-    throw std::runtime_error("Unsupported data type: " + formatStr);
+    throw std::runtime_error(("Unsupported data type: " + formatStr).c_str());
   }
 }
 

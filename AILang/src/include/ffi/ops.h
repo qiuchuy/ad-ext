@@ -32,7 +32,7 @@ py::object unary(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
     return py::cast(std::make_shared<ainl::core::JVPTracer>(
         promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
   case ainl::core::Tracer::TracerTy::JITTracerTy:
-    return py::cast(std::make_shared<ainl::core::JITTracer>(
+    return py::cast(ainl::core::JITTracer::create(
         promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
   default:
     throw std::runtime_error("Unsupported tracer type in ffi unary interface.");
@@ -61,7 +61,7 @@ staticPrim(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;
     case ainl::core::Tracer::TracerTy::JITTracerTy:
-      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+      tracers.push_back(ainl::core::JITTracer::create(
           promotedInputs,
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;
@@ -107,7 +107,7 @@ py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;
     case ainl::core::Tracer::TracerTy::JITTracerTy:
-      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+      tracers.push_back(ainl::core::JITTracer::create(
           promotedInputs,
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;
@@ -131,13 +131,12 @@ py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
   }
 }
 
-py::object ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-                    trueBranch,
-                std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-                    falseBranch,
-                const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs);
+py::object
+ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+         trueBranch,
+     std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+         falseBranch,
+     const std::shared_ptr<ainl::core::Tracer> &cond);
 
 py::tuple createPythonTupleFromTracerVector(
     const std::vector<std::shared_ptr<ainl::core::Tracer>> &args);

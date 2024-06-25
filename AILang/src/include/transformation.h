@@ -5,13 +5,14 @@
 #include "ir/type.h"
 #include "primitive.h"
 #include "trace.h"
+#include <memory>
 #include <stdexcept>
 
 namespace ainl::core {
 
 class JVPTrace : public BaseTrace {
 public:
-  JVPTrace(int level) : BaseTrace(level) {}
+  JVPTrace(int level) : BaseTrace(level, BaseTrace::TraceMode::jvp) {}
   void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
   void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
   void process(const std::shared_ptr<Primitive> &prim,
@@ -27,7 +28,7 @@ private:
 class JITTrace : public BaseTrace {
 public:
   JITTrace(const ir::ModulePtr &module, int level)
-      : BaseTrace(level), module_(module) {}
+      : BaseTrace(level, BaseTrace::TraceMode::jit), module_(module) {}
   void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
   void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
   void process(const std::shared_ptr<Primitive> &prim,
@@ -49,6 +50,18 @@ public:
   JITTracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
             const std::shared_ptr<Primitive> &prim)
       : Tracer(inputs, prim) {}
+  static std::shared_ptr<JITTracer>
+  create(const std::shared_ptr<Tracer> &tracer, const ir::ValuePtr &value) {
+    return std::make_shared<JITTracer>(tracer, value);
+  }
+  static std::shared_ptr<JITTracer>
+  create(const std::vector<std::shared_ptr<Tracer>> &inputs,
+         const std::shared_ptr<Primitive> &prim) {
+    auto tracer = std::make_shared<JITTracer>(inputs, prim);
+    if (eager_)
+      tracer->eval();
+    return tracer;
+  }
   bool evaluated() const override;
   Tracer::TracerTy getTracerTy() const override {
     return TracerTy::JITTracerTy;
@@ -63,10 +76,12 @@ public:
   std::shared_ptr<Tracer> clone() override {
     return std::make_shared<JITTracer>(*this);
   }
+  friend class BaseTrace;
 
 private:
   std::shared_ptr<Tracer> tracer_;
   ir::ValuePtr value_;
+  static bool eager_;
 };
 
 class JVPTracer : public Tracer {

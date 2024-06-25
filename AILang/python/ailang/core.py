@@ -4,10 +4,17 @@ import ailang as al
 
 from typing import Union, Tuple, Callable
 from ailang import Tensor, ModuleNode, array
+
 from iree import compiler as ireec
 from iree import runtime as ireert
 
 from .ast_converter import parse_pycallable
+
+dtype_mapping = {
+    al.bool: bool,
+    # (yuqiuchu) run IREE with float32
+    al.f32: np.float32,
+}
 
 def jit(debug: bool = False):
     """
@@ -43,7 +50,12 @@ def jit(debug: bool = False):
             vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
             ctx.add_vm_module(vm_module)
 
-            numpy_args = [np.array(arg.tolist(), dtype=np.float32) for arg in args]
+            numpy_args = [
+                np.array(arg.tolist()[0], dtype=dtype_mapping[arg.dtype]) if arg.shape == ()
+                else np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype])
+                for arg in args
+            ]
+
             _jitted_f = ctx.modules.main[f.__name__]
             results = _jitted_f(*numpy_args).to_host()
             return results

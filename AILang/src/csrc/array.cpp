@@ -9,6 +9,7 @@
 #include "ops.h"
 #include "primitive.h"
 #include "trace.h"
+#include "transformation.h"
 #include "utils/logger.h"
 
 namespace ainl::core {
@@ -188,6 +189,8 @@ ir::TypePtr Array::getJITType() {
   if (shape_->empty()) {
     // tensor which has empty shape_ will be jitted into literals
     switch (dtype_.type) {
+    case Dtype::DataType::BoolType:
+      return ir::BoolTypePtr::get();
     case Dtype::DataType::Int32Type:
       return ir::IntTypePtr::get();
     case Dtype::DataType::Float32Type:

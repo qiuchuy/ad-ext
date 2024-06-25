@@ -32,8 +32,7 @@ ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                              CompareOp::CompareType op);
 ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                         const ModulePtr &trueModule,
-                        const ModulePtr &falseModule, const ValuePtr &cond,
-                        const std::vector<ValuePtr> &args);
+                        const ModulePtr &falseModule, const ValuePtr &cond);
 
 class NodeContract {
 public:

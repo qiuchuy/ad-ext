@@ -66,10 +66,9 @@ ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
 
 ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                         const ModulePtr &trueModule,
-                        const ModulePtr &falseModule, const ValuePtr &cond,
-                        const std::vector<ValuePtr> &args) {
+                        const ModulePtr &falseModule, const ValuePtr &cond) {
   return module->getGraph()->create<IfOp>(nodeType, trueModule, falseModule,
-                                          cond, args);
+                                          cond);
 }
 
 ValuePtr compareNodeContract(const ModulePtr &module, const TypePtr &nodeType,
@@ -147,6 +146,11 @@ NodeContract::NodeContract() {
   });
   registerContract("ifop", [](const ModulePtr &module, const TypePtr &nodeType,
                               std::vector<ValuePtr> args) {
+    if (args.size() != 3) {
+      throw ainl::core::AINLError(
+          "Expect three arguments for if operator: true branch, false branch, "
+          "and condition.");
+    }
     auto falseModule =
         std::shared_ptr<ALModule>(asValueType<ALModule>(*args.rbegin()));
     args.pop_back();
@@ -155,8 +159,7 @@ NodeContract::NodeContract() {
     args.pop_back();
     auto ifCond = *args.rbegin();
     args.pop_back();
-    return ifNodeContract(module, nodeType, trueModule, falseModule, ifCond,
-                          args);
+    return ifNodeContract(module, nodeType, trueModule, falseModule, ifCond);
   });
   registerContract("eq", [](const ModulePtr &module, const TypePtr &nodeType,
                             std::vector<ValuePtr> args) {

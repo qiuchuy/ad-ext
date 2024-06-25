@@ -22,35 +22,28 @@ class TestJIT:
         def g(x, y):
             return x == y
 
-        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = np.array([[1, 2], [3, 4]], dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         iree_result = g(c, d)
         print("Result: ", iree_result)
 
-    """
     def test_if(self):
         @al.jit(debug=False)
-        def g(x):
-            y = al.transpose(x)
-            cond = al.transpose(x)
-            print(type(y))
-            def true_branch(x, y):
-                return al.matmul(x, y)
-
-            def false_branch(x, y):
-                z = al.transpose(x)
-                return al.matmul(z, y)
+        def g(cond, x):
+            def false_branch():
+                return al.matmul(x, x)
             
-            result = al.ifop(true_branch, false_branch, (cond, x, y))
+            result = al.ifop(lambda: al.transpose(x), false_branch, cond)
             return result
 
-        a = np.random.randn(2, 2)
-        b = a.astype(np.int32)
-        c = al.from_numpy(b)
-        iree_result = g(c)
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        c = al.from_numpy(a)
+        e = np.array(True)
+        f = al.from_numpy(e)
+        iree_result = g(f, c)
         print("Result: ", iree_result)
+    """
 
     def test_while_loop(self):
         @al.jit(debug=True)

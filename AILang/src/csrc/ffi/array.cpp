@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "array.h"
+#include "dtype.h"
 #include "ffi/array.h"
 #include "ops.h"
 #include "pass/stablehlo_lowering.h"
@@ -82,7 +83,18 @@ auto parseAttr = [](const py::object &obj) -> int {
 void initArray(py::module &_m) {
   py::class_<ainl::core::Dtype>(_m, "dtype")
       .def(py::init<>())
-      .def("__repr__", &ainl::core::Dtype::toString);
+      .def("__repr__", &ainl::core::Dtype::toString)
+      .def("__hash__", &ainl::core::Dtype::hash)
+      .def("__eq__", &ainl::core::Dtype::operator==);
+
+  _m.attr("bool") = ainl::core::Bool;
+  _m.attr("i8") = ainl::core::Int8;
+  _m.attr("i16") = ainl::core::Int16;
+  _m.attr("i32") = ainl::core::Int32;
+  _m.attr("i64") = ainl::core::Int64;
+  _m.attr("f32") = ainl::core::Float32;
+  _m.attr("f64") = ainl::core::Float64;
+
   py::class_<ainl::core::Tracer, std::shared_ptr<ainl::core::Tracer>>(_m,
                                                                       "tracer")
       .def("__repr__", &ainl::core::Tracer::toString)

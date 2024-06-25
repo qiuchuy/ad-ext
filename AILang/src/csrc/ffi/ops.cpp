@@ -1,10 +1,11 @@
 #include "ffi/ops.h"
-
 #include "array.h"
 #include "ops.h"
 #include "primitive.h"
+#include "trace.h"
 #include "transformation.h"
 #include <algorithm>
+#include <memory>
 #include <pybind11/cast.h>
 #include <pybind11/pytypes.h>
 #include <stdexcept>
@@ -101,80 +102,42 @@ void initOps(py::module_ &m) {
   m.def(
       "ifop",
       [](const py::function &trueBranch, const py::function &falseBranch,
-         py::tuple &cond) {
-        auto initHandlingHelper = [](const py::tuple &init) {
-          std::vector<std::shared_ptr<ainl::core::Tracer>> inits;
-          for (auto &item : init) {
+         py::object &cond) {
+        auto ifCond = cond.cast<std::shared_ptr<ainl::core::Tracer>>();
 
-            // cannot use nested structures in while_loop
-            if (py::isinstance<py::dict>(item) ||
-                py::isinstance<py::tuple>(item)) {
-              throw std::runtime_error(
-                  "Unsupported loop variable type in while_loop");
-            }
+        std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+            trueBranchImpl = [trueBranch]() {
+              auto result = trueBranch();
+              std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
+              if (py::isinstance<py::tuple>(result) ||
+                  py::isinstance<py::list>(result)) {
+                for (auto &item : result) {
+                  tracers.push_back(
+                      py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+                }
+              } else {
+                tracers.push_back(
+                    py::cast<std::shared_ptr<ainl::core::Tracer>>(result));
+              }
+              return tracers;
+            };
 
-            // handle scalars, convert them into Array
-            if (py::isinstance<py::int_>(item)) {
-              inits.push_back(
-                  std::make_shared<ainl::core::Array>(item.cast<int>()));
-            } else if (py::isinstance<py::float_>(item)) {
-              inits.push_back(
-                  std::make_shared<ainl::core::Array>(item.cast<float>()));
-            } else if (py::isinstance<py::bool_>(item)) {
-              inits.push_back(
-                  std::make_shared<ainl::core::Array>(item.cast<bool>()));
-            } else {
-              inits.push_back(item.cast<std::shared_ptr<ainl::core::Tracer>>());
-            }
-          }
-          return inits;
-        };
-
-        auto ifCond = initHandlingHelper(cond);
-
-        std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-            const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-            trueBranchImpl =
-                [trueBranch](
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>>
-                        &args) {
-                  auto result =
-                      trueBranch(*createPythonTupleFromTracerVector(args));
-                  std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
-                  if (py::isinstance<py::tuple>(result) ||
-                      py::isinstance<py::list>(result)) {
-                    for (auto &item : result) {
-                      tracers.push_back(
-                          py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
-                    }
-                  } else {
-                    tracers.push_back(
-                        py::cast<std::shared_ptr<ainl::core::Tracer>>(result));
-                  }
-                  return tracers;
-                };
-
-        std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-            const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-            falseBranchImpl =
-                [falseBranch](
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>>
-                        &args) {
-                  auto result =
-                      falseBranch(*createPythonTupleFromTracerVector(args));
-                  std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
-                  if (py::isinstance<py::tuple>(result) ||
-                      py::isinstance<py::list>(result)) {
-                    for (auto &item : result) {
-                      tracers.push_back(
-                          py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
-                    }
-                  } else {
-                    tracers.push_back(
-                        py::cast<std::shared_ptr<ainl::core::Tracer>>(result));
-                  }
-                  return tracers;
-                };
+        std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+            falseBranchImpl = [falseBranch]() {
+              auto result = falseBranch();
+              std::vector<std::shared_ptr<ainl::core::Tracer>> tracers;
+              if (py::isinstance<py::tuple>(result) ||
+                  py::isinstance<py::list>(result)) {
+                for (auto &item : result) {
+                  tracers.push_back(
+                      py::cast<std::shared_ptr<ainl::core::Tracer>>(item));
+                }
+              } else {
+                tracers.push_back(
+                    py::cast<std::shared_ptr<ainl::core::Tracer>>(result));
+              }
+              return tracers;
+            };
 
         return ifop(trueBranchImpl, falseBranchImpl, ifCond);
       },
@@ -191,30 +154,28 @@ py::tuple createPythonTupleFromTracerVector(
 }
 
 py::object
-ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-         const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
+ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
          trueBranch,
-     std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-         const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
+     std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
          falseBranch,
-     const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs) {
-  std::vector<std::shared_ptr<ainl::core::Tracer>> fakeTracers;
-  for (const auto &input : inputs) {
-    if (input == *inputs.begin()) {
-      continue;
-    }
-    fakeTracers.push_back(input->clone());
-  }
-  auto trueTracers = trueBranch(fakeTracers);
-  auto falseTracers = falseBranch(fakeTracers);
+     const std::shared_ptr<ainl::core::Tracer> &cond) {
+  if (ainl::core::findTopTrace({cond})->mode ==
+      ainl::core::BaseTrace::TraceMode::jit)
+    ainl::core::BaseTrace::disableJITEagerEval();
+
+  auto trueTracers = trueBranch();
+  auto falseTracers = falseBranch();
+
+  if (ainl::core::findTopTrace({cond})->mode ==
+      ainl::core::BaseTrace::TraceMode::jit)
+    ainl::core::BaseTrace::enableJITEagerEval();
   if (trueTracers.size() != falseTracers.size()) {
     throw std::runtime_error("ifop: trueBranch and falseBranch should have the "
                              "same number of return values.");
   }
 
   size_t returnSize = trueTracers.size();
-  assert(!inputs.empty());
-  auto promotedInputs = inputs;
+  std::vector<std::shared_ptr<ainl::core::Tracer>> promotedInputs = {cond};
   ainl::core::getCurrentTrace()->pack(promotedInputs);
   auto tracerType = promotedInputs[0]->getTracerTy();
 
@@ -232,7 +193,7 @@ ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
           std::make_shared<ainl::core::IfPrimitive>(trueBranch, falseBranch)));
       break;
     case ainl::core::Tracer::TracerTy::JITTracerTy:
-      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+      tracers.push_back(ainl::core::JITTracer::create(
           promotedInputs,
           std::make_shared<ainl::core::IfPrimitive>(trueBranch, falseBranch)));
       break;

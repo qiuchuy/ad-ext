@@ -2,6 +2,7 @@
 
 #include "dtype.h"
 #include "ir/literal.h"
+#include <stdexcept>
 
 namespace ainl::ir {
 
@@ -70,10 +71,6 @@ DependentTupleType::DependentTupleType(const std::vector<ValuePtr> &values) {
   this->values = values;
 }
 
-bool LiteralType::equals(const TypePtr &rhs) {
-  return value->getType()->equals(rhs);
-}
-
 LiteralType::LiteralType(const ValuePtr &value) { this->value = value; }
 
 std::string LiteralType::str() { return value->getType()->getName(); }
@@ -82,6 +79,8 @@ ValuePtr LiteralType::getValue() { return value; }
 
 TypePtr DtypeToTypePtr(core::Dtype dtype) {
   switch (dtype.type) {
+  case core::Dtype::DataType::BoolType:
+    return BoolTypePtr::get();
   case core::Dtype::DataType::Int32Type:
     return IntTypePtr::get();
   case core::Dtype::DataType::Float32Type:
@@ -89,8 +88,8 @@ TypePtr DtypeToTypePtr(core::Dtype dtype) {
   case core::Dtype::DataType::Float64Type:
     return DoubleTypePtr::get();
   default:
-      // throw AINLError("Unsupported dtype.");
-      ;
+    throw std::runtime_error(
+        "Unsupported dtype when converting from dtype to ir type.");
   }
 }
 
