@@ -131,13 +131,12 @@ py::object loop(const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
   }
 }
 
-py::object ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-                    trueBranch,
-                std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>(
-                    const std::vector<std::shared_ptr<ainl::core::Tracer>> &)>
-                    falseBranch,
-                const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs);
+py::object
+ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+         trueBranch,
+     std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
+         falseBranch,
+     const std::shared_ptr<ainl::core::Tracer> &cond);
 
 py::tuple createPythonTupleFromTracerVector(
     const std::vector<std::shared_ptr<ainl::core::Tracer>> &args);

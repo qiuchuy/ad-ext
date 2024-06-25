@@ -29,21 +29,17 @@ class TestJIT:
         iree_result = g(c, d)
         print("Result: ", iree_result)
 
-    """
     def test_if(self):
-        @al.jit(debug=False)
+        @al.jit(debug=True)
         def g(x):
             y = al.transpose(x)
             cond = al.transpose(x)
-            print(type(y))
-            def true_branch(x, y):
-                return al.matmul(x, y)
 
-            def false_branch(x, y):
+            def false_branch():
                 z = al.transpose(x)
                 return al.matmul(z, y)
             
-            result = al.ifop(true_branch, false_branch, (cond, x, y))
+            result = al.ifop(lambda: al.matmul(x, y), false_branch, cond)
             return result
 
         a = np.random.randn(2, 2)
@@ -51,6 +47,7 @@ class TestJIT:
         c = al.from_numpy(b)
         iree_result = g(c)
         print("Result: ", iree_result)
+    """
 
     def test_while_loop(self):
         @al.jit(debug=True)

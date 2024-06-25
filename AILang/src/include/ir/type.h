@@ -236,11 +236,12 @@ public:
     ssm << "(";
     for (size_t i = 0; i < size; i++) {
       if (i == size - 1) {
-        ssm << types[i]->str() << ")";
+        ssm << types[i]->str() << " ";
       } else {
         ssm << types[i]->str() << ", ";
       }
     }
+    ssm << ")";
     return ssm.str();
   }
 

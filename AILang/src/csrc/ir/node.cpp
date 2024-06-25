@@ -214,10 +214,8 @@ CompareOp::operator std::string() const {
 void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
-           const ModulePtr &falseBranch, const ValuePtr &cond,
-           const std::vector<ValuePtr> &inputs)
-    : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond),
-      inputs(inputs) {
+           const ModulePtr &falseBranch, const ValuePtr &cond)
+    : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond) {
   if (nodeType->isTupleType()) {
     auto types = asType<TupleType>(nodeType)->getTypes();
     for (const auto &type : types) {
@@ -251,14 +249,7 @@ IfOp::operator std::string() const {
     }
   }
   result += lhs + " = ailang::if (";
-  result += cond->getName() + ") (";
-  for (size_t i = 0; i < inputs.size(); i++) {
-    if (i == inputs.size() - 1) {
-      result += inputs[i]->getName() + "): ";
-    } else {
-      result += inputs[i]->getName() + ", ";
-    }
-  }
+  result += cond->getName() + ") : ";
   result += getType()->getName();
   result += " {\n" + addIndent(std::string(*trueBody)) + "\n\t} else {\n" +
             addIndent(std::string(*elseBody)) + "\n\t}";
