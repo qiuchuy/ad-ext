@@ -256,6 +256,7 @@ public:
        const ModulePtr &falseBranch, const ValuePtr &cond);
   NodeKind kind() override { return Node::NodeKind::IF; }
   explicit operator std::string() const override;
+  void accept(IRVisitor *visitor) override;
   std::vector<ValuePtr> getOutputValues() override { return outs; }
   ValuePtr getCond() const { return cond; }
   ModulePtr getThenBranch() const { return trueBody; }

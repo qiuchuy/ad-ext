@@ -256,4 +256,6 @@ IfOp::operator std::string() const {
   return result;
 }
 
+void IfOp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 } // namespace ainl::ir

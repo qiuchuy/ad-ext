@@ -230,7 +230,9 @@ TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
 
 TypePtr ifTypeContract(const TypePtr &condType, const TypePtr &trueType,
                        const TypePtr &falseType) {
-  if (trueType->equals(falseType)) {
+  LOG_DEBUG("%s", trueType->getName().c_str());
+  LOG_DEBUG("%s", falseType->getName().c_str());
+  if (!trueType->equals(falseType)) {
     throw ainl::core::AINLError(
         "[typeinfer] if operator type infer only applies to two tensors with "
         "the same type.");

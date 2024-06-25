@@ -14,6 +14,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
+#include <stdexcept>
 #include <string>
 
 #include "stablehlo/dialect/StablehloOps.h"
@@ -115,7 +116,7 @@ void StableHLOLoweringPass::visit(ParamPtr node) {
 void StableHLOLoweringPass::visit(ReturnOpPtr node) {
   auto value = valueMap[node->getReturnValue()];
   auto op =
-      builder.create<mlir::func::ReturnOp>(builder.getUnknownLoc(), value);
+      builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(), value);
 }
 
 void StableHLOLoweringPass::visit(TransposePtr node) {
@@ -157,6 +158,7 @@ void StableHLOLoweringPass::visit(CompareOpPtr node) {
 }
 
 void StableHLOLoweringPass::visit(IfOpPtr node) {
+  auto currentBlock = builder.getInsertionBlock();
   auto op = builder.create<mlir::stablehlo::IfOp>(
       builder.getUnknownLoc(),
       createRankedTensorTypeFromTensorType(node->getType(),
@@ -164,7 +166,7 @@ void StableHLOLoweringPass::visit(IfOpPtr node) {
       valueMap[node->getCond()]);
 
   auto thenBlock = builder.createBlock(&op.getTrueBranch());
-  builder.setInsertionPointToStart(thenBlock);
+  builder.setInsertionPointToEnd(thenBlock);
   for (auto block : *node->getThenBranch()->getGraph()) {
     for (auto node : *block) {
       node->accept(this);
@@ -179,10 +181,7 @@ void StableHLOLoweringPass::visit(IfOpPtr node) {
     }
   }
 
-  for (const auto &result : op.getResults()) {
-    insertValueMapping(node, result);
-  }
-
+  builder.setInsertionPointToEnd(currentBlock);
   for (size_t i = 0; i < op.getResults().size(); i++) {
     insertValueMapping(node->getOutputValue(i), op.getResult(i));
   }
@@ -202,9 +201,13 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
     auto elementType =
         createTypeFromElementType(tensorType->getElementType(), context);
     return mlir::RankedTensorType::get(shape, elementType);
+  } else if (auto literal = asType<LiteralType>(type)) {
+    auto elementType =
+        createTypeFromElementType(literal->getValue()->getType(), context);
+    return mlir::RankedTensorType::get({}, elementType);
   } else {
-    throw std::runtime_error("Unsupported type when lowering to mlir type, "
-                             "expect AINL tensor type.");
+    return mlir::RankedTensorType::get(
+        {}, createTypeFromElementType(type, context));
   }
 }
 

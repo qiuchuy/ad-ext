@@ -71,10 +71,6 @@ DependentTupleType::DependentTupleType(const std::vector<ValuePtr> &values) {
   this->values = values;
 }
 
-bool LiteralType::equals(const TypePtr &rhs) {
-  return value->getType()->equals(rhs);
-}
-
 LiteralType::LiteralType(const ValuePtr &value) { this->value = value; }
 
 std::string LiteralType::str() { return value->getType()->getName(); }
