@@ -31,7 +31,7 @@ unary(const std::vector<std::shared_ptr<Tracer>> &inputs, Args &&... args) {
     return (std::make_shared<ainl::core::JVPTracer>(
         promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
   case ainl::core::Tracer::TracerTy::JITTracerTy:
-    return (std::make_shared<ainl::core::JITTracer>(
+    return (JITTracer::create(
         promotedInputs, std::make_shared<PrimTy>(std::forward<Args>(args)...)));
   default:
     throw std::runtime_error("Unsupported tracer type in op unary.");
@@ -58,7 +58,7 @@ op(const std::vector<std::shared_ptr<Tracer>> &inputs, Args &&... args) {
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;
     case ainl::core::Tracer::TracerTy::JITTracerTy:
-      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+      tracers.push_back(JITTracer::create(
           promotedInputs,
           std::make_shared<PrimTy>(std::forward<Args>(args)...)));
       break;

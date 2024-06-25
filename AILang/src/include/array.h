@@ -83,6 +83,8 @@ protected:
   std::shared_ptr<Primitive> prim_;
   std::shared_ptr<BaseTrace> trace_;
   uint64_t idx_ = 0;
+
+private:
 };
 
 class Array : public Tracer {
@@ -369,6 +371,15 @@ convertTracerSharedPtrVector(const std::vector<T> &inputs) {
 
 template <typename T>
 std::shared_ptr<T> asTracer(const std::shared_ptr<Tracer> &tracer) {
+  if (auto array = std::dynamic_pointer_cast<T>(tracer)) {
+    return array;
+  } else {
+    return nullptr;
+  }
+}
+
+template <typename T>
+std::shared_ptr<T> asTrace(const std::shared_ptr<BaseTrace> &tracer) {
   if (auto array = std::dynamic_pointer_cast<T>(tracer)) {
     return array;
   } else {

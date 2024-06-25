@@ -1,8 +1,9 @@
-#include "dtype.h"
 
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
+
+#include "dtype.h"
 
 namespace ainl::core {
 
@@ -85,7 +86,9 @@ std::string Dtype::toString() const {
 }
 
 Dtype getDtypeFromFormat(const std::string &formatStr) {
-  if (formatStr == "b" || formatStr == "B") {
+  if (formatStr == "?") {
+    return Bool;
+  } else if (formatStr == "b" || formatStr == "B") {
     return Int8;
   } else if (formatStr == "h" || formatStr == "H") {
     return Int16;
@@ -98,7 +101,7 @@ Dtype getDtypeFromFormat(const std::string &formatStr) {
   } else if (formatStr == "d") {
     return Float64;
   } else {
-    throw std::runtime_error("Unsupported data type: " + formatStr);
+    throw std::runtime_error(("Unsupported data type: " + formatStr).c_str());
   }
 }
 

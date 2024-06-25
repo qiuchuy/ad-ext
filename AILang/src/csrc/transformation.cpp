@@ -94,6 +94,8 @@ jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
 
 bool JITTracer::evaluated() const { return tracer_ != nullptr; }
 
+bool JITTracer::eager_ = true;
+
 ir::TypePtr JITTracer::getJITType() {
   if (tracer_ == nullptr) {
     throw std::runtime_error(
@@ -137,7 +139,7 @@ void JITTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
         value = ir::Node::create(type);
       }
       auto tracer = input->clone();
-      input = std::make_shared<JITTracer>(tracer, value);
+      input = JITTracer::create(tracer, value);
     }
   }
 }
@@ -190,7 +192,7 @@ ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
   std::vector<std::shared_ptr<Tracer>> jittracers;
 
   for (size_t i = 0; i < params.size(); i++) {
-    auto jittracer = std::make_shared<JITTracer>(inputs[i], params[i]);
+    auto jittracer = JITTracer::create(inputs[i], params[i]);
     jittracers.push_back(jittracer);
   }
 

@@ -9,9 +9,13 @@
 
 namespace ainl::core {
 
-BaseTrace::BaseTrace(int level) : level(level) {}
+BaseTrace::BaseTrace(int level, TraceMode mode) : level(level), mode(mode) {}
 
-EvaluationTrace::EvaluationTrace(int level) : BaseTrace(level) {}
+void BaseTrace::enableJITEagerEval() { JITTracer::eager_ = true; }
+void BaseTrace::disableJITEagerEval() { JITTracer::eager_ = false; }
+
+EvaluationTrace::EvaluationTrace(int level)
+    : BaseTrace(level, BaseTrace::TraceMode::eval) {}
 
 void EvaluationTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {}
 

@@ -2,6 +2,7 @@
 #include "array.h"
 #include "ops.h"
 #include "primitive.h"
+#include "trace.h"
 #include "transformation.h"
 #include <algorithm>
 #include <memory>
@@ -158,8 +159,16 @@ ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
      std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
          falseBranch,
      const std::shared_ptr<ainl::core::Tracer> &cond) {
+  if (ainl::core::findTopTrace({cond})->mode ==
+      ainl::core::BaseTrace::TraceMode::jit)
+    ainl::core::BaseTrace::disableJITEagerEval();
+
   auto trueTracers = trueBranch();
   auto falseTracers = falseBranch();
+
+  if (ainl::core::findTopTrace({cond})->mode ==
+      ainl::core::BaseTrace::TraceMode::jit)
+    ainl::core::BaseTrace::enableJITEagerEval();
   if (trueTracers.size() != falseTracers.size()) {
     throw std::runtime_error("ifop: trueBranch and falseBranch should have the "
                              "same number of return values.");
@@ -184,7 +193,7 @@ ifop(std::function<std::vector<std::shared_ptr<ainl::core::Tracer>>()>
           std::make_shared<ainl::core::IfPrimitive>(trueBranch, falseBranch)));
       break;
     case ainl::core::Tracer::TracerTy::JITTracerTy:
-      tracers.push_back(std::make_shared<ainl::core::JITTracer>(
+      tracers.push_back(ainl::core::JITTracer::create(
           promotedInputs,
           std::make_shared<ainl::core::IfPrimitive>(trueBranch, falseBranch)));
       break;

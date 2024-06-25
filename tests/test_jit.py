@@ -31,10 +31,8 @@ class TestJIT:
 
     def test_if(self):
         @al.jit(debug=True)
-        def g(x):
+        def g(cond, x):
             y = al.transpose(x)
-            cond = al.transpose(x)
-
             def false_branch():
                 z = al.transpose(x)
                 return al.matmul(z, y)
@@ -45,7 +43,9 @@ class TestJIT:
         a = np.random.randn(2, 2)
         b = a.astype(np.int32)
         c = al.from_numpy(b)
-        iree_result = g(c)
+        e = np.array(True)
+        f = al.from_numpy(e)
+        iree_result = g(f, c)
         print("Result: ", iree_result)
     """
 

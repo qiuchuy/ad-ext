@@ -592,8 +592,6 @@ void IfPrimitive::jit(const std::vector<JITTracer> &inputs,
   inputTypes.push_back(falseBranchModule->getReturnType());
   auto outputType = ir::resolveContract("ifop", inputTypes);
 
-  LOG_DEBUG("%d", inputValues.size());
-
   auto ifOp = ir::asValueType<ir::IfOp>(
       ir::resolveContract("ifop", module, outputType, inputValues));
 
