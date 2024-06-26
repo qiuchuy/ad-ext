@@ -44,6 +44,23 @@ class TestJIT:
         f = al.from_numpy(e)
         iree_result = g(f, c)
         print("Result: ", iree_result)
+
+    def test_nested_if(self):
+        @al.jit(debug=False)
+        def g(cond, x):
+            def false_branch():
+                return al.matmul(x, x)
+            
+            result = al.ifop(lambda: al.transpose(x), false_branch, cond)
+            return result
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        c = al.from_numpy(a)
+        e = np.array(True)
+        f = al.from_numpy(e)
+        iree_result = g(f, c)
+        print("Result: ", iree_result)
+
     """
 
     def test_while_loop(self):

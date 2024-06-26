@@ -50,11 +50,7 @@ def jit(debug: bool = False):
             vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
             ctx.add_vm_module(vm_module)
 
-            numpy_args = [
-                np.array(arg.tolist()[0], dtype=dtype_mapping[arg.dtype]) if arg.shape == ()
-                else np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype])
-                for arg in args
-            ]
+            numpy_args = [np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in args]
 
             _jitted_f = ctx.modules.main[f.__name__]
             results = _jitted_f(*numpy_args).to_host()

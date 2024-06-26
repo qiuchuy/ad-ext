@@ -1,10 +1,10 @@
 #pragma once
 
-#include <stdio.h>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <stdio.h>
 #include <string>
 #include <unordered_map>
 
@@ -139,12 +139,14 @@ private:
       std::scoped_lock lock(logMutex);
 
       char formattedMessage[1024];
-      formatMessage(formattedMessage, sizeof(formattedMessage), message, args...);
+      formatMessage(formattedMessage, sizeof(formattedMessage), message,
+                    args...);
 
       printf("%s %s%s\n", buffer, messagePriorityStr, formattedMessage);
 
       if (file) {
-        fprintf(file, "%s %s%s\n", buffer, messagePriorityStr, formattedMessage);
+        fprintf(file, "%s %s%s\n", buffer, messagePriorityStr,
+                formattedMessage);
       }
     }
   }
@@ -161,29 +163,28 @@ private:
       std::scoped_lock lock(logMutex);
 
       char formattedMessage[1024];
-      formatMessage(formattedMessage, sizeof(formattedMessage), message, args...);
+      formatMessage(formattedMessage, sizeof(formattedMessage), message,
+                    args...);
 
-      printf("%s %s%s on line %d in %s\n", buffer, messagePriorityStr, formattedMessage, line_number, sourceFile);
+      printf("%s %s%s on line %d in %s\n", buffer, messagePriorityStr,
+             formattedMessage, line_number, sourceFile);
 
       if (file) {
-        fprintf(file, "%s %s%s on line %d in %s\n", buffer, messagePriorityStr, formattedMessage, line_number, sourceFile);
+        fprintf(file, "%s %s%s on line %d in %s\n", buffer, messagePriorityStr,
+                formattedMessage, line_number, sourceFile);
       }
     }
   }
 
   template <typename... Args>
-  void formatMessage(char *buffer, size_t bufferSize, const char *format, Args... args) {
+  void formatMessage(char *buffer, size_t bufferSize, const char *format,
+                     Args... args) {
     snprintf(buffer, bufferSize, format, convertToCStr(args)...);
   }
 
-  template <typename T>
-  T convertToCStr(T value) {
-    return value;
-  }
+  template <typename T> T convertToCStr(T value) { return value; }
 
-  const char* convertToCStr(const std::string &value) {
-    return value.c_str();
-  }
+  const char *convertToCStr(const std::string &value) { return value.c_str(); }
 
   bool enableFileOutput_() {
     freeFile();

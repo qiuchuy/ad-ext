@@ -48,6 +48,27 @@ py::object toPyList(ainl::core::Array &arr) {
     arr.eval();
   }
 
+  if (arr.ndim() == 0) {
+    switch (arr.dtype().type) {
+    case ainl::core::Dtype::DataType::BoolType:
+      return py::cast(arr.item<bool>());
+    case ainl::core::Dtype::DataType::Int8Type:
+      return py::cast(arr.item<int8_t>());
+    case ainl::core::Dtype::DataType::Int16Type:
+      return py::cast(arr.item<int16_t>());
+    case ainl::core::Dtype::DataType::Int32Type:
+      return py::cast(arr.item<int32_t>());
+    case ainl::core::Dtype::DataType::Int64Type:
+      return py::cast(arr.item<int64_t>());
+    case ainl::core::Dtype::DataType::Float32Type:
+      return py::cast(arr.item<float>());
+    case ainl::core::Dtype::DataType::Float64Type:
+      return py::cast(arr.item<double>());
+    default:
+      throw std::invalid_argument("Unknown data type");
+    }
+  }
+
   switch (arr.dtype().type) {
   case ainl::core::Dtype::DataType::BoolType:
     return toPyListRec<bool>(arr, 0, 0);
