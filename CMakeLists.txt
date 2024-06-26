@@ -39,10 +39,10 @@ set(IREE_BUILD_SAMPLES OFF)
 # Users should only include the drivers they actually plan on using to save on
 # compile time and binary size. This sample uses the local synchronous CPU
 # executor and the embedded ELF loader.
-set(IREE_HAL_DRIVER_DEFAULTS OFF)
-set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
-set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
-set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
+# set(IREE_HAL_DRIVER_DEFAULTS OFF)
+# set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
+# set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
+# set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
 
 # The CMake variant specified will change some runtime behavior such as
 # including asserts in Debug builds. There's a group of features commonly used
@@ -69,9 +69,65 @@ endif()
 # CMake target listing by default - for most users this is fine but if deeply
 # integrating it can be useful to drop it.
 add_subdirectory(third_party/iree EXCLUDE_FROM_ALL)
+# add_subdirectory(third_party/oneDNN)
+# # Set the oneDNN root directory
+# set(ONEDNN_ROOT ${CMAKE_SOURCE_DIR}/third_party/oneDNN)
+# message(STATUS "oneDNN root directory: ${ONEDNN_ROOT}")
 
+# # Set the oneDNN build directory
+# set(ONEDNN_BUILD_DIR ${CMAKE_BINARY_DIR}/third_party/oneDNN)
+# message(STATUS "oneDNN build directory: ${ONEDNN_BUILD_DIR}")
+
+#-------------------------------------------------------------------------------
+# Add oneDNN library
+#-------------------------------------------------------------------------------
+
+# macro(include_directories_with_host_compiler_before)
+#     foreach(inc_dir ${ARGV})
+#         include_directories(BEFORE ${inc_dir})
+#         append_host_compiler_options(CMAKE_CXX_FLAGS "-I${inc_dir}" BEFORE)
+#     endforeach()
+# endmacro()
+
+# Add oneDNN include directories
+# include_directories(${ONEDNN_ROOT}/include)
+
+# Add oneDNN library directory
+# link_directories(${ONEDNN_BUILD_DIR}/src)
+
+# # Add oneDNN include directories
+# include_directories(/root/AILang/build/install/include)
+
+# # Add oneDNN library directory
+# link_directories(/root/AILang/build/install/lib)
+
+
+# Set the DNNLROOT variable (change this to the appropriate path if necessary)
+# set(DNNLROOT /usr/local)
+# # Add the include directories for oneDNN
+# include_directories(${DNNLROOT}/include)
+
+# # # Add oneDNN library directory
+# link_directories(${DNNLROOT}/lib)
 #-------------------------------------------------------------------------------
 # Application
 #-------------------------------------------------------------------------------
+
+# Add subdirectory for AILang
 add_subdirectory(AILang)
+
+# find_package(dnnl REQUIRED)
+
+# # Print a message if dnnl is found
+# if(dnnl_FOUND)
+#     message(STATUS "dnnl found")
+# else()
+#     message(FATAL_ERROR "dnnl not found")
+# endif()
+
+# # Link oneDNN library to AILang
+# target_link_libraries(libailang PRIVATE dnnl)
+
+# Ensure that libailang depends on iree-compile
+# add_dependencies(libailang dnnl)
 add_dependencies(libailang iree-compile)

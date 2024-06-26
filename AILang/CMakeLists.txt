@@ -83,6 +83,14 @@ list(APPEND LINKER_LIBS iree_compiler_bindings_c_loader)
 add_compile_options(${IREE_DEFAULT_COPTS})
 list(APPEND LINKER_LIBS iree_runtime_runtime)
 
+set(DNNLROOT /usr/local)
+# Add the include directories for oneDNN
+include_directories(${DNNLROOT}/include)
+
+# Add oneDNN library directory
+link_directories(${DNNLROOT}/lib)
+
+list(APPEND LINKER_LIBS dnnl)
 
 pybind11_add_module(libailang SHARED ${SOURCES} ${HEADERS})
 target_link_libraries(libailang PUBLIC ${LINKER_LIBS})
