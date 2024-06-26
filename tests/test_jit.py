@@ -22,6 +22,7 @@ class TestJIT:
         def g(x, y):
             return x == y
 
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = np.array([[1, 2], [3, 4]], dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
