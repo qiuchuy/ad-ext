@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdio.h>
-
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -138,16 +137,14 @@ private:
       char buffer[80];
       strftime(buffer, 80, "%c", timestamp);
       std::scoped_lock lock(logMutex);
-      printf("%s", buffer);
-      printf(messagePriorityStr);
-      printf(message, args...);
-      printf("\n");
+
+      char formattedMessage[1024];
+      formatMessage(formattedMessage, sizeof(formattedMessage), message, args...);
+
+      printf("%s %s%s\n", buffer, messagePriorityStr, formattedMessage);
 
       if (file) {
-        fprintf(file, "%s ", buffer);
-        fprintf(file, messagePriorityStr);
-        fprintf(file, message, args...);
-        fprintf(file, "\n");
+        fprintf(file, "%s %s%s\n", buffer, messagePriorityStr, formattedMessage);
       }
     }
   }
@@ -162,20 +159,30 @@ private:
       char buffer[80];
       strftime(buffer, 80, "%c", timestamp);
       std::scoped_lock lock(logMutex);
-      printf("%s ", buffer);
-      printf(messagePriorityStr);
-      printf(message, args...);
-      printf(" on line %d in %s", line_number, sourceFile);
-      printf("\n");
+
+      char formattedMessage[1024];
+      formatMessage(formattedMessage, sizeof(formattedMessage), message, args...);
+
+      printf("%s %s%s on line %d in %s\n", buffer, messagePriorityStr, formattedMessage, line_number, sourceFile);
 
       if (file) {
-        fprintf(file, "%s ", buffer);
-        fprintf(file, messagePriorityStr);
-        fprintf(file, message, args...);
-        fprintf(file, " on line %d in %s", line_number, sourceFile);
-        fprintf(file, "\n");
+        fprintf(file, "%s %s%s on line %d in %s\n", buffer, messagePriorityStr, formattedMessage, line_number, sourceFile);
       }
     }
+  }
+
+  template <typename... Args>
+  void formatMessage(char *buffer, size_t bufferSize, const char *format, Args... args) {
+    snprintf(buffer, bufferSize, format, convertToCStr(args)...);
+  }
+
+  template <typename T>
+  T convertToCStr(T value) {
+    return value;
+  }
+
+  const char* convertToCStr(const std::string &value) {
+    return value.c_str();
   }
 
   bool enableFileOutput_() {
@@ -213,7 +220,7 @@ private:
 
 class AINLError : public std::exception {
 public:
-  explicit AINLError(std::string message) : _message(message) {}
+  explicit AINLError(std::string message) : _message(std::move(message)) {}
   explicit AINLError(const char *message) : _message(message) {}
   const char *what() const noexcept override { return _message.c_str(); }
 

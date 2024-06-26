@@ -12,7 +12,7 @@
 #include "dtype.h"
 #include "graph.h"
 #include "ir/type.h"
-#include "primitive.h"
+// #include "primitive.h"
 #include "trace.h"
 #include "utils/logger.h"
 
