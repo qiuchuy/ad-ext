@@ -23,25 +23,28 @@
 namespace ainl::ir {
 
 class StableHLOLoweringPass : public Pass, public IRVisitor {
-public:
-  StableHLOLoweringPass(mlir::MLIRContext &context, const std::string &name);
-  void run(ModulePtr module) override;
-  mlir::ModuleOp *module();
+  public:
+    StableHLOLoweringPass(mlir::MLIRContext &context, const std::string &name);
+    void run(ModulePtr module) override;
+    mlir::ModuleOp *module();
 
-  void visit(NodePtr node) override;
-  void visit(ParamPtr node) override;
-  void visit(ReturnOpPtr node) override;
-  void visit(TransposePtr node) override;
-  void visit(MatmulPtr node) override;
-  void visit(CompareOpPtr node) override;
-  void visit(IfOpPtr node) override;
+    void visit(NodePtr node) override;
+    void visit(ParamPtr node) override;
+    void visit(ReturnOpPtr node) override;
+    void visit(TransposePtr node) override;
+    void visit(ConvolutionPtr node) override;
+    void visit(MatmulPtr node) override;
+    void visit(AddPtr node) override;
+    // void visit(BroadcastPtr node) override;
+    void visit(CompareOpPtr node) override;
+    void visit(IfOpPtr node) override;
 
-private:
-  mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);
-  void insertValueMapping(ValuePtr value, mlir::Value mlirValue);
-  mlir::ModuleOp *theModule;
-  mlir::OpBuilder builder;
-  llvm::DenseMap<ValuePtr, mlir::Value> valueMap;
+  private:
+    mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);
+    void insertValueMapping(ValuePtr value, mlir::Value mlirValue);
+    mlir::ModuleOp *theModule;
+    mlir::OpBuilder builder;
+    llvm::DenseMap<ValuePtr, mlir::Value> valueMap;
 };
 
 std::string StableHLOLowering(ModulePtr module);

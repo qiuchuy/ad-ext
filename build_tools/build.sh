@@ -1,16 +1,16 @@
 #!/bin/bash
 # build with IREE Compiler & Runtime API
 git submodule update --init --recursive
-make clean
+# make clean
 
 cmake_options=(
     CMAKE_BUILD_TYPE=RelWithDebInfo
     # CMAKE_INSTALL_PREFIX=/usr/local
     IREE_ENABLE_LLD=ON
     USE_CUSTOM_LLVM=ON
-    CUSTOM_LLVM_PATH=/root/AILang/build/third_party/iree/llvm-project/lib/cmake/llvm
+    CUSTOM_LLVM_PATH=/root/AILang/AILang/build/third_party/iree/llvm-project/lib/cmake/llvm
     USE_CUSTOM_MLIR=ON
-    CUSTOM_MLIR_PATH=/root/AILang/build/lib/cmake/mlir
+    CUSTOM_MLIR_PATH=/root/AILang/AILang/build/lib/cmake/mlir
     IREE_BUILD_PYTHON_BINDINGS=ON 
     Python3_EXECUTABLE="$(which python)"
     IREE_ENABLE_ASSERTIONS=ON
