@@ -17,31 +17,34 @@ Array transpose(const Array &input);
 Array matmul(const Array &lhs, const Array &rhs);
 Array flatten(const Array &input);
 Array add(const Array &lhs, const Array &rhs);
-Array maximum(const Array &a, const Array &b);
-Array minimum(const Array &a, const Array &b);
-Array multiply(const Array &a, const Array &b);
-Array sigmoid(const Array &arr);
-Array subtract(const Array &a, const Array &b);
-Array exp(const Array &arr);
-Array sum(const Array &arr, const std::vector<int> &axes, bool keepdims);
-Array squeeze(const Array &arr, const std::vector<int> &axes);
+Array maximum(const Array &lhs, const Array &rhs);
+Array minimum(const Array &lhs, const Array &rhs);
+Array multiply(const Array &lhs, const Array &rhs);
+Array sigmoid(const Array &lhsrr);
+Array subtract(const Array &lhs, const Array &rhs);
+Array exp(const Array &input);
+Array sum(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array squeeze(const Array &input, const std::vector<int> &axes);
 Array broadcast_to(const Array &input, const std::vector<int> &shape);
-Array square(const Array &arr);
-Array sqrt(const Array &arr);
-Array rsqrt(const Array &arr);
-Array var(const Array &arr, const std::vector<int> &axes, bool keepdims,
+Array square(const Array &input);
+Array sqrt(const Array &input);
+Array rsqrt(const Array &input);
+Array var(const Array &input, const std::vector<int> &axes, bool keepdims,
           int ddof);
-Array var(const Array &arr, bool keepdims);
-Array var(const Array &arr, const std::vector<int> &axes, bool keepdims);
-Array var(const Array &arr, int axis, bool keepdims);
-Array mean(const Array &arr, bool keepdims);
-Array mean(const Array &arr, const std::vector<int> &axes, bool keepdims);
-Array mean(const Array &arr, int axis, bool keepdims);
+Array var(const Array &input, bool keepdims);
+Array var(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array var(const Array &input, int axis, bool keepdims);
+Array mean(const Array &input, bool keepdims);
+Array mean(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array mean(const Array &input, int axis, bool keepdims);
 Array flatten(const Array &input);
 Array conv2d(const Array &input, const Array &weight,
              const std::pair<int, int> &stride,
              const std::pair<int, int> &padding,
              const std::pair<int, int> &dilation);
+// activations
+Array relu(const Array &input);
+
 std::vector<int> get_conv2d_output_shape(const std::vector<int> &in_shape,
                                          const std::vector<int> &weight_shape,
                                          const std::pair<int, int> &stride,

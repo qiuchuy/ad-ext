@@ -207,7 +207,6 @@ class MaximumPrimitive : public UnaryPrimitive {
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     std::string toString() const override;
 };
 class MinimumPrimitive : public UnaryPrimitive {
@@ -217,7 +216,6 @@ class MinimumPrimitive : public UnaryPrimitive {
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     std::string toString() const override;
 };
 
@@ -227,7 +225,6 @@ class MultiplyPrimitive : public UnaryPrimitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 };
@@ -255,10 +252,8 @@ class SqrtPrimitive : public UnaryPrimitive {
   public:
     explicit SqrtPrimitive(bool reverse = false) : reverse_(reverse){};
     SqrtPrimitive() = default;
-
     void eval(const std::vector<Array> &inputs, Array &output) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
@@ -277,7 +272,6 @@ class ReducePrimitive : public UnaryPrimitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 
@@ -294,7 +288,6 @@ class GetElementsNumberPrimitive : public UnaryPrimitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 
@@ -310,9 +303,7 @@ class SigmoidPrimitive : public UnaryPrimitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-
     std::string toString() const override;
 };
 
@@ -322,7 +313,6 @@ class ConvolutionPrimitive : public UnaryPrimitive {
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 
@@ -330,8 +320,17 @@ class ConvolutionPrimitive : public UnaryPrimitive {
     std::vector<int> stride_;
     std::vector<int> padding_;
     std::vector<int> dilation_;
+};
 
-}; // namespace ainl::core
+class ReluPrimitive : public UnaryPrimitive {
+  public:
+    ReluPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
 
 class LoopPrimitive : public Primitive {
   public:

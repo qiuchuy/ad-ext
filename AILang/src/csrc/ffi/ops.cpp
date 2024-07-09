@@ -32,7 +32,6 @@ void initOps(py::module_ &m) {
     m.def("transpose", [](const std::shared_ptr<ainl::core::Tracer> &input) {
         return unary<ainl::core::TransposePrimitive>({input});
     });
-
     m.def("matmul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                        const std::shared_ptr<ainl::core::Tracer> &rhs) {
         return unary<ainl::core::MatMulPrimitive>({lhs, rhs});
@@ -48,6 +47,9 @@ void initOps(py::module_ &m) {
                        const std::pair<int, int> &dilation = {1, 1}) {
         return unary<ainl::core::ConvolutionPrimitive>(
             {inputValue, weightValue});
+    });
+    m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+        return unary<ainl::core::ReluPrimitive>({input});
     });
     m.def(
         "while_loop",

@@ -33,6 +33,8 @@ class StableHLOLoweringPass : public Pass, public IRVisitor {
     void visit(ReturnOpPtr node) override;
     void visit(TransposePtr node) override;
     void visit(ConvolutionPtr node) override;
+    void visit(ReluPtr node) override;
+
     void visit(MatmulPtr node) override;
     void visit(AddPtr node) override;
     // void visit(BroadcastPtr node) override;

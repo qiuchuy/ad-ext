@@ -621,6 +621,42 @@ void ConvolutionPrimitive::jit(const std::vector<JITTracer> &inputs,
 void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                JVPTracer &output) {}
 std::string ConvolutionPrimitive::toString() const { return "Conv"; }
+// Relu
+
+void ReluPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void ReluPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[ReluPrimitive::evalCPU] expects exactly one input array.");
+    }
+    auto input = inputs[0];
+    // TODO
+}
+
+void ReluPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[ReluPrimitive::jit] expects exactly one input tracer.");
+    }
+
+    auto input = inputs[0];
+    std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value()};
+    auto outputType = ir::resolveContract("relu", inputType);
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("relu", module, outputType, inputValues));
+    output.setTracer(unary<ReluPrimitive>({input.tracer()}));
+}
+
+void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
+std::string ReluPrimitive::toString() const { return "relu"; }
 
 // GetElementsNumberPrimitive
 void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,

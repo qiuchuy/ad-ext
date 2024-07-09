@@ -208,6 +208,8 @@ class Relu : public Node {
     explicit operator std::string() const override;
     // 在需要将 Relu 类的对象转换为字符串类型时使用。
     ValuePtr getValue() const { return inValue; }
+    void accept(IRVisitor *visitor) override;
+    std::vector<int> getShape();
 
   private:
     ValuePtr inValue;
@@ -244,7 +246,8 @@ class Maxpool2d : public Node {
 NODE_PTR_TYPE_DECL(Convolution)
 class Convolution : public Node {
   public:
-    Convolution(const TypePtr &nodeType, const ValuePtr &inputValue, const ValuePtr &weightValue);
+    Convolution(const TypePtr &nodeType, const ValuePtr &inputValue,
+                const ValuePtr &weightValue);
     NodeKind kind() override { return Node::NodeKind::CONVOLUTION; }
     void accept(IRVisitor *visitor) override;
     explicit operator std::string() const override;

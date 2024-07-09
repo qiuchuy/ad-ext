@@ -13,6 +13,8 @@ class IRVisitor {
     virtual void visit(ConvolutionPtr node) = 0;
     virtual void visit(MatmulPtr node) = 0;
     virtual void visit(AddPtr node) = 0;
+    virtual void visit(ReluPtr node) = 0;
+
     // virtual void visit(BroadcastPtr node) = 0;
     virtual void visit(CompareOpPtr node) = 0;
     virtual void visit(IfOpPtr node) = 0;

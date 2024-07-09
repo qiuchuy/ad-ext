@@ -155,7 +155,7 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
     // builder.getF32Type()); auto rhsType = RankedTensorType::get({1, 1, 5, 5},
     // builder.getF32Type());
     auto resultType =
-        mlir::Type::get({1, 112, 112, 5}, builder.getF32Type());
+        mlir::RankedTensorType::get({1, 112, 112, 5}, builder.getF32Type());
 
     auto windowStrides = builder.getI64ArrayAttr({2, 2});
 
@@ -166,8 +166,8 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
     auto padding =
         mlir::DenseIntElementsAttr::get(paddingvectorType, padding_values);
 
-    auto lhsDilation = builder.getI64ArrayAttr({1, 1});     // lhs_dilation
-    auto rhsDilation = builder.getI64ArrayAttr({1, 1});     // rhs_dilation
+    auto lhsDilation = builder.getI64ArrayAttr({1, 1});      // lhs_dilation
+    auto rhsDilation = builder.getI64ArrayAttr({1, 1});      // rhs_dilation
     auto window_reversal = builder.getBoolArrayAttr({0, 0}); // window_reversal
 
     int64_t inputBatchDimension = 0;
@@ -204,6 +204,23 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
         conv_dimension_numbers_attr, 1, 1, precision_config);
     insertValueMapping(node, op);
 }
+void StableHLOLoweringPass::visit(ReluPtr node) {
+    mlir::Value value = valueMap[node->getValue()];
+    create allzero constant auto shape = node->getShape();
+    // TODO after fix not support
+    mlir::Type elementType = builder.getF32Type();
+    llvm::SmallVector<float, 4> zero_values = {0, 0, 0, 0};
+    llvm::SmallVector<int64_t, 2> zero_shape = {2, 2}; // 2x2 shape
+    auto zeroVectorType = mlir::VectorType::get(zero_shape, elementType);
+    auto zeroAttr = mlir::DenseFPElementsAttr::get(zeroVectorType, zero_values);
+    mlir::Value zeroValue = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(), zeroAttr);
+    auto op = builder.create<mlir::stablehlo::MaxOp>(builder.getUnknownLoc(),
+                                                     value, zeroValue);
+
+    insertValueMapping(node, op);
+}
+
 // void StableHLOLoweringPass::visit(BroadcastPtr node) {
 //     mlir::Value value = valueMap[node->getValue()];
 //     auto shape = node->getShape();
@@ -267,8 +284,8 @@ mlir::RankedTensorType
 createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
     if (auto tensorType = std::dynamic_pointer_cast<TensorType>(type)) {
-        // may need to change the data type used in `getConcreteShape` to avoid
-        // this
+        // may need to change the data type used in `getConcreteShape` to
+        // avoid this
         std::vector<int64_t> shape;
         shape.reserve(tensorType->getConcreteShape().size());
 

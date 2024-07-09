@@ -1,8 +1,10 @@
 import numpy as np
 import ailang as al
+import pytest
 
 
 class TestOP:
+    @pytest.mark.add
     def test_unary_op_add(self):
         @al.jit(debug=False)
         def g(x, y):
@@ -18,7 +20,8 @@ class TestOP:
         iree_result = g(c, d)
         print("Result: ", iree_result)
 
-    def test_unary_opp_conv(self):
+    @pytest.mark.conv
+    def test_unary_op_conv(self):
         @al.jit(debug=False)
         def g(x, y):
             return al.conv2d(x, y, (2, 2), (0, 0), (1, 1))
@@ -28,4 +31,15 @@ class TestOP:
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         iree_result = g(c, d)
+        print("Result: ", iree_result)
+
+    @pytest.mark.relu
+    def test_unary_op_conv(self):
+        @al.jit(debug=True)
+        def g(x):
+            return al.relu(x)
+
+        a = np.ones((2, 2), dtype=np.float32)
+        b = al.from_numpy(a)
+        iree_result = g(b)
         print("Result: ", iree_result)

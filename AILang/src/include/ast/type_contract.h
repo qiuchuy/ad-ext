@@ -11,6 +11,7 @@ TypePtr matmulTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 TypePtr transposeTypeContract(const TypePtr &inType);
 TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 TypePtr reluTypeContract(const TypePtr &inType);
+
 // TypePtr broadcastTypeContract(const TypePtr &inType);
 TypePtr maxpool2dTypeContract(const TypePtr &inType);
 TypePtr convolutionTypeContract(const TypePtr &inputType,

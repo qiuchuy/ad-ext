@@ -122,7 +122,17 @@ Relu::operator std::string() const {
     return getName() + " = ailang::relu(" + getValue()->getName() +
            "):" + std::string(*getType());
 }
+void Relu::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+
+std::vector<int> Relu::getShape() {
+    if (auto tensorType =
+            dynamic_cast<TensorType *>(inValue->getType().get())) {
+        return tensorType->getConcreteShape();
+    } else {
+        throw std::runtime_error("ReLU input is not a tensor");
+    }
+}
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
