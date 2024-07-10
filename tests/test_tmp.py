@@ -22,7 +22,7 @@ class TestOP:
 
     @pytest.mark.conv
     def test_unary_op_conv(self):
-        @al.jit(debug=True)
+        @al.jit(debug=False)
         def g(x, y):
             return al.conv2d(x, y, (2, 2), (0, 0), (1, 1))
 
