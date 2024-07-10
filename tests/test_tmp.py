@@ -22,7 +22,7 @@ class TestOP:
 
     @pytest.mark.conv
     def test_unary_op_conv(self):
-        @al.jit(debug=False)
+        @al.jit(debug=True)
         def g(x, y):
             return al.conv2d(x, y, (2, 2), (0, 0), (1, 1))
 
@@ -34,7 +34,7 @@ class TestOP:
         print("Result: ", iree_result)
 
     @pytest.mark.relu
-    def test_unary_op_conv(self):
+    def test_unary_op_relu(self):
         @al.jit(debug=True)
         def g(x):
             return al.relu(x)

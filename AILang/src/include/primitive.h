@@ -5,6 +5,7 @@
 #include "device.h"
 #include "ir/node.h"
 
+
 namespace ainl::core {
 
 class Array;

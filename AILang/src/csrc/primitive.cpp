@@ -16,7 +16,6 @@
 #include "ops.h"
 #include "trace.h"
 #include "transformation.h"
-
 namespace ainl::core {
 
 void UnaryPrimitive::eval(const std::vector<Array> &inputs,

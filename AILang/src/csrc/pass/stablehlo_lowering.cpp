@@ -206,7 +206,7 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
 }
 void StableHLOLoweringPass::visit(ReluPtr node) {
     mlir::Value value = valueMap[node->getValue()];
-    create allzero constant auto shape = node->getShape();
+    auto shape = node->getShape();
     // TODO after fix not support
     mlir::Type elementType = builder.getF32Type();
     llvm::SmallVector<float, 4> zero_values = {0, 0, 0, 0};
