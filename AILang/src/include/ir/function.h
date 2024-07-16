@@ -59,6 +59,22 @@ public:
                           const TypePtr &returnType = nullptr) {
     return std::make_shared<ALModule>("", inputType, returnType);
   }
+  template <typename NodeType, typename... ARGS>
+  NodePtr create(ARGS &&... args) {
+    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
+    Node->graph = graph;
+    Node->block = (BlockPtr)(graph->endBlock->prev);
+    graph->insertNodeAtEnd(Node);
+    return Node;
+  }
+  template <typename NodeType, typename... ARGS>
+  NodePtr createAfter(NodePtr after, ARGS &&... args) {
+    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
+    Node->graph = graph;
+    Node->block = after->block;
+    graph->insertNodeAfter(after, Node);
+    return Node;
+  }
   std::vector<ValuePtr> getParams();
   std::vector<TypePtr> getParamTypes();
   TypePtr getReturnType();

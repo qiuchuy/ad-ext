@@ -3,7 +3,7 @@ import numpy as np
 import ailang as al
 
 from typing import Union, Tuple, Callable
-from ailang import Tensor, ModuleNode, array
+from ailang import Tensor, ModuleNode, array, transform
 
 from iree import compiler as ireec
 from iree import runtime as ireert
@@ -58,6 +58,37 @@ def jit(debug: bool = False):
 
         return jitted_f
     return _jit
+
+def grad(f: Union[Callable]):
+    """
+    Decorator that performs automatic differentiation of a function.
+
+    Args:
+        f (Callable): The function to differentiate.
+
+    Returns:
+        The decorated function, which is the gradient of the original function.
+    """
+    def _grad(*args, **kwargs):
+        module = al.transform(f, args, al.grad_impl)
+        print(module)
+        compiled_flatbuffer = ireec.tools.compile_str(
+            module,
+            input_type="stablehlo",
+            target_backends=["llvm-cpu"],
+            #extra_args=["--mlir-print-ir-before-all"],
+            #output_mlir_debuginfo=True,
+        )
+        config = ireert.Config("local-task")
+        ctx = ireert.SystemContext(config=config)
+        vm_module = ireert.VmModule.copy_buffer(ctx.instance, compiled_flatbuffer)
+        ctx.add_vm_module(vm_module)
+        numpy_args = [np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in args]
+        grads = [np.ones_like(arg) for arg in numpy_args]
+        _jitted_f = ctx.modules.main[f.__name__]
+        results = _jitted_f(*(numpy_args + grads)).to_host()
+        return results
+    return _grad
 
 def compile(f: Union[Callable]):
     """

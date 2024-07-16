@@ -85,6 +85,9 @@ public:
     return Node;
   }
 
+  std::vector<ValuePtr> getOperands();
+  ValuePtr getOperand(size_t index);
+
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
   virtual void accept(IRVisitor *visitor);
   virtual std::vector<ValuePtr> getOutputValues() { return {this}; }
@@ -126,6 +129,7 @@ public:
     return ssm.str();
   }
   void accept(IRVisitor *visitor) override;
+  void addParam(ValuePtr Param, const TypePtr &Type, size_t Index);
 
 private:
   std::vector<ValuePtr> params;
@@ -148,6 +152,7 @@ public:
   }
 
   ValuePtr getReturnValue() const { return value; }
+  void setReturnValue(ValuePtr Value) { value = Value; }
 
 private:
   ValuePtr value;

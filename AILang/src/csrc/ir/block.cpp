@@ -28,6 +28,9 @@ Block::Block(int idx) {
 std::vector<ValuePtr> Block::getParams() { return paramNode->getParams(); }
 void Block::insertNodeAtHead(NodePtr Node) { beginNode->insertAfter(Node); }
 void Block::insertNodeAtEnd(NodePtr Node) { endNode->insertBefore(Node); }
+void Block::insertNodeAfter(NodePtr After, NodePtr Node) {
+  After->insertAfter(Node);
+}
 
 Value::ValueKind Block::getValueKind() const { return Value::ValueKind::Block; }
 

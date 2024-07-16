@@ -40,6 +40,22 @@ void Node::addBlock() {
   this->block->endBlock->insertBefore(block);
 }
 
+std::vector<ValuePtr> Node::getOperands() {
+  std::vector<ValuePtr> Operands;
+  for (auto &Use : useList) {
+    Operands.push_back(Use->used);
+  }
+  return Operands;
+}
+
+ValuePtr Node::getOperand(size_t index) {
+  if (index >= useList.size()) {
+    throw std::runtime_error(
+        "Index out of range when getting IR Node operand.");
+  }
+  return useList[index]->used;
+}
+
 void Node::addBlockWithParam(NodePtr param, GraphPtr graph) {
   auto newBlock = new Block(Block::blockCount++);
   newBlock->paramNode = dynamic_cast<ParamPtr>(param);
@@ -64,13 +80,22 @@ void Node::addBlockWithParam(NodePtr param, GraphPtr graph) {
 void Node::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 Param::Param(std::vector<ValuePtr> params, const TypePtr &type) : Node(type) {
+  for (size_t i = 0; i < params.size(); i++) {
+    setUse(params[i], i);
+  }
   this->params = std::move(params);
   this->contentType = type;
 }
 
 void Param::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+void Param::addParam(ValuePtr param, const TypePtr &type, size_t Index) {
+  setUse(param, Index);
+  params.push_back(param);
+}
+
 ReturnOp::ReturnOp(const ValuePtr &value) : Node(value->getType()) {
+  setUse(value, 0);
   this->value = value;
 }
 
@@ -79,6 +104,8 @@ void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
   this->lhs = lhs;
   this->rhs = rhs;
 }
@@ -102,6 +129,7 @@ Relu::operator std::string() const {
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
+  setUse(inValue, 0);
   this->inValue = inValue;
 }
 Transpose::operator std::string() const {
@@ -200,6 +228,8 @@ WhileOp::operator std::string() const {
 CompareOp::CompareOp(const TypePtr &nodeType, const ValuePtr &lhs,
                      const ValuePtr &rhs, CompareOp::CompareType op)
     : Node(nodeType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
   this->lhs = lhs;
   this->rhs = rhs;
   this->op = op;
@@ -216,12 +246,17 @@ void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
            const ModulePtr &falseBranch, const ValuePtr &cond)
     : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond) {
+  // setUse(cond, 0);
   if (nodeType->isTupleType()) {
     auto types = asType<TupleType>(nodeType)->getTypes();
     for (const auto &type : types) {
+      auto *OutNode = Node::create(type);
+      OutNode->setUse(cond, 0);
       outs.push_back(Node::create(type));
     }
   } else {
+    auto *OutNode = Node::create(nodeType);
+    OutNode->setUse(cond, 0);
     outs.push_back(Node::create(nodeType));
   }
 }

@@ -67,6 +67,15 @@ public:
     insertNodeAtEnd(Node);
     return Node;
   }
+
+  template <typename NodeType, typename... ARGS>
+  NodePtr createAfter(NodePtr after, ARGS &&... args) {
+    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
+    Node->graph = shared_from_this();
+    Node->block = after->block;
+    insertNodeAfter(after, Node);
+    return Node;
+  }
   Value::ValueKind getValueKind() const override;
   friend class Node;
   friend class ALModule;
@@ -129,7 +138,7 @@ public:
 
 private:
   void insertNodeAtEnd(NodePtr Node);
-
+  void insertNodeAfter(NodePtr After, NodePtr Node);
   BlockPtr beginBlock;
   BlockPtr endBlock;
 };

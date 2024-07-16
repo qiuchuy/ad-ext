@@ -40,6 +40,13 @@ bool Value::operator!=(const Value &other) const { return !(*this == other); }
 
 void Value::insertUseAtEnd(UsePtr use) { endUse->insertBefore(use); }
 
+std::vector<ValuePtr> Value::getUsers() {
+  std::vector<ValuePtr> Users;
+  for (auto *Use = beginUse; Use != endUse; Use = (UsePtr)Use->next)
+    Users.push_back(Use->user);
+  return Users;
+}
+
 std::string Value::getName() const { return prefix + name; }
 
 TypePtr createTypePtrForValues(const std::vector<Value *> &values) {

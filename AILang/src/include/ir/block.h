@@ -20,6 +20,7 @@ public:
   std::vector<ValuePtr> getParams();
   void insertNodeAtHead(NodePtr Node);
   void insertNodeAtEnd(NodePtr Node);
+  void insertNodeAfter(NodePtr After, NodePtr Node);
   friend class Node;
   friend class Graph;
   explicit operator std::string() const override;

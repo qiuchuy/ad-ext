@@ -135,6 +135,8 @@ public:
   ~Value() override = default;
   TypePtr getType() const { return type; }
 
+  std::vector<ValuePtr> getUsers();
+
   virtual ValueKind getValueKind() const { return ValueKind::Value; }
   virtual std::string getName() const;
 

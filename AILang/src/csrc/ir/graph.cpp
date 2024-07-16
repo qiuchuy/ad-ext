@@ -23,6 +23,15 @@ void Graph::insertNodeAtEnd(NodePtr Node) {
   }
 }
 
+void Graph::insertNodeAfter(NodePtr Node, NodePtr After) {
+  if (this->endBlock->prev != this->beginBlock) {
+    ((BlockPtr)(this->endBlock->prev))->insertNodeAfter(Node, After);
+  } else {
+    // throw AINLError(
+    // "Attempting to add a node without first creating a block.");
+  }
+}
+
 std::string Graph::str() {
   std::string str;
   for (auto bb = (BlockPtr)beginBlock->next; bb->next != nullptr;

@@ -1,5 +1,5 @@
 ---
 Language: Cpp
 BasedOnStyle: llvm
-IndentWidth: 4
+IndentWidth: 2
 UseTab: Never

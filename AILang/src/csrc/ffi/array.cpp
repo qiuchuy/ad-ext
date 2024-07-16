@@ -1,4 +1,5 @@
 #include <pybind11/cast.h>
+#include <pybind11/functional.h>
 #include <pybind11/pytypes.h>
 #include <sstream>
 
@@ -6,6 +7,7 @@
 #include "dtype.h"
 #include "ffi/array.h"
 #include "ops.h"
+#include "pass/autodiff.h"
 #include "pass/stablehlo_lowering.h"
 #include "primitive.h"
 #include "trace.h"
@@ -376,6 +378,87 @@ void initArray(py::module &_m) {
       },
       "jit compilation of python function", py::arg(), py::arg(),
       py::arg("target") = "ailang");
+
+  _m.def(
+      "jit_impl",
+      [](py::function &f,
+         std::vector<std::shared_ptr<ainl::core::Tracer>> inputs,
+         const std::string &target) {
+        auto func =
+            [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
+            -> std::vector<std::shared_ptr<ainl::core::Tracer>> {
+          py::tuple posArgs = py::tuple(inputs.size());
+          for (size_t i = 0; i < inputs.size(); i++) {
+            posArgs[i] = inputs[i];
+          }
+          auto result = f(*posArgs);
+          if (py::isinstance<py::tuple>(result) ||
+              py::isinstance<py::list>(result)) {
+            std::vector<std::shared_ptr<ainl::core::Tracer>> resultVec;
+            for (auto &item : result.cast<py::tuple>()) {
+              resultVec.push_back(
+                  item.cast<std::shared_ptr<ainl::core::Tracer>>());
+            }
+            return resultVec;
+          } else {
+            auto containedResult =
+                std::vector<std::shared_ptr<ainl::core::Tracer>>();
+            containedResult.push_back(
+                result.cast<std::shared_ptr<ainl::core::Tracer>>());
+            return containedResult;
+          }
+        };
+
+        auto module =
+            jit(func, py::str(getattr(f, "__name__")), target, inputs);
+        if (target == "ailang") {
+          return py::cast(module);
+        } else if (target == "mlir") {
+          return py::cast(ir::StableHLOLowering(module));
+        } else {
+          throw std::invalid_argument("Invalid jit target");
+        }
+      },
+      "jit compilation of python function", py::arg(), py::arg(),
+      py::arg("target") = "ailang");
+
+  _m.def(
+      "transform",
+      [](py::function &f,
+         std::vector<std::shared_ptr<ainl::core::Tracer>> inputs,
+         std::function<void(ir::ModulePtr)> TransformationCallback) {
+        auto func =
+            [&f](std::vector<std::shared_ptr<ainl::core::Tracer>> inputs)
+            -> std::vector<std::shared_ptr<ainl::core::Tracer>> {
+          py::tuple posArgs = py::tuple(inputs.size());
+          for (size_t i = 0; i < inputs.size(); i++) {
+            posArgs[i] = inputs[i];
+          }
+
+          auto result = f(*posArgs);
+
+          if (py::isinstance<py::tuple>(result) ||
+              py::isinstance<py::list>(result)) {
+            std::vector<std::shared_ptr<ainl::core::Tracer>> resultVec;
+            for (auto &item : result.cast<py::tuple>()) {
+              resultVec.push_back(
+                  item.cast<std::shared_ptr<ainl::core::Tracer>>());
+            }
+            return resultVec;
+          } else {
+            std::vector<std::shared_ptr<ainl::core::Tracer>> containedResult;
+            containedResult.push_back(
+                result.cast<std::shared_ptr<ainl::core::Tracer>>());
+            return containedResult;
+          }
+        };
+        auto Module =
+            jit(func, py::str(getattr(f, "__name__")), "ailang", inputs);
+        TransformationCallback(Module);
+        return py::cast(ir::StableHLOLowering(Module));
+      },
+      "trace and transform of python functions written in AINL.", py::arg("f"),
+      py::arg("inputs"), py::arg("TransformationCallback"));
 }
 
 } // namespace ainl::ffi
