@@ -11,6 +11,11 @@ void AutoDiffPass::init() {
       std::make_shared<TransposeDifferentialPattern>(shared_from_this());
 }
 
+bool AutoDiffPass::isLinearizedDAGNode(NodePtr Node) {
+  return std::find(LinearizedNodes.begin(), LinearizedNodes.end(), Node) !=
+         LinearizedNodes.end();
+}
+
 void AutoDiffPass::run(ModulePtr Module) {
   runForwardDiff(Module);
   runTranspose(Module);
@@ -34,8 +39,8 @@ void AutoDiffPass::runTranspose(ModulePtr Module) {
   for (auto *Block : *Graph) {
     std::vector<NodePtr> Nodes;
     for (auto *Node : *Block) {
-      if (TangentTable.find(Node) != TangentTable.end())
-        Nodes.push_back((NodePtr)TangentTable[Node]);
+      if (isLinearizedDAGNode(Node))
+        Nodes.push_back(Node);
     }
     std::reverse(Nodes.begin(), Nodes.end());
     for (const auto &Node : Nodes) {
@@ -74,6 +79,14 @@ void AutoDiffPass::ForwardDifferentialPattern::setTransposeRelation(
   }
 }
 
+void AutoDiffPass::ForwardDifferentialPattern::addLinearizedNode(ValuePtr Node) {
+  if (Pass) {
+    Pass->LinearizedNodes.push_back(Node);
+  } else {
+    throw std::runtime_error("AutoDiffPass is not initialized.");
+  }
+}
+
 ValuePtr
 AutoDiffPass::ForwardDifferentialPattern::getLinearValue(ValuePtr Node) {
   if (Pass) {
@@ -89,6 +102,7 @@ void AutoDiffPass::ForwardDifferentialPattern::visit(ParamPtr Node) {
     auto *LinearParam =
         new Graph::GraphParam(Params[i]->getType(), i + Params.size());
     Node->addParam(LinearParam, LinearParam->getType(), i + Params.size());
+    addLinearizedNode(LinearParam);
     setLinearRelation(Params[i], LinearParam);
   }
 }
@@ -98,6 +112,7 @@ void AutoDiffPass::ForwardDifferentialPattern::visit(ReturnOpPtr Node) {
   auto *Value = Node->getReturnValue();
   auto *Tangent = getLinearValue(Value);
   Node->setReturnValue(Tangent);
+  addLinearizedNode(Node);
   setTransposeRelation(Tangent, Tangent);
 }
 
@@ -109,9 +124,37 @@ void AutoDiffPass::ForwardDifferentialPattern::visit(TransposePtr Node) {
   setLinearRelation(Node, LinearNode);
 }
 
-void AutoDiffPass::ForwardDifferentialPattern::visit(MatmulPtr Node) {}
+void AutoDiffPass::ForwardDifferentialPattern::visit(MatmulPtr Node) {
+  auto *Left = Node->getLHS();
+  auto *Right = Node->getRHS();
+  auto *LeftLinear = getLinearValue(Left);
+  auto *RightLinear = getLinearValue(Right);
+  auto *LeftLinearNode = Pass->Module->createAfter<Matmul>(
+      Node, LeftLinear->getType(), LeftLinear, Right);
+  auto *RightLinearNode = Pass->Module->createAfter<Matmul>(
+      LeftLinearNode, RightLinear->getType(), Left, RightLinear);
+  auto *LinearNode =
+      Pass->Module->createAfter<Add>(RightLinearNode, LeftLinearNode->getType(),
+                                     LeftLinearNode, RightLinearNode);
+  setLinearRelation(Node, LinearNode);
+}
 void AutoDiffPass::ForwardDifferentialPattern::visit(CompareOpPtr Node) {}
 void AutoDiffPass::ForwardDifferentialPattern::visit(IfOpPtr Node) {}
+void AutoDiffPass::ForwardDifferentialPattern::visit(AddPtr Node) {
+  auto *Left = Node->getLHS();
+  auto *Right = Node->getRHS();
+  auto *LeftLinear = getLinearValue(Left);
+  auto *RightLinear = getLinearValue(Right);
+  auto *LeftLinearNode = Pass->Module->createAfter<Add>(
+      Node, LeftLinear->getType(), LeftLinear, Right);
+  auto *RightLinearNode = Pass->Module->createAfter<Add>(
+      LeftLinearNode, RightLinear->getType(), Left, RightLinear);
+  auto *LinearNode =
+      Pass->Module->createAfter<Add>(RightLinearNode, LeftLinearNode->getType(),
+                                     LeftLinearNode, RightLinearNode);
+  setLinearRelation(Node, LinearNode);
+
+}
 
 void AutoDiffPass::TransposeDifferentialPattern::visit(NodePtr Node) {}
 void AutoDiffPass::TransposeDifferentialPattern::visit(ParamPtr Node) {
@@ -125,11 +168,12 @@ void AutoDiffPass::TransposeDifferentialPattern::visit(TransposePtr Node) {
   auto *Value = Node->getValue();
   auto *Adjoint = Pass->AdjointTable[Value];
   auto *LinearTranspose =
-      Pass->Module->createAfter<Transpose>(Node, Adjoint->getType(), Adjoint);
+      Pass->Module->create<Transpose>(Adjoint->getType(), Adjoint);
   Pass->AdjointTable[Node] = LinearTranspose;
 }
 void AutoDiffPass::TransposeDifferentialPattern::visit(MatmulPtr Node) {}
 void AutoDiffPass::TransposeDifferentialPattern::visit(CompareOpPtr Node) {}
 void AutoDiffPass::TransposeDifferentialPattern::visit(IfOpPtr Node) {}
+void AutoDiffPass::TransposeDifferentialPattern::visit(AddPtr Node) {}
 
 } // namespace ainl::ir

@@ -158,6 +158,20 @@ private:
   ValuePtr value;
 };
 
+NODE_PTR_TYPE_DECL(Add)
+class Add : public Node {
+public:
+  Add(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::ADD; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  ValuePtr getLHS() const { return lhs; }
+  ValuePtr getRHS() const { return rhs; }
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+};
+
 NODE_PTR_TYPE_DECL(Matmul)
 class Matmul : public Node {
 public:

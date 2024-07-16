@@ -55,6 +55,12 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
   std::vector<ValuePtr> lhsShape = lhsTensorType->getShape();
   std::vector<ValuePtr> rhsShape = rhsTensorType->getShape();
   // std::vector<ValuePtr> addShape = std::move(lhsShape);
+
+  // numpy-style broadcast
+  
+
+
+
   if (lhsShape.size() != rhsShape.size()) {
     throw ainl::core::AINLError(
         "two tensor dont not have the same dim for add.");

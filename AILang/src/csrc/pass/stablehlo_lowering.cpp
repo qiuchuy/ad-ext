@@ -9,6 +9,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
@@ -137,6 +138,14 @@ void StableHLOLoweringPass::visit(MatmulPtr node) {
   llvm::SmallVector<mlir::NamedAttribute, 4> attributes;
   auto op = builder.create<mlir::stablehlo::MulOp>(builder.getUnknownLoc(),
                                                    inputs, attributes);
+  insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(AddPtr node) {
+  llvm::SmallVector<mlir::Value, 4> inputs = {valueMap[node->getLHS()],
+                                              valueMap[node->getRHS()]};
+  auto op =
+      builder.create<mlir::stablehlo::AddOp>(builder.getUnknownLoc(), inputs);
   insertValueMapping(node, op);
 }
 

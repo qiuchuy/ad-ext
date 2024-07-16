@@ -20,6 +20,7 @@ public:
 
 private:
   void init();
+  bool isLinearizedDAGNode(NodePtr Node);
   class ForwardDifferentialPattern : public IRVisitor {
   public:
     ForwardDifferentialPattern(std::shared_ptr<AutoDiffPass> Pass);
@@ -30,10 +31,12 @@ private:
     void visit(MatmulPtr Node) override;
     void visit(CompareOpPtr Node) override;
     void visit(IfOpPtr Node) override;
+    void visit(AddPtr Node) override;
 
   private:
     void setLinearRelation(ValuePtr Node, ValuePtr LinearNode);
     void setTransposeRelation(ValuePtr Node, ValuePtr TransposeNode);
+    void addLinearizedNode(ValuePtr Node);
     ValuePtr getLinearValue(ValuePtr Node);
     std::shared_ptr<AutoDiffPass> Pass;
   };
@@ -48,6 +51,7 @@ private:
     void visit(MatmulPtr Node) override;
     void visit(CompareOpPtr Node) override;
     void visit(IfOpPtr Node) override;
+    void visit(AddPtr Node) override;
 
   private:
     std::shared_ptr<AutoDiffPass> Pass;
@@ -57,6 +61,7 @@ private:
   void runTranspose(ModulePtr Module);
   std::map<ValuePtr, ValuePtr> TangentTable;
   std::map<ValuePtr, ValuePtr> AdjointTable;
+  std::vector<ValuePtr> LinearizedNodes;
   std::shared_ptr<ForwardDifferentialPattern> ForwardPattern;
   std::shared_ptr<TransposeDifferentialPattern> TransposePattern;
   ModulePtr Module;

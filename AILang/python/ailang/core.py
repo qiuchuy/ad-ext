@@ -40,7 +40,7 @@ def jit(debug: bool = False):
             compiled_flatbuffer = ireec.tools.compile_str(
                 module,
                 input_type="stablehlo",
-                target_backends=["vmvx"],
+                target_backends=["llvm-cpu"],
                 #extra_args=["--mlir-print-ir-before-all"],
                 #output_mlir_debuginfo=True,
             )
@@ -72,6 +72,7 @@ def grad(f: Union[Callable]):
     def _grad(*args, **kwargs):
         module = al.transform(f, args, al.grad_impl)
         print(module)
+        """
         compiled_flatbuffer = ireec.tools.compile_str(
             module,
             input_type="stablehlo",
@@ -88,6 +89,7 @@ def grad(f: Union[Callable]):
         _jitted_f = ctx.modules.main[f.__name__]
         results = _jitted_f(*(numpy_args + grads)).to_host()
         return results
+        """
     return _grad
 
 def compile(f: Union[Callable]):

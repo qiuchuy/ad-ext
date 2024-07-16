@@ -101,6 +101,22 @@ ReturnOp::ReturnOp(const ValuePtr &value) : Node(value->getType()) {
 
 void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// Add
+Add::Add(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+  this->lhs = lhs;
+  this->rhs = rhs;
+}
+
+void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Add::operator std::string() const {
+  return getName() + " = " + getLHS()->getName() + " + " + getRHS()->getName() +
+         ": " + std::string(*getType());
+}
+
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
