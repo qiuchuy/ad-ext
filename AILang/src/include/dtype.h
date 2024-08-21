@@ -7,28 +7,30 @@
 namespace ainl::core {
 
 struct Dtype {
-  enum class DataType {
-    Any = 0,
-    VoidType,
-    BoolType,
-    Int8Type,
-    Int16Type,
-    Int32Type,
-    Int64Type,
-    Float32Type,
-    Float64Type,
-  };
-  DataType type;
-  Dtype() = default;
-  constexpr explicit Dtype(DataType type) : type(type) {}
-  bool operator<(const Dtype &other) const;
-  std::string toString() const;
-  size_t hash() const;
-  friend std::ostream &operator<<(std::ostream &os, const Dtype &dtype);
-  bool operator==(const Dtype &other) const;
+    enum class DataType {
+        Any = 0,
+        VoidType,
+        BoolType,
+        Int8Type,
+        Int16Type,
+        Int32Type,
+        Int64Type,
+        Float32Type,
+        Float64Type,
+    };
+    DataType type;
+    Dtype() = default;
+    constexpr explicit Dtype(DataType type) : type(type) {}
+    bool operator<(const Dtype &other) const;
+    std::string toString() const;
+    size_t hash() const;
+    friend std::ostream &operator<<(std::ostream &os, const Dtype &dtype);
+    bool operator==(const Dtype &other) const;
 };
 
-template <typename T> struct TypeToDtype { operator Dtype(); };
+template <typename T> struct TypeToDtype {
+    operator Dtype();
+};
 
 static constexpr Dtype Any = Dtype(Dtype::DataType::Any);
 static constexpr Dtype Bool = Dtype(Dtype::DataType::BoolType);

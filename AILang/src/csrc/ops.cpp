@@ -62,10 +62,9 @@ Array add(const Array &lhs, const Array &rhs) {
     Dtype output_type = lhs.dtype() < rhs.dtype() ? lhs.dtype() : rhs.dtype();
     auto inputs =
         broadcastArrays({astype(lhs, output_type), astype(rhs, output_type)});
-
     std::vector<int> output_shape = inputs[0].shape();
-    return Array(output_type, std::make_shared<AddPrimitive>(),
-                 std::move(inputs), output_shape,
+    return Array(output_type, std::make_shared<AddPrimitive>(), inputs,
+                 output_shape,
                  getStridesFromShape(output_shape, dtypeSize(output_type)));
 }
 
@@ -74,7 +73,7 @@ Array astype(const Array &input, Dtype dtype) {
         return input;
     return Array(dtype, std::make_shared<AsTypePrimitive>(dtype), {input},
                  input.shape(),
-                 getStridesFromShape(input.shape(), input.itemsize()));
+                 getStridesFromShape(input.shape(), dtypeSize(dtype)));
 }
 
 Array maximum(const Array &lhs, const Array &rhs) {

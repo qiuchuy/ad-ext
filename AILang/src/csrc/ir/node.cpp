@@ -124,7 +124,6 @@ Relu::operator std::string() const {
 }
 void Relu::accept(IRVisitor *visitor) { visitor->visit(this); }
 
-
 std::vector<int> Relu::getShape() {
     if (auto tensorType =
             dynamic_cast<TensorType *>(inValue->getType().get())) {
@@ -177,15 +176,23 @@ Convolution::operator std::string() const {
 void Convolution::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // BatchNorm2d
-BatchNorm2d::BatchNorm2d(const TypePtr &opType, const ValuePtr &inValue)
+BatchNorm2d::BatchNorm2d(const TypePtr &opType, const ValuePtr &inValue,
+                         const ValuePtr &scale, const ValuePtr &offset,
+                         const ValuePtr &mean, const ValuePtr &variance)
     : Node(opType) {
     this->inValue = inValue;
+    this->scale = scale;
+    this->offset = offset;
+    this->mean = mean;
+    this->variance = variance;
 }
 BatchNorm2d::operator std::string() const {
     return getName() + " = ailang::batchnorm2d(" + getValue()->getName() +
            "):" + std::string(*getType());
 }
+void BatchNorm2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// whileOp
 WhileOp::WhileOp(const TypePtr &nodeType, const ModulePtr &condGraph,
                  const ModulePtr &bodyGraph, const std::vector<ValuePtr> &args)
     : Node(nodeType), cond(condGraph), body(bodyGraph), inits(std::move(args)) {

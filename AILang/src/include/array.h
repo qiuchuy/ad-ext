@@ -101,7 +101,7 @@ class Array : public Tracer {
         data_ = std::make_shared<Data>(
             buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
         dtype_ = dtype;
-        size_ = sizeof(T);
+        size_ = sizeof(T); 
         shape_ = std::make_shared<std::vector<int>>();
         *(reinterpret_cast<T *>(ptr_)) = val;
         stride_ = std::make_shared<std::vector<int>>();
@@ -216,6 +216,7 @@ class Array : public Tracer {
     std::vector<int> strides() const { return *(stride_); }
     size_t size() const { return size_; }
     size_t itemsize() const { return dtypeSize(dtype_); }
+    size_t data_size() const { return size_ / itemsize(); }
     Dtype dtype() const { return dtype_; }
     size_t ndim() const { return shape_->size(); }
 

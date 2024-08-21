@@ -42,6 +42,10 @@ Array conv2d(const Array &input, const Array &weight,
              const std::pair<int, int> &stride,
              const std::pair<int, int> &padding,
              const std::pair<int, int> &dilation);
+Array batch_norm_inference();
+Array broadcast_in_dims(Array &input, int out_dim_size,
+                        std::vector<int> broadcast_dimensions);
+                        
 // activations
 Array relu(const Array &input);
 

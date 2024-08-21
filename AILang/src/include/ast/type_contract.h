@@ -35,7 +35,7 @@ class TypeContract {
         if (functions.find(name) == functions.end()) {
             throw std::runtime_error("The type contract of operator [" + name +
                                      "] has not been registered yet.");
-        }
+        } 
         return functions[name](std::move(args));
     }
 

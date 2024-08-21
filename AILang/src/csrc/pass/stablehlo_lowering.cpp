@@ -1,3 +1,4 @@
+#include "ir/node.h"
 #include "ir/value.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
@@ -9,14 +10,19 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
 
+#include "mlir/Support/LLVM.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/reference/Api.h"
 
@@ -147,28 +153,24 @@ void StableHLOLoweringPass::visit(AddPtr node) {
                                                      inputs, attributes);
     insertValueMapping(node, op);
 }
+
 void StableHLOLoweringPass::visit(ConvolutionPtr node) {
     mlir::Value input = valueMap[node->getInputValue()];
     mlir::Value weight = valueMap[node->getWeightValue()];
-
-    // auto lhsType = RankedTensorType::get({1, 1, 28, 28},
-    // builder.getF32Type()); auto rhsType = RankedTensorType::get({1, 1, 5, 5},
-    // builder.getF32Type());
+    std::initializer_list<int64_t> padding_args = {0, 0, 0, 0};
+    auto paddingTensorType =
+        mlir::RankedTensorType::get({2, 2}, builder.getIntegerType(64));
+    mlir::DenseIntElementsAttr padding =
+        mlir::DenseIntElementsAttr::get(paddingTensorType, padding_args);
     auto resultType =
-        mlir::RankedTensorType::get({1, 112, 112, 5}, builder.getF32Type());
+        mlir::RankedTensorType::get({1, 2, 2, 1}, builder.getF32Type());
+    llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
 
-    auto windowStrides = builder.getI64ArrayAttr({2, 2});
-
-    auto elementType = builder.getIntegerType(64);
-    llvm::SmallVector<int64_t, 4> padding_values = {0, 0, 0, 0};
-    llvm::SmallVector<int64_t, 2> padding_shape = {2, 2}; // 2x2 shape
-    auto paddingvectorType = mlir::VectorType::get(padding_shape, elementType);
-    auto padding =
-        mlir::DenseIntElementsAttr::get(paddingvectorType, padding_values);
-
-    auto lhsDilation = builder.getI64ArrayAttr({1, 1});      // lhs_dilation
-    auto rhsDilation = builder.getI64ArrayAttr({1, 1});      // rhs_dilation
-    auto window_reversal = builder.getBoolArrayAttr({0, 0}); // window_reversal
+    auto windowStrides = builder.getDenseI64ArrayAttr({4, 4});
+    auto lhsDilation = builder.getDenseI64ArrayAttr({2, 2}); // lhs_dilation
+    auto rhsDilation = builder.getDenseI64ArrayAttr({1, 1}); // rhs_dilation
+    auto window_reversal =
+        builder.getDenseBoolArrayAttr({0, 0}); // window_reversal
 
     int64_t inputBatchDimension = 0;
     int64_t inputFeatureDimension = 3;
@@ -182,7 +184,7 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
     int64_t outputFeatureDimension = 3;
     llvm::SmallVector<int64_t, 2> outputSpatialDimensions = {1, 2};
 
-    // 创建 ConvDimensionNumbersAttr
+    //  ConvDimensionNumbersAttr
     auto conv_dimension_numbers_attr =
         mlir::stablehlo::ConvDimensionNumbersAttr::get(
             builder.getContext(), inputBatchDimension, inputFeatureDimension,
@@ -199,25 +201,53 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
              builder.getContext(),
              mlir::stablehlo::Precision::DEFAULT)}); // precision_config
     auto op = builder.create<mlir::stablehlo::ConvolutionOp>(
-        builder.getUnknownLoc(), resultType, input, weight, windowStrides,
+        builder.getUnknownLoc(), resultTypes, input, weight, windowStrides,
         padding, lhsDilation, rhsDilation, window_reversal,
         conv_dimension_numbers_attr, 1, 1, precision_config);
     insertValueMapping(node, op);
 }
 void StableHLOLoweringPass::visit(ReluPtr node) {
     mlir::Value value = valueMap[node->getValue()];
+
     auto shape = node->getShape();
-    // TODO after fix not support
-    mlir::Type elementType = builder.getF32Type();
-    llvm::SmallVector<float, 4> zero_values = {0, 0, 0, 0};
-    llvm::SmallVector<int64_t, 2> zero_shape = {2, 2}; // 2x2 shape
-    auto zeroVectorType = mlir::VectorType::get(zero_shape, elementType);
-    auto zeroAttr = mlir::DenseFPElementsAttr::get(zeroVectorType, zero_values);
+    std::vector<int64_t> int64Shape(shape.size());
+    std::transform(shape.begin(), shape.end(), int64Shape.begin(),
+                   [](int val) { return static_cast<int64_t>(val); });
+
+    auto tensorType = mlir::RankedTensorType::get(
+        mlir::ArrayRef<int64_t>(int64Shape),
+        mlir::FloatType::getF32(builder.getContext()));
+    auto getConstValue = [&](double val) {
+        return mlir::DenseElementsAttr::get(
+            tensorType, builder.getFloatAttr(tensorType.getElementType(), val));
+    };
+    auto zeroConstant = getConstValue(0);
+
     mlir::Value zeroValue = builder.create<mlir::stablehlo::ConstantOp>(
-        builder.getUnknownLoc(), zeroAttr);
+        builder.getUnknownLoc(), zeroConstant);
     auto op = builder.create<mlir::stablehlo::MaxOp>(builder.getUnknownLoc(),
                                                      value, zeroValue);
 
+    insertValueMapping(node, op);
+}
+void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
+    // input operand scale offset
+
+    mlir::Value value = valueMap[node->getValue()];
+    mlir::Value scale = valueMap[node->getScale()];
+    mlir::Value mean = valueMap[node->getMean()];
+    mlir::Value offset = valueMap[node->getOffset()];
+    mlir::Value variance = valueMap[node->getVariance()];
+
+    // // same shape
+    auto resultType = value.getType();
+    llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
+    mlir::FloatAttr epsilon = builder.getF32FloatAttr(0.000001);
+    mlir::IntegerAttr feature_index = builder.getI64IntegerAttr(2);
+
+    auto op = builder.create<mlir::stablehlo::BatchNormInferenceOp>(
+        builder.getUnknownLoc(), resultTypes, value, scale, offset, mean,
+        variance, epsilon, feature_index);
     insertValueMapping(node, op);
 }
 

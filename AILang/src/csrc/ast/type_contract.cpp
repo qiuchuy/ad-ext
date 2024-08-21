@@ -222,11 +222,9 @@ TypePtr convolutionTypeContract(const TypePtr &inputType,
     int O = weightConcreateShape[3];
     assert(C == I);
     int H_out =
-        (H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h +
-        1;
+        (H + 2 * padding_h - dilation_h * (kernel_size_h - 1)) / stride_h + 1;
     int W_out =
-        (W + 2 * padding_w - dilation_w * (kernel_size_w - 1) ) / stride_w +
-        1;
+        (W + 2 * padding_w - dilation_w * (kernel_size_w - 1)) / stride_w + 1;
     std::vector<ValuePtr> outTensorShape = {
         Literal::create(N),
         Literal::create(H_out),
@@ -237,20 +235,22 @@ TypePtr convolutionTypeContract(const TypePtr &inputType,
     return TensorType::create(elementType, outTensorShape);
 }
 
-TypePtr batchnorm2dTypeContract(const TypePtr &inType) {
-    if (!inType->isTensorType()) {
+TypePtr batchnorm2dTypeContract(const TypePtr &inType, const TypePtr &scaleType,
+                                const TypePtr &offsetType,
+                                const TypePtr &meanType,
+                                const TypePtr &varianceType) {
+    // same shape as input
+    if (!inType->isTensorType() || !scaleType->isTensorType() ||
+        !offsetType->isTensorType() || !meanType->isTensorType() ||
+        !varianceType->isTensorType()) {
         throw ainl::core::AINLError(
             "batchnorm2d operator only applies to tensors.");
     }
     TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
     std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
     std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
-    if (inConcreateShape.size() != 4) {
-        throw ainl::core::AINLError(
-            "expected 4d (N,C,H,W) input dim is not matched.");
-    }
     TypePtr elementType = inTensorType->getElementType();
-    return TensorType::create(elementType, inTensorShape);
+    return TensorType::create(elementType, inTensorShape); // with same shape
 }
 
 TypePtr compareTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
@@ -339,11 +339,12 @@ TypeContract::TypeContract() {
         return convolutionTypeContract((args[0]), (args[1]));
     });
     registerContract("batchnorm2d", [](std::vector<TypePtr> args) {
-        if (args.size() != 1) {
+        if (args.size() != 5) {
             throw ainl::core::AINLError(
                 "Invalid argument number for operator bacthnorm2d");
         }
-        return batchnorm2dTypeContract((args[0]));
+        return batchnorm2dTypeContract(args[0], args[1], args[2], args[3],
+                                       args[4]);
     });
     registerContract("eq", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {

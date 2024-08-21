@@ -28,6 +28,9 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
     shape_ = std::make_shared<std::vector<int>>(shape);
     stride_ = std::make_shared<std::vector<int>>(stride);
     idx_ = 0;
+    size_ =
+        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
+        dtypeSize(dtype);
 }
 
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,

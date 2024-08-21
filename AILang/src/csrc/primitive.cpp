@@ -4,13 +4,13 @@
 #include <cstddef>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 
 #include "array.h"
 #include "ast/node_contract.h"
 #include "ast/type_contract.h"
 #include "ir/container.h"
 #include "ir/function.h"
-#include "ir/graph.h"
 #include "ir/type.h"
 #include "ir/value.h"
 #include "ops.h"
@@ -61,26 +61,6 @@ std::string IdentityPrimitive::toString() const { return "Identity"; }
 
 void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
-}
-
-void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-    if (inputs.size() != 2) {
-        throw std::invalid_argument(
-            "[AddPrimitive::evalCPU] expects exactly two input arrays.");
-    }
-
-    auto input1 = inputs[0];
-    auto input2 = inputs[1];
-    auto input1Shape = input1.shape();
-    auto input2Shape = input2.shape();
-    if (input1Shape != input2Shape) {
-        throw std::invalid_argument(
-            "[AddPrimitive::evalCPU] input arrays must have the same shape, "
-            "broadcasting is not supported yet.");
-    }
-
-    auto size = std::accumulate(input1Shape.begin(), input1Shape.end(), 1,
-                                std::multiplies<int>());
 }
 
 void AddPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -303,23 +283,6 @@ void TransposePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
 
-void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
-                                 Array &output) {
-    if (inputs.size() != 1) {
-        throw std::invalid_argument(
-            "[TransposePrimitive::evalCPU] expects exactly one input array.");
-    }
-
-    auto input = inputs[0];
-    auto shape = input.shape();
-    auto stride = input.strides();
-    std::reverse(shape.begin(), shape.end());
-    std::reverse(stride.begin(), stride.end());
-    auto size =
-        std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
-    output.copyBySharing(input, size, 0, shape, stride);
-}
-
 void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
     if (inputs.size() != 1) {
@@ -355,37 +318,6 @@ void MatMulPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
 
-void MatMulPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-    if (inputs.size() != 2) {
-        throw std::invalid_argument(
-            "[MatMulPrimitive::evalCPU] expects exactly two input arrays.");
-    }
-
-    auto input1 = inputs[0];
-    auto input2 = inputs[1];
-    auto input1Shape = input1.shape();
-    auto input2Shape = input2.shape();
-    if (input1Shape.size() != 2 || input2Shape.size() != 2) {
-        throw std::invalid_argument(
-            "[MatMulPrimitive::evalCPU] input arrays must have exactly two "
-            "dimensions.");
-    }
-
-    if (input1Shape[1] != input2Shape[0]) {
-        throw std::invalid_argument(
-            "[MatMulPrimitive::evalCPU] the second dimension of the first "
-            "input "
-            "array must be the same as the first dimension of the second input "
-            "array.");
-    }
-
-    auto outputShape = {input1Shape[0], input2Shape[1]};
-    auto size = std::accumulate(outputShape.begin(), outputShape.end(), 1,
-                                std::multiplies<int>());
-    // this is wrong, please update it
-    output.copyBySharing(input1, size, 0, outputShape);
-}
-
 void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
                           JITTracer &output) {
     if (inputs.size() != 2) {
@@ -418,12 +350,7 @@ std::string MatMulPrimitive::toString() const { return "MatMul"; }
 void AsTypePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
-void AsTypePrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-    assert(inputs.size() == 1);
-    auto &in = inputs[0];
-    output.setDataWithBuffer(allocator::malloc(output.size()), dtype_,
-                             output.shape(), output.strides());
-}
+
 void AsTypePrimitive::jit(const std::vector<JITTracer> &inputs,
                           JITTracer &output) {}
 void AsTypePrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -434,22 +361,7 @@ std::string AsTypePrimitive::toString() const { return "AsType"; }
 void BroadcastPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
     evalCPU(inputs, output);
 }
-void BroadcastPrimitive::evalCPU(const std::vector<Array> &inputs,
-                                 Array &output) {
-    if (inputs.size() != 1) {
-        std::invalid_argument("[BroadCastPrimitive::evalCPU] expects "
-                              "exactly one input array.");
-    }
-    if (output.size() == 0) {
-        std::invalid_argument(
-            "[BroadCastPrimitive::evalCPU] output size can't be zero. ");
-    }
-    const auto &input = inputs[0];
-    output.setDataWithBuffer(allocator::malloc(output.size()), output.dtype(),
-                             shape_, output.strides());
-    // TODO
-    // BroadCast_dispatch(input, output);
-}
+
 void BroadcastPrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
     // if (inputs.size() != 2) {
@@ -656,7 +568,89 @@ void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string ReluPrimitive::toString() const { return "relu"; }
+// Mean
 
+void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[MeanPrimitive::evalCPU] expects exactly one input array.");
+    }
+    auto input = inputs[0];
+}
+
+void MeanPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[MeanPrimitive::jit] expects exactly one input tracer.");
+    }
+    auto input = inputs[0];
+    std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value()};
+    auto outputType = ir::resolveContract("mean", inputType);
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("mean", module, outputType, inputValues));
+    output.setTracer(unary<MeanPrimitive>({input.tracer()}));
+}
+
+void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
+std::string MeanPrimitive::toString() const { return "mean"; }
+
+// BatchnormInferencePrimitive
+void BatchnormInferencePrimitive::eval(const std::vector<Array> &inputs,
+                                       Array &output) {
+    evalCPU(inputs, output);
+}
+
+void BatchnormInferencePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                          Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument("[BatchnormInferencePrimitive::evalCPU] "
+                                    "expects exactly one input array.");
+    }
+    auto input = inputs[0];
+    throw std::invalid_argument(
+        "[batchnorm infernece prmitive] not implemnet yet.");
+}
+
+void BatchnormInferencePrimitive::jit(const std::vector<JITTracer> &inputs,
+                                      JITTracer &output) {
+    if (inputs.size() != 5) {
+        throw std::invalid_argument("[BatchnormInferencePrimitive::jit] "
+                                    "expects exactly one input tracer.");
+    }
+    auto input = inputs[0];
+    auto scale = inputs[1];
+    auto offset = inputs[2];
+    auto mean = inputs[3];
+    auto variance = inputs[4];
+    std::vector<ir::TypePtr> inputType = {
+        input.value()->getType(), scale.value()->getType(),
+        offset.value()->getType(), mean.value()->getType(),
+        variance.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value(), scale.value(),
+                                             offset.value(), mean.value(),
+                                             variance.value()};
+    auto outputType = ir::resolveContract("batchnorm2d", inputType);
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("batchnorm2d", module, outputType, inputValues));
+    output.setTracer(unary<BatchnormInferencePrimitive>({input.tracer()}));
+}
+
+void BatchnormInferencePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                                      JVPTracer &output) {}
+
+std::string BatchnormInferencePrimitive::toString() const {
+    return "BatchnormInference";
+}
 // GetElementsNumberPrimitive
 void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,
                                       Array &out) {

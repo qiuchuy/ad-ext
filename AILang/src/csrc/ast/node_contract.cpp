@@ -63,12 +63,17 @@ ValuePtr convolutionNodeContract(const ModulePtr &module,
 }
 ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
-                                 const ValuePtr &inValue) {
-    if (!inValue->getType()->isTensorType()) {
-        throw ainl::core::AINLError(
-            "batchnorm2d operator only applies to tensors.");
+                                 const std::vector<ValuePtr> &inValues) {
+    for (auto inValue : inValues) {
+        if (!inValue->getType()->isTensorType()) {
+            throw ainl::core::AINLError(
+                "batchnorm2d operator only applies to special tensors.");
+        }
     }
-    return module->getGraph()->create<BatchNorm2d>(nodeType, inValue);
+
+    return module->getGraph()->create<BatchNorm2d>(nodeType, inValues[0],
+                                                   inValues[1], inValues[2],
+                                                   inValues[3], inValues[4]);
 }
 
 ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
@@ -151,11 +156,11 @@ NodeContract::NodeContract() {
     registerContract("batchnorm2d", [](const ModulePtr &module,
                                        const TypePtr &nodeType,
                                        std::vector<ValuePtr> args) {
-        if (args.size() != 1) {
+        if (args.size() != 5) {
             throw ainl::core::AINLError(
                 "Invalid argument number for operator batchnorm2d");
         }
-        return batchnorm2dNodeContract(module, nodeType, (args[0]));
+        return batchnorm2dNodeContract(module, nodeType, {args[0],args[1],args[2],args[3],args[4]});
     });
     registerContract("loop", [](const ModulePtr &module,
                                 const TypePtr &nodeType,

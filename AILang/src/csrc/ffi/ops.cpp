@@ -32,6 +32,10 @@ void initOps(py::module_ &m) {
     m.def("transpose", [](const std::shared_ptr<ainl::core::Tracer> &input) {
         return unary<ainl::core::TransposePrimitive>({input});
     });
+    m.def("broadcast_to", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                             const std::vector<int> &shape_) {
+        return unary<ainl::core::BroadcastPrimitive>({input}, shape_);
+    });
     m.def("matmul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                        const std::shared_ptr<ainl::core::Tracer> &rhs) {
         return unary<ainl::core::MatMulPrimitive>({lhs, rhs});
@@ -51,6 +55,19 @@ void initOps(py::module_ &m) {
     m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
         return unary<ainl::core::ReluPrimitive>({input});
     });
+    m.def("batchnorm2d",
+          [](const std::shared_ptr<ainl::core::Tracer> &input,
+             const std::shared_ptr<ainl::core::Tracer> &scale,
+             const std::shared_ptr<ainl::core::Tracer> &offset,
+             const std::shared_ptr<ainl::core::Tracer> &mean,
+             const std::shared_ptr<ainl::core::Tracer> &variance) {
+              return unary<ainl::core::BatchnormInferencePrimitive>(
+                  {input, scale, offset, mean, variance});
+          });
+
+    // m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    //     return ainl::core::mean();
+    // });
     m.def(
         "while_loop",
         [](const py::function &cond, const py::function &body,

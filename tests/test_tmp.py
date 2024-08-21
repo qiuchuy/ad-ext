@@ -2,19 +2,54 @@ import numpy as np
 import ailang as al
 import pytest
 
+def convert(x : np.array):
+    return al.from_numpy(x)
 
 class TestOP:
+    @pytest.mark.batchnorm2d
+    def test_batchnorm2d(self):
+# // %operand: [
+# //            [[1.0, 2.0], [3.0, 4.0]],
+# //            [[3.0, 4.0], [1.0, 2.0]]
+# //           ]
+# // %scale: [1.0, 1.0]
+# // %offset: [1.0, 1.0]
+# // %mean: [2.0, 3.0]
+# // %variance: [1.0, 1.0]
+        operand = convert(np.array([[[1.0, 2.0], [3.0, 4.0]],
+            [[3.0, 4.0], [1.0, 2.0]]], dtype=np.float32))
+        offset = convert(np.array([1.0, 1.0], dtype=np.float32))
+        scale = convert(np.array([1.0, 1.0], dtype=np.float32))
+        mean = convert(np.array([1.0, 2.0], dtype=np.float32))
+        variance = convert(np.array([1.0, 1.0], dtype=np.float32))
+        
+        @al.jit(debug=False)
+        def g(operand, scale, offset, mean, variance):
+            return al.batchnorm2d(operand, scale, offset, mean, variance)  
+        res = g(operand, scale, offset, mean, variance)
+        print("eval res", res)
+    
+    @pytest.mark.eval
+    def test_eval(self):
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.add(c, d)
+        print("eval res", e)
+
     @pytest.mark.add
     def test_unary_op_add(self):
-        @al.jit(debug=False)
+        @al.jit(debug=True)
         def g(x, y):
             b = al.transpose(y)
             a = al.transpose(b)
             z = al.transpose(a)
-            return al.add(x, z)
+            m = al.add(x, z)
+            return m
 
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
-        b = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = np.array([[1, 4], [3, 7]], dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         iree_result = g(c, d)
@@ -26,8 +61,8 @@ class TestOP:
         def g(x, y):
             return al.conv2d(x, y, (2, 2), (0, 0), (1, 1))
 
-        a = np.ones((1, 224, 224, 3), dtype=np.float32)
-        b = np.ones((3, 3, 3, 5), dtype=np.float32)
+        a = np.ones((1, 4, 4, 1), dtype=np.float32)
+        b = np.ones((3, 3, 1, 1), dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         iree_result = g(c, d)
@@ -39,7 +74,7 @@ class TestOP:
         def g(x):
             return al.relu(x)
 
-        a = np.ones((2, 2), dtype=np.float32)
+        a = np.array([[1, 2], [-1, 0]], dtype=np.float32)
         b = al.from_numpy(a)
         iree_result = g(b)
         print("Result: ", iree_result)

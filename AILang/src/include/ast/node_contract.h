@@ -29,7 +29,7 @@ ValuePtr convolutionNodeContract(const ModulePtr &module,
                                  const ValuePtr &weightValue);
 ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
-                                 const ValuePtr &inValue);
+                                 const std::vector<ValuePtr> &inValues);
 ValuePtr whileLoopNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                                const ModulePtr &condGraph,
                                const ModulePtr &bodyGraph,

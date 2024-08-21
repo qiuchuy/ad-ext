@@ -5,7 +5,6 @@
 #include "device.h"
 #include "ir/node.h"
 
-
 namespace ainl::core {
 
 class Array;
@@ -326,6 +325,24 @@ class ConvolutionPrimitive : public UnaryPrimitive {
 class ReluPrimitive : public UnaryPrimitive {
   public:
     ReluPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
+class MeanPrimitive  : public UnaryPrimitive {
+  public:
+    MeanPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
+class BatchnormInferencePrimitive : public UnaryPrimitive{
+  public:
+    BatchnormInferencePrimitive() = default;
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;

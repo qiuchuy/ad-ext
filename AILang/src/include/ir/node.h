@@ -262,13 +262,25 @@ class Convolution : public Node {
 NODE_PTR_TYPE_DECL(BatchNorm2d)
 class BatchNorm2d : public Node {
   public:
-    BatchNorm2d(const TypePtr &nodeType, const ValuePtr &inValue);
+    BatchNorm2d(const TypePtr &nodeType, const ValuePtr &inValue,
+                const ValuePtr &scale, const ValuePtr &offset,
+                const ValuePtr &mean, const ValuePtr &variance);
     NodeKind kind() override { return Node::NodeKind::BATCHNORM2d; }
+    void accept(IRVisitor *visitor) override;
     explicit operator std::string() const override;
     ValuePtr getValue() const { return inValue; }
+    ValuePtr getMean() const { return mean; }
+    ValuePtr getScale() const { return scale; }
+    ValuePtr getVariance() const { return variance; }
+    ValuePtr getOffset() const { return offset; }
 
-  private:
+
+  private:  
     ValuePtr inValue;
+    ValuePtr scale;
+    ValuePtr offset;
+    ValuePtr mean;
+    ValuePtr variance;
 };
 
 NODE_PTR_TYPE_DECL(WhileOp)
