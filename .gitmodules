@@ -1,6 +1,6 @@
-[submodule "third_party/iree"]
-	path = third_party/iree
-	url = https://github.com/openxla/iree.git
-[submodule "third_party/oneDNN"]
-	path = third_party/oneDNN
-	url = https://github.com/oneapi-src/oneDNN.git
+[submodule "third_party/stablehlo"]
+	path = third_party/stablehlo
+	url = https://github.com/openxla/stablehlo
+[submodule "third_party/llvm-project"]
+	path = third_party/llvm-project
+	url = https://github.com/llvm/llvm-project
