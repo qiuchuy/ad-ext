@@ -1,133 +1,136 @@
-# Licensed under the Apache License v2.0 with LLVM Exceptions.
-# See https://llvm.org/LICENSE.txt for license information.
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+cmake_minimum_required(VERSION 3.18)
 
-# IREE requires a minimum CMake version of 3.21 but may be possible to get
-# working with older versions.
-cmake_minimum_required(VERSION 3.21...3.24)
-
-#-------------------------------------------------------------------------------
-# Project configuration
-#-------------------------------------------------------------------------------
-
-project(iree-template-compiler-cmake VERSION 1.0 LANGUAGES CXX C)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-#-------------------------------------------------------------------------------
-# IREE subproject configuration
-#-------------------------------------------------------------------------------
-
-# Enable building the IREE compiler.
-#
-# Projects depending on the compiler need three main components:
-#   1. Compiler API header files from `iree/compiler/bindings/c/iree/compiler/`
-#   2. The compiler shared library loader
-#       - From CMake, link against `iree_compiler_bindings_c_loader`
-#       - Or build `iree/compiler/bindings/c/iree/compiler/loader/` using the
-#         toolchain of your choosing (no dependencies, reasonable to just fork)
-#   3. The compiler shared library (libIREECompiler.so / IREECompiler.dll)
-#       - This can be built from source with CMake
-#       - This can also be installed from a release (such as a Python wheel)
-set(IREE_BUILD_COMPILER ON)
-
-# Disable optional IREE components.
-set(IREE_BUILD_TESTS OFF)
-set(IREE_BUILD_SAMPLES OFF)
-
-# By default the IREE runtime will contain all of the HAL drivers that are able
-# to be built based on available dependencies (CUDA SDK, etc).
-# Users should only include the drivers they actually plan on using to save on
-# compile time and binary size. This sample uses the local synchronous CPU
-# executor and the embedded ELF loader.
-# set(IREE_HAL_DRIVER_DEFAULTS OFF)
-# set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
-# set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
-# set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
-
-# The CMake variant specified will change some runtime behavior such as
-# including asserts in Debug builds. There's a group of features commonly used
-# in size-sensitive builds (bare-metal embedded, web, etc) that can be easily
-# toggled with the IREE_SIZE_OPTIMIZED flag. This disables debug features like
-# VM disassembly traces, iree_status_t string messages, and statistics. Each of
-# these is available for independent control and decoupled from the CMake
-# variant to allow users to decide; for example helpful string error messages
-# can be useful in MinSizeRel variants and may be worth the ~4KB binary size
-# tradeoff to some users while others may be trying to get the runtime to fit
-# in a 128KB ROM and will choose to disable them.
-#
-# Here as an example we tie IREE_SIZE_OPTIMIZED to the MinSizeRel variant. This
-# means that Debug and RelWithDebInfo builds will get nice error messages while
-# MinSizeRel will just get status code names.
-if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
-  set(IREE_SIZE_OPTIMIZED ON)
+if(POLICY CMP0116)
+# Introduced in cmake 3.20
+# https://cmake.org/cmake/help/latest/policy/CMP0116.html
+  cmake_policy(SET CMP0116 OLD)
 endif()
 
-# Include the IREE submodule CMake project as a dependency.
-# This will make the IREE targets available for use by subsequent commands.
-#
-# Note that EXCLUDE_FROM_ALL will prevent the IREE targets from showing in the
-# CMake target listing by default - for most users this is fine but if deeply
-# integrating it can be useful to drop it.
-add_subdirectory(third_party/iree EXCLUDE_FROM_ALL)
-# add_subdirectory(third_party/oneDNN)
-# # Set the oneDNN root directory
-# set(ONEDNN_ROOT ${CMAKE_SOURCE_DIR}/third_party/oneDNN)
-# message(STATUS "oneDNN root directory: ${ONEDNN_ROOT}")
+set(CMAKE_CXX_STANDARD 17)
 
-# # Set the oneDNN build directory
-# set(ONEDNN_BUILD_DIR ${CMAKE_BINARY_DIR}/third_party/oneDNN)
-# message(STATUS "oneDNN build directory: ${ONEDNN_BUILD_DIR}")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-#-------------------------------------------------------------------------------
-# Add oneDNN library
-#-------------------------------------------------------------------------------
+project(ailang)
 
-# macro(include_directories_with_host_compiler_before)
-#     foreach(inc_dir ${ARGV})
-#         include_directories(BEFORE ${inc_dir})
-#         append_host_compiler_options(CMAKE_CXX_FLAGS "-I${inc_dir}" BEFORE)
-#     endforeach()
-# endmacro()
+# Options
+option(AILANG_BUILD_PYTHON_MODULE "Build Python AILang bindings" ON)
 
-# Add oneDNN include directories
-# include_directories(${ONEDNN_ROOT}/include)
+# Default build type
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Default build type: Release")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
 
-# Add oneDNN library directory
-# link_directories(${ONEDNN_BUILD_DIR}/src)
-
-# # Add oneDNN include directories
-# include_directories(/root/AILang/build/install/include)
-
-# # Add oneDNN library directory
-# link_directories(/root/AILang/build/install/lib)
+# Compiler flags
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_FORMAT_MACROS  -fPIC -std=gnu++17")
 
 
-# Set the DNNLROOT variable (change this to the appropriate path if necessary)
-# set(DNNLROOT /usr/local)
-# # Add the include directories for oneDNN
-# include_directories(${DNNLROOT}/include)
+# #########
+# LLVM
+# #########
+if(NOT MLIR_DIR)
+  set(MLIR_DIR ${LLVM_LIBRARY_DIR}/cmake/mlir)
+endif()
 
-# # # Add oneDNN library directory
-# link_directories(${DNNLROOT}/lib)
-#-------------------------------------------------------------------------------
-# Application
-#-------------------------------------------------------------------------------
+# MLIR
+find_package(MLIR REQUIRED CONFIG PATHS ${MLIR_DIR})
 
-# Add subdirectory for AILang
-add_subdirectory(AILang)
+list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
-# find_package(dnnl REQUIRED)
+include(TableGen) # required by AddMLIR
+include(AddLLVM)
+include(AddMLIR)
 
-# # Print a message if dnnl is found
-# if(dnnl_FOUND)
-#     message(STATUS "dnnl found")
-# else()
-#     message(FATAL_ERROR "dnnl not found")
-# endif()
+function(add_ailang_object name)
+  cmake_parse_arguments(ARG "" "" "DEPENDS;LINK_LIBS" ${ARGN})
+  add_library(${name} OBJECT)
+  target_sources(${name}
+    PRIVATE ${ARG_UNPARSED_ARGUMENTS}
+    INTERFACE $<TARGET_OBJECTS:${name}>
+  )
 
-# # Link oneDNN library to AILang
-# target_link_libraries(libailang PRIVATE dnnl)
 
-# Ensure that libailang depends on iree-compile
-# add_dependencies(libailang dnnl)
-add_dependencies(libailang iree-compile)
+  # add_library(${name} OBJECT ${ARG_UNPARSED_ARGUMENTS})
+  if(ARG_DEPENDS)
+    add_dependencies(${name} ${ARG_DEPENDS})
+  endif()
+  if(ARG_LINK_LIBS)
+    target_link_libraries(${name} PUBLIC ${ARG_LINK_LIBS})
+  endif()
+endfunction(add_ailang_object)
+
+set_property(GLOBAL PROPERTY AILANG_LIBS "")
+function(add_ailang_library name)
+  set_property(GLOBAL APPEND PROPERTY AILANG_LIBS ${name})
+  add_ailang_object(${name} ${ARGN})
+  llvm_update_compile_flags(${name})
+endfunction(add_ailang_library)
+
+# Disable warnings that show up in external code (gtest;pybind11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden")
+
+include_directories(".")
+include_directories(${MLIR_INCLUDE_DIRS})
+include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include) 
+include_directories(${PROJECT_SOURCE_DIR}/third_party)
+include_directories(${PROJECT_BINARY_DIR}/third_party) 
+
+# link_directories(${LLVM_LIBRARY_DIR})
+add_subdirectory(include)
+add_subdirectory(lib)
+
+# find_package(PythonLibs REQUIRED)
+set(AILANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(AILANG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
+# -----
+
+# ------
+if(AILANG_BUILD_PYTHON_MODULE)
+  message(STATUS "Adding Python module")
+  set(PYTHON_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/python/src)
+  include_directories(${PYTHON_SRC_PATH})
+
+  if(PYTHON_INCLUDE_DIRS)
+    # We have PYTHON_INCLUDE_DIRS set--this is what we expect when building
+    # using pip install.
+    include_directories(${PYTHON_INCLUDE_DIRS})
+    include_directories(${PYBIND11_INCLUDE_DIR})
+  else()
+    # Otherwise, we might be building from top CMakeLists.txt directly.
+    # Try to find Python and pybind11 packages.
+    find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
+    find_package(pybind11 CONFIG REQUIRED HINTS "${Python3_SITELIB}")
+    include_directories(${Python3_INCLUDE_DIRS})
+    include_directories(${pybind11_INCLUDE_DIR})
+    link_directories(${Python3_LIBRARY_DIRS})
+    link_libraries(${Python3_LIBRARIES})
+    add_link_options(${Python3_LINK_OPTIONS})
+  endif()
+
+
+  get_property(ailang_libs GLOBAL PROPERTY AILANG_LIBS)
+  set(AILANG_LIBRARIES
+    ${ailang_libs}
+  )
+  add_library(ailang SHARED ${PYTHON_SRC_PATH}/main.cc)
+
+  # Link ailang with its dependencies
+  target_link_libraries(ailang PUBLIC ${AILANG_LIBRARIES})
+  target_link_options(ailang PRIVATE ${LLVM_LDFLAGS})
+endif()
+
+if (UNIX AND NOT APPLE)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,ALL")
+endif()
+
+if(AILANG_BUILD_PYTHON_MODULE AND NOT WIN32)
+  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  target_link_libraries(ailang PRIVATE ${PYTHON_LDFLAGS})
+endif()
+
+

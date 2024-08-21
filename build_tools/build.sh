@@ -1,7 +1,6 @@
 #!/bin/bash
 # build with IREE Compiler & Runtime API
 git submodule update --init --recursive
-make clean
 
 cmake_options=(
     CMAKE_BUILD_TYPE=RelWithDebInfo
