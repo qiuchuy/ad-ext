@@ -10,5 +10,4 @@ iree-compiler = { version = "20240226.813", numpy = "Any", PyYAML = "Any" }
 iree-runtime = { version = "20240226.813", numpy = "Any", PyYAML = "Any" }
 pybind11 = "2.10.4"
 numpy = "1.26.4"
-nanobind = "2.1.0"
 pytest = { version = "7.4.0", iniconfig = "Any", packaging = "Any", pluggy = ">=0.12,<2.0" }

@@ -1,0 +1,6 @@
+gast
+iree-compiler
+iree-runtime
+pybind11
+numpy
+pytest

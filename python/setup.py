@@ -23,8 +23,6 @@ def get_build_type():
         return "Release"
 
 # ---- cmake extension ----
-
-
 def get_base_dir():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
@@ -81,13 +79,10 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         ninja_dir = shutil.which('ninja')
-        # lit is used by the test suite
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.path)))
         # create build directories
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        # python directories
-        python_include_dir = sysconfig.get_path("platinclude")
         # third party packages
         thirdparty_cmake_args = get_thirdparty_packages([get_llvm_package_info()])
         cmake_args = [
@@ -97,7 +92,7 @@ class CMakeBuild(build_ext):
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", "-DLLVM_ENABLE_WERROR=ON",
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir, 
             "-DAILANG_BUILD_PYTHON_MODULE=ON", "-DPython3_EXECUTABLE:FILEPATH=" + sys.executable,
-            "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON", "-DPYTHON_INCLUDE_DIRS=" + python_include_dir,
+            "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON",  
         ]
         cmake_args.extend(thirdparty_cmake_args)
 
@@ -134,30 +129,33 @@ class CMakeBuild(build_ext):
 # ---- package data ---
 class Package(NamedTuple):
     package: str
-    rev: str
     include_flag: str
     lib_flag: str
+    syspath_var_name: str
 
 # llvm
 def get_llvm_package_info():
-    system_suffix = 'ubuntu-x64'
-    llvm_hash_path = os.path.join(get_base_dir(), "cmake", "llvm-hash.txt")
-    with open(llvm_hash_path, "r") as llvm_hash_file:
-        rev = llvm_hash_file.read(8)
-    return Package("llvm-project", rev, "LLVM_INCLUDE_DIRS", "LLVM_LIBRARY_DIR")
+    # system_suffix = 'ubuntu-x64'
+    # llvm_hash_path = os.path.join(get_base_dir(), "cmake", "llvm-hash.txt")
+    # with open(llvm_hash_path, "r") as llvm_hash_file:
+    #     rev = llvm_hash_file.read(8)
+    return Package("llvm-project", "LLVM_INCLUDE_DIRS", "LLVM_LIBRARY_DIR", "LLVM_SYSPATH")
 
 def get_ailang_cache_path():
     return os.path.join(get_base_dir(), "../third_party")
 
 def get_thirdparty_packages(packages: list):
-    # ailang_cache_path = get_ailang_cache_path()
+    ailang_cache_path = get_ailang_cache_path()
     thirdparty_cmake_args = []
-    # for p in packages:
-    #     package_root_dir = os.path.join(ailang_cache_path, p.package)
-    #     if p.include_flag:
-    #         thirdparty_cmake_args.append(f"-D{p.include_flag}={package_root_dir}/include")
-    #     if p.lib_flag:
-    #         thirdparty_cmake_args.append(f"-D{p.lib_flag}={package_root_dir}/lib")
+    for p in packages:
+        package_root_dir = os.path.join(ailang_cache_path, p.package)
+        package_dir = os.path.join(package_root_dir, p.package)
+        if os.environ.get(p.syspath_var_name):
+            package_dir = os.environ[p.syspath_var_name]
+        if p.include_flag:
+            thirdparty_cmake_args.append(f"-D{p.include_flag}={package_dir}/include")
+        if p.lib_flag:
+            thirdparty_cmake_args.append(f"-D{p.lib_flag}={package_dir}/lib")
     return thirdparty_cmake_args
 
 def get_packages():

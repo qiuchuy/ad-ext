@@ -1,55 +1,17 @@
-# AINL 
-## Build locally
-+ Prerequisite
-  + pybind11
-  + llvm & mlir
-  + IREE
-+ default build
+# Build
+## Build LLVM with MLIR 
+```bash
+cd /path/to/llvm-project  # your clone of LLVM.
+mkdir build
+cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON ../llvm -DLLVM_ENABLE_PROJECTS="mlir;llvm" -DLLVM_TARGETS_TO_BUILD="host;NVPTX;AMDGPU"
+ninja
 ```
-
-cmake -G Ninja -B build/ -S . \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DIREE_ENABLE_ASSERTIONS=ON \
-    -DIREE_ENABLE_SPLIT_DWARF=ON \
-    -DIREE_ENABLE_THIN_ARCHIVES=ON \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DIREE_ENABLE_LLD=ON \
-    -DIREE_BUILD_PYTHON_BINDINGS=ON  \
-    -DPython3_EXECUTABLE="$(which python)" \
-    . 
-cmake --build build/ --target iree-compile libailang
-cd AILang/python && pip install -e .
-```
-+ build with custom llvm & mlir
-```
-
-cmake -G Ninja -B build/ -S . \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DIREE_ENABLE_ASSERTIONS=ON \
-    -DIREE_ENABLE_SPLIT_DWARF=ON \
-    -DIREE_ENABLE_THIN_ARCHIVES=ON \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    -DIREE_ENABLE_LLD=ON \
-    -DUSE_CUSTOM_LLVM=ON \
-    -DCUSTOM_LLVM_PATH=build/third_party/iree/llvm-project/lib/cmake/llvm \
-    -DUSE_CUSTOM_MLIR=ON \
-    -DCUSTOM_MLIR_PATH=build/lib/cmake/mlir \
-    -DIREE_BUILD_PYTHON_BINDINGS=ON  \
-    -DPython3_EXECUTABLE="$(which python)" \
-    . 
-
-cmake --build build/ --target iree-compile libailang
-cd AILang/python && pip install -e .
-```
-## \[Recommended\] Build with a docker environment
-See `build_tools/README.md`
-
-## Run test
-```
-./runtest [your test entry: e.g. "ast", "typeinfer"]
-```
-
-
-
+## Build AILang
+git submodule update --init --recursive
+export LLVM_BUILD_DIR=/path/to/llvm-project/build
+export LLVM_INCLUDE_DIR=$LLVM_BUILD_DIR/include
+export LLVM_LIBRARY_DIR=$LLVM_BUILD_DIR/lib
+export LLVM_SYSPATH=$LLVM_BUILD_DIR
+pip install -r python/requirement.txt
+pip install -e python

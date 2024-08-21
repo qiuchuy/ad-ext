@@ -50,9 +50,6 @@ function(add_ailang_object name)
     PRIVATE ${ARG_UNPARSED_ARGUMENTS}
     INTERFACE $<TARGET_OBJECTS:${name}>
   )
-
-
-  # add_library(${name} OBJECT ${ARG_UNPARSED_ARGUMENTS})
   if(ARG_DEPENDS)
     add_dependencies(${name} ${ARG_DEPENDS})
   endif()
@@ -76,18 +73,13 @@ include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR}/include) 
-include_directories(${PROJECT_SOURCE_DIR}/third_party)
-include_directories(${PROJECT_BINARY_DIR}/third_party) 
 
-# link_directories(${LLVM_LIBRARY_DIR})
 add_subdirectory(include)
 add_subdirectory(lib)
 
-# find_package(PythonLibs REQUIRED)
+
 set(AILANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AILANG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-
-# -----
 
 # ------
 if(AILANG_BUILD_PYTHON_MODULE)
@@ -95,30 +87,34 @@ if(AILANG_BUILD_PYTHON_MODULE)
   set(PYTHON_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/python/src)
   include_directories(${PYTHON_SRC_PATH})
 
-  if(PYTHON_INCLUDE_DIRS)
-    # We have PYTHON_INCLUDE_DIRS set--this is what we expect when building
-    # using pip install.
-    include_directories(${PYTHON_INCLUDE_DIRS})
-    include_directories(${PYBIND11_INCLUDE_DIR})
-  else()
-    # Otherwise, we might be building from top CMakeLists.txt directly.
-    # Try to find Python and pybind11 packages.
-    find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
-    find_package(pybind11 CONFIG REQUIRED HINTS "${Python3_SITELIB}")
-    include_directories(${Python3_INCLUDE_DIRS})
-    include_directories(${pybind11_INCLUDE_DIR})
-    link_directories(${Python3_LIBRARY_DIRS})
-    link_libraries(${Python3_LIBRARIES})
-    add_link_options(${Python3_LINK_OPTIONS})
-  endif()
+  # find pybind11
+  find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
+  find_package(pybind11 CONFIG REQUIRED HINTS "${Python3_SITELIB}")
+  # link pybind11 libraries
+  include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
+  list(APPEND AILANG_LIBS ${pybind11_LIBRARIES})
 
+  # Important: If loading StableHLO in this fashion, it must come last,
+  # after all of our libraries and test targets have been defined.
+  # It seems that they both abuse upstream CMake macros that accumulate
+  # properties.
+  # Getting this wrong results in building large parts of the stablehlo
+  # project that we don't actually depend on. Further some of those parts
+  # do not even compile on all platforms.
+  set(STABLEHLO_BUILD_EMBEDDED ON)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo
+    ${CMAKE_CURRENT_BINARY_DIR}/stablehlo
+    EXCLUDE_FROM_ALL)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo)
 
   get_property(ailang_libs GLOBAL PROPERTY AILANG_LIBS)
   set(AILANG_LIBRARIES
     ${ailang_libs}
+    StablehloOps 
+    StablehloReferenceApi
   )
-  add_library(ailang SHARED ${PYTHON_SRC_PATH}/main.cc)
 
+  add_library(ailang SHARED ${PYTHON_SRC_PATH}/main.cpp)
   # Link ailang with its dependencies
   target_link_libraries(ailang PUBLIC ${AILANG_LIBRARIES})
   target_link_options(ailang PRIVATE ${LLVM_LDFLAGS})
@@ -132,5 +128,7 @@ if(AILANG_BUILD_PYTHON_MODULE AND NOT WIN32)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
   target_link_libraries(ailang PRIVATE ${PYTHON_LDFLAGS})
 endif()
+
+
 
 
