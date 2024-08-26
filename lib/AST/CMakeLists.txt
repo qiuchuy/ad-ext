@@ -1,4 +1,10 @@
 add_ailang_library(AILangAST
-  test.cpp
-
+  AST.cpp
+  ASTNode.cpp
+  ASTVisitor.cpp
+  IRBuilding.cpp
+  NodeContract.cpp
+  IRBuilding.cpp
+  TypeContract.cpp
+  TypeInfer.cpp
 )

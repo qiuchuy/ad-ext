@@ -23,7 +23,7 @@ endif()
 
 # Compiler flags
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_FORMAT_MACROS  -fPIC -std=gnu++17")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_FORMAT_MACROS  -fPIC -std=gnu++17") 
 
 
 # #########
@@ -62,11 +62,11 @@ set_property(GLOBAL PROPERTY AILANG_LIBS "")
 function(add_ailang_library name)
   set_property(GLOBAL APPEND PROPERTY AILANG_LIBS ${name})
   add_ailang_object(${name} ${ARGN})
-  llvm_update_compile_flags(${name})
+  # llvm_update_compile_flags(${name})
 endfunction(add_ailang_library)
 
 # Disable warnings that show up in external code (gtest;pybind11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-covered-switch-default -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-covered-switch-default -fvisibility=hidden")
 
 include_directories(".")
 include_directories(${MLIR_INCLUDE_DIRS})
@@ -102,33 +102,20 @@ if(AILANG_BUILD_PYTHON_MODULE)
   # project that we don't actually depend on. Further some of those parts
   # do not even compile on all platforms.
   set(STABLEHLO_BUILD_EMBEDDED ON)
+  set(STABLEHLO_ENABLE_BINDINGS_PYTHON OFF)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo
     ${CMAKE_CURRENT_BINARY_DIR}/stablehlo
     EXCLUDE_FROM_ALL)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo)
-
   get_property(ailang_libs GLOBAL PROPERTY AILANG_LIBS)
   set(AILANG_LIBRARIES
-    ${ailang_libs}
-    StablehloOps 
-    StablehloReferenceApi
+  ${ailang_libs}
   )
 
+
   add_library(ailang SHARED ${PYTHON_SRC_PATH}/main.cpp)
+  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
   # Link ailang with its dependencies
   target_link_libraries(ailang PUBLIC ${AILANG_LIBRARIES})
-  target_link_options(ailang PRIVATE ${LLVM_LDFLAGS})
-endif()
-
-if (UNIX AND NOT APPLE)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,ALL")
-endif()
-
-if(AILANG_BUILD_PYTHON_MODULE AND NOT WIN32)
-  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
   target_link_libraries(ailang PRIVATE ${PYTHON_LDFLAGS})
 endif()
-
-
-
-
