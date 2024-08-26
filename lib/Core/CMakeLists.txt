@@ -1,4 +1,4 @@
-add_ailang_library(
+add_ailang_library(AILangCore
   Allocator.cpp
   Array.cpp
   Device.cpp

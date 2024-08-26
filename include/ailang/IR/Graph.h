@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "ailang/IR/Block.h"
-#include "ailang/IR/Function.h"
 #include "ailang/IR/Node.h"
 
 namespace ainl::ir {

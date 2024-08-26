@@ -23,24 +23,6 @@ std::vector<TypePtr> ALModule::getParamTypes() {
 
 TypePtr ALModule::getReturnType() { return signature->returnType; }
 
-template <typename NodeType, typename... ARGS>
-NodePtr ALModule::create(ARGS&&... args) {
-    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
-    Node->graph = graph;
-    Node->block = static_cast<BlockPtr>(graph->endBlock->prev);
-    graph->insertNodeAtEnd(Node);
-    return Node;
-}
-
-template <typename NodeType, typename... ARGS>
-NodePtr ALModule::createAfter(NodePtr after, ARGS&&... args) {
-    NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
-    Node->graph = graph;
-    Node->block = after->block;
-    graph->insertNodeAfter(after, Node);
-    return Node;
-}
-
 std::string ALModule::str() {
   std::stringstream ss;
   for (size_t i = 0; i < getParams().size(); ++i) {
