@@ -30,10 +30,10 @@ namespace ainl::ir {
 StableHLOLoweringPass::StableHLOLoweringPass(mlir::MLIRContext &context,
                                              const std::string &name)
     : builder(&context) {
-  *theModule = mlir::ModuleOp::create(builder.getUnknownLoc(), "main");
+  theModule = mlir::ModuleOp::create(builder.getUnknownLoc(), "main");
 }
 
-mlir::ModuleOp *StableHLOLoweringPass::module() { return theModule; }
+mlir::ModuleOp StableHLOLoweringPass::module() { return theModule; }
 
 void StableHLOLoweringPass::insertValueMapping(ValuePtr value,
                                                mlir::Value mlirValue) {
@@ -72,7 +72,7 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
       mlir::func::FuncOp::create(mlir::UnknownLoc::get(theModule->getContext()),
                                  module->getName(), funcType, attrs);
   function.setVisibility(mlir::func::FuncOp::Visibility::Public);
-  theModule->push_back(function);
+  theModule.push_back(function);
 
   return function;
 }
@@ -95,7 +95,7 @@ void StableHLOLoweringPass::run(ModulePtr module) {
       node->accept(this);
     }
   }
-  if (failed(theModule->verify())) {
+  if (failed(theModule.verify())) {
     theModule->emitError("module verification error");
     return;
   }
@@ -243,7 +243,7 @@ std::string StableHLOLowering(ModulePtr module) {
   auto loweringPass =
       std::make_unique<StableHLOLoweringPass>(context, module->getName());
   loweringPass->run(module);
-  return mlirModuleToString(*loweringPass->module());
+  return mlirModuleToString(loweringPass->module());
 }
 
 std::string mlirModuleToString(mlir::ModuleOp module) {

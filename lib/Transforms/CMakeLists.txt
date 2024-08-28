@@ -6,6 +6,8 @@ add_ailang_library(AILangTransform
     DEPENDS AILangIR
 
     LINK_LIBS PUBLIC
+    MLIRDialect
+    MLIRFuncDialect
     MLIRIR 
     StablehloOps 
     StablehloReferenceApi

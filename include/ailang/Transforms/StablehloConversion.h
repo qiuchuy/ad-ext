@@ -26,7 +26,7 @@ class StableHLOLoweringPass : public Pass, public IRVisitor {
 public:
   StableHLOLoweringPass(mlir::MLIRContext &context, const std::string &name);
   void run(ModulePtr module) override;
-  mlir::ModuleOp *module();
+  mlir::ModuleOp module();
 
   void visit(NodePtr node) override;
   void visit(ParamPtr node) override;
@@ -40,7 +40,7 @@ public:
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);
   void insertValueMapping(ValuePtr value, mlir::Value mlirValue);
-  mlir::ModuleOp *theModule;
+  mlir::ModuleOp theModule;
   mlir::OpBuilder builder;
   llvm::DenseMap<ValuePtr, mlir::Value> valueMap;
 };

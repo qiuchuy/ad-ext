@@ -57,9 +57,6 @@ TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType) {
   // std::vector<ValuePtr> addShape = std::move(lhsShape);
 
   // numpy-style broadcast
-  
-
-
 
   if (lhsShape.size() != rhsShape.size()) {
     throw ainl::core::AINLError(

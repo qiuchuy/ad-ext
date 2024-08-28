@@ -1,4 +1,3 @@
-#include "ailang/Core/Primitive.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -6,16 +5,17 @@
 #include <numeric>
 
 #include "ailang/Core/Array.h"
-#include "ailang/IR/NodeContract.h"
-#include "ailang/IR/TypeContract.h"
+#include "ailang/Core/Ops.h"
+#include "ailang/Core/Primitive.h"
+#include "ailang/Core/Trace.h"
+#include "ailang/Core/Transformation.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Graph.h"
+#include "ailang/IR/NodeContract.h"
 #include "ailang/IR/Type.h"
+#include "ailang/IR/TypeContract.h"
 #include "ailang/IR/Value.h"
-#include "ailang/Core/Ops.h"
-#include "ailang/Core/Trace.h"
-#include "ailang/Core/Transformation.h"
 
 namespace ainl::core {
 
@@ -272,8 +272,8 @@ void ReshapePrimitive::jvp(const std::vector<JVPTracer> &inputs,
         "[ReshapePrimitive::jvp] expects exactly one input tracer.");
   }
   auto input = inputs[0];
-  output.setPrimal(unary<ReshapePrimitive>({input.primal()}, shape_));
-  output.setTangent(unary<ReshapePrimitive>({input.tangent()}, shape_));
+  output.setPrimal(single<ReshapePrimitive>({input.primal()}, shape_));
+  output.setTangent(single<ReshapePrimitive>({input.tangent()}, shape_));
 }
 
 std::string ReshapePrimitive::toString() const { return "Reshape"; }
@@ -314,7 +314,7 @@ void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
   auto module = getTracedModule();
   output.setValue(
       ir::resolveContract("transpose", module, outputType, inputValues));
-  output.setTracer(unary<TransposePrimitive>({input.tracer()}));
+  output.setTracer(single<TransposePrimitive>({input.tracer()}));
 }
 
 void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -324,8 +324,8 @@ void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
         "[TransposePrimitive::jvp] expects exactly one input tracer.");
   }
   auto input = inputs[0];
-  output.setPrimal(unary<TransposePrimitive>({input.primal()}));
-  output.setTangent(unary<TransposePrimitive>({input.tangent()}));
+  output.setPrimal(single<TransposePrimitive>({input.primal()}));
+  output.setTangent(single<TransposePrimitive>({input.tangent()}));
 }
 
 std::string TransposePrimitive::toString() const { return "Transpose"; }
@@ -384,89 +384,13 @@ void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
   // ir generation
   output.setValue(
       ir::resolveContract("matmul", module, outputType, inputValues));
-  output.setTracer(unary<MatMulPrimitive>({input0.tracer(), input1.tracer()}));
+  output.setTracer(single<MatMulPrimitive>({input0.tracer(), input1.tracer()}));
 }
 
 void MatMulPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
 std::string MatMulPrimitive::toString() const { return "MatMul"; }
-
-void LoopPrimitive::eval(const std::vector<Array> &inputs,
-                         std::vector<Array> &output) {
-  evalCPU(inputs, output);
-}
-
-void LoopPrimitive::evalCPU(const std::vector<Array> &inputs,
-                            std::vector<Array> &output) {
-  auto inits = convertTracerSharedPtrVector(inputs);
-  while (1) {
-    auto cond = cond_(inits);
-    if (auto array = asTracer<Array>(cond)) {
-      if (!array->item<bool>()) {
-        break;
-      }
-    }
-    inits = body_(inits);
-  }
-  output = convertTracerVector<Array>(inits);
-}
-
-void LoopPrimitive::jit(const std::vector<JITTracer> &inputs,
-                        std::vector<JITTracer> &outputs) {
-  std::vector<ir::TypePtr> inputsTypes;
-  // for loop primitive, we enforce the type of output variables match the type
-  // of input variables at the top level
-  for (auto &input : inputs) {
-    inputsTypes.push_back(input.value()->getType());
-  }
-  auto outputTypes = ir::TupleType::createUnnamedTuple(inputsTypes);
-  std::vector<ir::ValuePtr> inputValues;
-  for (auto &input : inputs) {
-    inputValues.push_back(input.value());
-  }
-
-  auto inits = convertTracerSharedPtrVector(inputs);
-  std::vector<std::shared_ptr<Tracer>> tracers;
-  for (const auto &input : inputs) {
-    tracers.push_back(input.tracer());
-  }
-
-  auto module = getTracedModule();
-  auto savedModule = *module;
-
-  // jit cond_ and body_ respectively
-  auto jitCond = cond_;
-  auto condWrapper =
-      [jitCond](const std::vector<std::shared_ptr<Tracer>> &inits) {
-        auto cond = jitCond(inits);
-        return std::vector<std::shared_ptr<Tracer>>{cond};
-      };
-
-  auto condModule = ainl::core::jit(condWrapper, "cond", "", tracers);
-
-  auto bodyModule = ainl::core::jit(body_, "body", "", tracers);
-
-  *module = savedModule;
-
-  inputValues.push_back(ir::ALModule::createModuleValue(*condModule));
-  inputValues.push_back(ir::ALModule::createModuleValue(*bodyModule));
-
-  auto whileOp = ir::asValueType<ir::WhileOp>(
-      ir::resolveContract("loop", module, outputTypes, inputValues));
-
-  getCurrentTrace()->unpack(inits);
-  auto outputTracers = op<LoopPrimitive>(inits, cond_, body_);
-  for (size_t i = 0; i < whileOp->getOutputValues().size(); i++) {
-    outputs[i].setValue(whileOp->getOutputValues()[i]);
-    outputs[i].setTracer(outputTracers[i]);
-  }
-}
-
-void LoopPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                        std::vector<JVPTracer> &output) {}
-
-std::string LoopPrimitive::toString() const { return "Loop"; }
 
 void ComparePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
@@ -546,68 +470,12 @@ void ComparePrimitive::jit(const std::vector<JITTracer> &inputs,
     tracers.push_back(input.tracer());
   }
 
-  output.setTracer(unary<ComparePrimitive>(tracers, op_));
+  output.setTracer(single<ComparePrimitive>(tracers, op_));
 }
 
 void ComparePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
 std::string ComparePrimitive::toString() const { return "Compare"; }
-
-void IfPrimitive::eval(const std::vector<Array> &inputs,
-                       std::vector<Array> &output) {
-  evalCPU(inputs, output);
-}
-
-void IfPrimitive::evalCPU(const std::vector<Array> &inputs,
-                          std::vector<Array> &output) {}
-
-void IfPrimitive::jit(const std::vector<JITTracer> &inputs,
-                      std::vector<JITTracer> &outputs) {
-  auto ifCond = inputs.front();
-  std::vector<ir::TypePtr> inputTypes = {ifCond.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {ifCond.value()};
-
-  auto module = getTracedModule();
-
-  auto trueBranchWrapper = std::function<std::vector<std::shared_ptr<Tracer>>(
-      const std::vector<std::shared_ptr<Tracer>> &)>(
-      [&](const std::vector<std::shared_ptr<Tracer>> &inits) {
-        return trueBranch();
-      });
-  auto falseBranchWrapper = std::function<std::vector<std::shared_ptr<Tracer>>(
-      const std::vector<std::shared_ptr<Tracer>> &)>(
-      [&](const std::vector<std::shared_ptr<Tracer>> &inits) {
-        return falseBranch();
-      });
-
-  auto trueBranchModule =
-      ainl::core::jit(trueBranchWrapper, "trueBranch", "", {});
-  auto falseBranchModule =
-      ainl::core::jit(falseBranchWrapper, "falseBranch", "", {});
-  inputValues.push_back(ir::ALModule::createModuleValue(*trueBranchModule));
-  inputValues.push_back(ir::ALModule::createModuleValue(*falseBranchModule));
-
-  inputTypes.push_back(trueBranchModule->getReturnType());
-  inputTypes.push_back(falseBranchModule->getReturnType());
-  auto outputType = ir::resolveContract("ifop", inputTypes);
-
-  auto ifOp = ir::asValueType<ir::IfOp>(
-      ir::resolveContract("ifop", module, outputType, inputValues));
-
-  auto inits = convertTracerSharedPtrVector(inputs);
-  getCurrentTrace()->unpack(inits);
-  auto outputTracers = op<IfPrimitive>(inits, trueBranch, falseBranch);
-
-  for (size_t i = 0; i < ifOp->getOutputValues().size(); i++) {
-    outputs[i].setValue(ifOp->getOutputValues()[i]);
-    outputs[i].setTracer(outputTracers[i]);
-  }
-}
-
-void IfPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                      std::vector<JVPTracer> &output) {}
-
-std::string IfPrimitive::toString() const { return "If"; }
 
 } // namespace ainl::core

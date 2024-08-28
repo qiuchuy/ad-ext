@@ -1,7 +1,7 @@
 #include "ailang/AST/ASTNode.h"
 
-#include "ailang/AST/TypeInfer.h"
 #include "ailang/AST/ASTVisitor.h"
+#include "ailang/AST/TypeInfer.h"
 
 namespace ainl::ir {
 

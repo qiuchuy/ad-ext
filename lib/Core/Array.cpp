@@ -4,12 +4,12 @@
 
 #include "ailang/Core/Array.h"
 #include "ailang/Core/Graph.h"
-#include "ailang/IR/Literal.h"
-#include "ailang/IR/Type.h"
 #include "ailang/Core/Ops.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Trace.h"
 #include "ailang/Core/Transformation.h"
+#include "ailang/IR/Literal.h"
+#include "ailang/IR/Type.h"
 #include "ailang/Utils/Logger.h"
 
 namespace ainl::core {
@@ -17,7 +17,7 @@ namespace ainl::core {
 Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
              const std::vector<Array> &inputs, const std::vector<int> &shape,
              const std::vector<int> &stride)
-    : Tracer({}, prim) {
+    : Tracer({}, prim), device_(cpu) {
   std::vector<std::shared_ptr<Tracer>> inputTracers;
   for (const auto &input : inputs) {
     inputTracers.push_back(
@@ -35,11 +35,13 @@ Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
     : Tracer(inputs, prim) {}
 
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
-             const std::vector<int> &shape, const std::vector<int> &stride)
+             const std::vector<int> &shape, const std::vector<int> &stride,
+             Device device)
     : Tracer({}, std::make_shared<IdentityPrimitive>()),
       data_(std::make_shared<Data>(
           buffer, [](allocator::Buffer buffer) { allocator::free(buffer); })),
-      dtype_(dtype), shape_(std::make_shared<std::vector<int>>(shape)),
+      dtype_(dtype), device_(device),
+      shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
   ptr_ = buffer.ptr();
   size_ =

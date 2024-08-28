@@ -3,11 +3,11 @@
 #include <stack>
 #include <utility>
 
-#include "ailang/IR/NodeContract.h"
 #include "ailang/AST/ASTVisitor.h"
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Graph.h"
 #include "ailang/IR/Node.h"
+#include "ailang/IR/NodeContract.h"
 #include "ailang/IR/Symbol.h"
 #include "ailang/Utils/Utils.h"
 

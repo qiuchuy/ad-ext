@@ -1,18 +1,14 @@
-#include "llvm/Passes/PassBuilder.h" 
-
-#include "pybind11/pybind11.h"
+#include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-// 一个简单的加法函数
-int add(int a, int b) {
-    return a + b;
-}
+void init_ailang_core(pybind11::module &m);
+void init_ailang_ir(pybind11::module &m);
+void init_ailang_op(pybind11::module &m);
 
-// 创建 Python 模块
 PYBIND11_MODULE(libailang, m) {
-    m.doc() = "pybind11 example plugin";  // 可选的模块文档
-
-    // 将函数导出到 Python 中
-    m.def("add", &add, "A function that adds two numbers");
+  m.doc() = "Python bindings to the C++ AILang API";
+  init_ailang_core(m);
+  init_ailang_ir(m);
+  init_ailang_op(m);
 }

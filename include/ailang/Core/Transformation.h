@@ -1,10 +1,10 @@
 #pragma once
 
 #include "ailang/Core/Array.h"
-#include "ailang/IR/Function.h"
-#include "ailang/IR/Type.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Trace.h"
+#include "ailang/IR/Function.h"
+#include "ailang/IR/Type.h"
 #include <memory>
 #include <stdexcept>
 
@@ -123,7 +123,7 @@ jvp(std::function<std::shared_ptr<Tracer>(std::vector<std::shared_ptr<Tracer>>)>
 ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
                       std::vector<std::shared_ptr<Tracer>>)>
                       f,
-                  std::string funcName, std::string target,
+                  std::string funcName,
                   const std::vector<std::shared_ptr<Tracer>> &inputs);
 
 void eval(const std::vector<std::shared_ptr<Tracer>> &inputs);

@@ -1,9 +1,9 @@
 #include "ailang/Core/Trace.h"
 
 #include "ailang/Core/Array.h"
-#include "ailang/IR/Function.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Transformation.h"
+#include "ailang/IR/Function.h"
 #include "ailang/Utils/Logger.h"
 #include <memory>
 

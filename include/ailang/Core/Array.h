@@ -91,12 +91,14 @@ class Array : public Tracer {
 public:
   /* Construct a scalar array*/
   template <typename T>
-  explicit Array(T val, Dtype dtype = TypeToDtype<T>()) : Tracer({}, nullptr) {
+  explicit Array(T val, Dtype dtype = TypeToDtype<T>(), Device device = cpu)
+      : Tracer({}, nullptr) {
     LOG_DEBUG("initialized value: %f", val);
     auto buffer = allocator::malloc(sizeof(T));
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
         buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+    device_ = device;
     dtype_ = dtype;
     size_ = sizeof(T);
     shape_ = std::make_shared<std::vector<int>>();
@@ -115,6 +117,7 @@ public:
     ptr_ = buffer.ptr();
     data_ = std::make_shared<Data>(
         buffer, [](allocator::Buffer buffer) { allocator::free(buffer); });
+    device_ = cpu;
     dtype_ = dtype;
     size_ = vec.size() * sizeof(T);
     stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
@@ -123,7 +126,8 @@ public:
 
   /* Construct an array from buffer*/
   Array(const allocator::Buffer &buffer, Dtype dtype,
-        const std::vector<int> &shape, const std::vector<int> &stride);
+        const std::vector<int> &shape, const std::vector<int> &stride,
+        Device device = cpu);
   /* Construct an array by copy*/
   Array(const Array &other) = default;
 
@@ -210,6 +214,7 @@ public:
   size_t itemsize() const { return dtypeSize(dtype_); }
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
+  Device device() const { return device_; }
 
   template <typename T> T item() {
     if (!evaluated()) {
@@ -341,6 +346,7 @@ public:
 protected:
   std::shared_ptr<Data> data_;
   Dtype dtype_;
+  Device device_;
   size_t size_;
   std::shared_ptr<std::vector<int>> shape_;
   std::shared_ptr<std::vector<int>> stride_;

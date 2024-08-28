@@ -79,7 +79,8 @@ void AutoDiffPass::ForwardDifferentialPattern::setTransposeRelation(
   }
 }
 
-void AutoDiffPass::ForwardDifferentialPattern::addLinearizedNode(ValuePtr Node) {
+void AutoDiffPass::ForwardDifferentialPattern::addLinearizedNode(
+    ValuePtr Node) {
   if (Pass) {
     Pass->LinearizedNodes.push_back(Node);
   } else {
@@ -153,7 +154,6 @@ void AutoDiffPass::ForwardDifferentialPattern::visit(AddPtr Node) {
       Pass->Module->createAfter<Add>(RightLinearNode, LeftLinearNode->getType(),
                                      LeftLinearNode, RightLinearNode);
   setLinearRelation(Node, LinearNode);
-
 }
 
 void AutoDiffPass::TransposeDifferentialPattern::visit(NodePtr Node) {}

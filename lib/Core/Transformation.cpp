@@ -3,12 +3,12 @@
 #include <memory>
 
 #include "ailang/Core/Array.h"
+#include "ailang/Core/Trace.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Literal.h"
 #include "ailang/IR/Node.h"
 #include "ailang/IR/Type.h"
-#include "ailang/Core/Trace.h"
 
 namespace ainl::core {
 
@@ -178,7 +178,7 @@ std::string JITTrace::toString() const { return "jit"; }
 ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
                       std::vector<std::shared_ptr<Tracer>>)>
                       f,
-                  std::string funcName, std::string target,
+                  std::string funcName,
                   const std::vector<std::shared_ptr<Tracer>> &inputs) {
   std::vector<ir::TypePtr> types;
   for (auto &input : inputs) {

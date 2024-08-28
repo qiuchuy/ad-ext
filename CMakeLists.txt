@@ -113,7 +113,13 @@ if(AILANG_BUILD_PYTHON_MODULE)
   )
 
 
-  add_library(ailang SHARED ${PYTHON_SRC_PATH}/main.cpp)
+  add_library(ailang SHARED 
+    ${PYTHON_SRC_PATH}/main.cpp
+    ${PYTHON_SRC_PATH}/core.cpp
+    ${PYTHON_SRC_PATH}/ir.cpp
+    ${PYTHON_SRC_PATH}/ops.cpp
+  )
+
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
   # Link ailang with its dependencies
   target_link_libraries(ailang PUBLIC ${AILANG_LIBRARIES})

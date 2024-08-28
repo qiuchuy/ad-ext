@@ -42,4 +42,5 @@ std::string ALModule::str() {
   str.append(graph->str());
   return str;
 }
+
 } // namespace ainl::ir

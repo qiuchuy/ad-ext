@@ -1,0 +1,47 @@
+name: Build AILang Project
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t ailang-build .
+
+      - name: Run Docker container and Build AILang
+        run: |
+          docker run --rm ailang-build /bin/bash -c "
+          # Build LLVM with MLIR
+          cd /root && \
+          git clone https://github.com/llvm/llvm-project.git && \
+          cd llvm-project && \
+          mkdir -p build && \
+          cd build && \
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS='mlir;llvm' -DLLVM_TARGETS_TO_BUILD='host;NVPTX;AMDGPU' ../llvm && \
+          ninja && \
+
+          # Build AILang
+          cd /root && \
+          git submodule update --init --recursive && \
+          export LLVM_BUILD_DIR=/root/llvm-project/build && \
+          export LLVM_INCLUDE_DIR=\$LLVM_BUILD_DIR/include && \
+          export LLVM_LIBRARY_DIR=\$LLVM_BUILD_DIR/lib && \
+          export LLVM_SYSPATH=\$LLVM_BUILD_DIR && \
+          pip install -r python/requirement.txt && \
+          pip install -e python
+          "

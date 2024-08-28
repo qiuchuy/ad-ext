@@ -5,9 +5,9 @@
 #include <map>
 #include <utility>
 
-#include "ailang/IR/TypeContract.h"
 #include "ailang/AST/ASTVisitor.h"
 #include "ailang/IR/Literal.h"
+#include "ailang/IR/TypeContract.h"
 
 namespace ainl::ir {
 

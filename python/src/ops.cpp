@@ -1,0 +1,81 @@
+#include "ailang/Core/Ops.h"
+#include "ailang/Core/Primitive.h"
+#include "ailang/Core/Trace.h"
+
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
+
+namespace py = pybind11;
+
+namespace {
+
+using namespace ainl::core;
+
+class PyTracerBuilder {
+public:
+  static PyTracerBuilder &getInstance() {
+    static PyTracerBuilder instance;
+    return instance;
+  }
+  PyTracerBuilder() = default;
+  virtual ~PyTracerBuilder() = default;
+  PyTracerBuilder(const PyTracerBuilder &) = delete;
+  PyTracerBuilder(PyTracerBuilder &&) = delete;
+  template <typename PrimTy, typename... Args>
+  py::object build(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                   unsigned output_size, Args... args) {
+    auto &builder = TracerBuilder::getInstance();
+    auto tracers = builder.build<PrimTy>(inputs, output_size, args...);
+    return py::cast(tracers);
+  }
+};
+
+template <typename PrimTy, typename... Args>
+py::object pyop(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                unsigned output_num, Args &&... args) {
+  auto &builder = PyTracerBuilder::getInstance();
+  return builder.build<PrimTy>(inputs, output_num, std::forward<Args>(args)...);
+}
+
+template <typename PrimTy, typename... Args>
+py::object pyunary(const std::vector<std::shared_ptr<Tracer>> &inputs,
+                Args &&... args) {
+  auto result = pyop<PrimTy>(inputs, 1, std::forward<Args>(args)...);
+  if (py::isinstance<py::list>(result)) {
+    return py::cast<py::list>(result)[0];
+  } else if (py::isinstance<py::tuple>(result)) {
+    return py::cast<py::tuple>(result)[0];
+  } else {
+    throw std::invalid_argument("Expect a list or tuple of tracers as output in unary operators");
+  }
+}
+
+} // anonymous namespace
+
+void init_ailang_op(py::module_ &m) {
+  m.def("flatten", [](const std::shared_ptr<Tracer> &input) {
+    return pyunary<FlattenPrimitive>({input});
+  });
+
+  m.def("reshape", [](const std::shared_ptr<Tracer> &input,
+                      const std::vector<int> &shape) {
+    return pyunary<ReshapePrimitive>({input}, shape);
+  });
+
+  m.def("slice",
+        [](const std::shared_ptr<Tracer> &input, const std::vector<int> &start,
+           const std::vector<int> &end, const std::vector<int> &stride) {
+          return pyunary<SlicePrimitive>({input}, start, end, stride);
+        });
+
+  m.def("transpose", [](const std::shared_ptr<Tracer> &input) {
+    return pyunary<TransposePrimitive>({input});
+  });
+
+  m.def("matmul", [](const std::shared_ptr<Tracer> &lhs,
+                     const std::shared_ptr<Tracer> &rhs) {
+    return pyunary<MatMulPrimitive>({lhs, rhs});
+  });
+}

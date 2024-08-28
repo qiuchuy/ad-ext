@@ -167,6 +167,7 @@ public:
   explicit operator std::string() const override;
   ValuePtr getLHS() const { return lhs; }
   ValuePtr getRHS() const { return rhs; }
+
 private:
   ValuePtr lhs;
   ValuePtr rhs;
