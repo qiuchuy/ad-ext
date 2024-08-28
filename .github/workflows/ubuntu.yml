@@ -28,10 +28,20 @@ jobs:
       - name: Run Docker container and Build AILang
         run: |
           docker run --rm -v ${{ github.workspace }}:/workspace ailang-build /bin/bash -c "
-          pwd
-          ls -l
+          # Build LLVM with MLIR
+          cd .. && \
+          git clone https://github.com/llvm/llvm-project.git && \
+          cd llvm-project && \
+          mkdir -p build && \
+          cd build && \
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS='mlir;llvm' -DLLVM_TARGETS_TO_BUILD='host;NVPTX;AMDGPU' ../llvm && \
+          ninja && \
+          export LLVM_BUILD_DIR=/workspace/../llvm-project/build && \
+          export LLVM_INCLUDE_DIR=\$LLVM_BUILD_DIR/include && \
+          export LLVM_LIBRARY_DIR=\$LLVM_BUILD_DIR/lib && \
+          export LLVM_SYSPATH=\$LLVM_BUILD_DIR && \
           # Build AILang
-          cd /workspace/AILang && \
+          cd /workspace && \
           pip install -r python/requirement.txt && \
           pip install -e python
           "
