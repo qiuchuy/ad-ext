@@ -171,7 +171,7 @@ class MatMulPrimitive : public UnaryPrimitive {
 
 class AsTypePrimitive : public UnaryPrimitive {
   public:
-    explicit AsTypePrimitive(Dtype dtype) : dtype_(dtype){};
+    explicit AsTypePrimitive(Dtype dtype) : dtype_(dtype) {};
     AsTypePrimitive() = default;
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
@@ -250,7 +250,7 @@ class SquarePrimitive : public UnaryPrimitive {
 
 class SqrtPrimitive : public UnaryPrimitive {
   public:
-    explicit SqrtPrimitive(bool reverse = false) : reverse_(reverse){};
+    explicit SqrtPrimitive(bool reverse = false) : reverse_(reverse) {};
     SqrtPrimitive() = default;
     void eval(const std::vector<Array> &inputs, Array &output) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
@@ -309,7 +309,7 @@ class SigmoidPrimitive : public UnaryPrimitive {
 
 class ConvolutionPrimitive : public UnaryPrimitive {
   public:
-    explicit ConvolutionPrimitive(){};
+    explicit ConvolutionPrimitive() {};
     void eval(const std::vector<Array> &inputs, Array &out) override;
     void evalCPU(const std::vector<Array> &inputs, Array &output) override;
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
@@ -331,7 +331,7 @@ class ReluPrimitive : public UnaryPrimitive {
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 };
-class MeanPrimitive  : public UnaryPrimitive {
+class MeanPrimitive : public UnaryPrimitive {
   public:
     MeanPrimitive() = default;
     void eval(const std::vector<Array> &inputs, Array &out) override;
@@ -340,7 +340,7 @@ class MeanPrimitive  : public UnaryPrimitive {
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 };
-class BatchnormInferencePrimitive : public UnaryPrimitive{
+class BatchnormInferencePrimitive : public UnaryPrimitive {
   public:
     BatchnormInferencePrimitive() = default;
     void eval(const std::vector<Array> &inputs, Array &out) override;
@@ -348,6 +348,17 @@ class BatchnormInferencePrimitive : public UnaryPrimitive{
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
+};
+class MaxPool2dPrimitive : public UnaryPrimitive {
+  public:
+    MaxPool2dPrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+  private:
+    std::vector<int> kernel_size;
 };
 
 class LoopPrimitive : public Primitive {

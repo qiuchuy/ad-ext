@@ -651,6 +651,42 @@ void BatchnormInferencePrimitive::jvp(const std::vector<JVPTracer> &inputs,
 std::string BatchnormInferencePrimitive::toString() const {
     return "BatchnormInference";
 }
+// MaxPool2dPrimitive inference
+void MaxPool2dPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+void MaxPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument("[MaxPool2dPrimitive::evalCPU] "
+                                    "expects exactly one input array.");
+    }
+    auto input = inputs[0];
+    throw std::invalid_argument("[MaxPool2dPrimitive] not implemnet yet.");
+}
+
+void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
+                                    "expects exactly one input tracer.");
+    }
+    auto input = inputs[0];
+    std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value()};
+    auto outputType = ir::resolveContract("maxpool2d", inputType);
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("maxpool2d", module, outputType, inputValues));
+    output.setTracer(unary<MaxPool2dPrimitive>({input.tracer()}));
+}
+
+void MaxPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                             JVPTracer &output) {}
+
+std::string MaxPool2dPrimitive::toString() const {
+    return "MaxPool2dPrimitive";
+}
 // GetElementsNumberPrimitive
 void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,
                                       Array &out) {

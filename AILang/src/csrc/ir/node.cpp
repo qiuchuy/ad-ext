@@ -132,6 +132,25 @@ std::vector<int> Relu::getShape() {
         throw std::runtime_error("ReLU input is not a tensor");
     }
 }
+// Mean
+
+Mean::Mean(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+    this->inValue = inValue;
+}
+Mean::operator std::string() const {
+    return getName() + " = ailang::mean(" + getValue()->getName() +
+           "):" + std::string(*getType());
+}
+void Mean::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Mean::getShape() {
+    if (auto tensorType =
+            dynamic_cast<TensorType *>(inValue->getType().get())) {
+        return tensorType->getConcreteShape();
+    } else {
+        throw std::runtime_error("Mean input is not a tensor");
+    }
+}
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
@@ -162,6 +181,8 @@ Maxpool2d::operator std::string() const {
     return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
            "):" + std::string(*getType());
 }
+void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Convolution
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
                          const ValuePtr &weightValue)

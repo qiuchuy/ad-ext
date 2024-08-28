@@ -101,6 +101,18 @@ TypePtr reluTypeContract(const TypePtr &inType) {
     return TensorType::create(elementType, inTensorShape);
 }
 
+TypePtr meanTypeContract(const TypePtr &inType) {
+    if (!inType->isTensorType()) {
+        throw ainl::core::AINLError("mean operator only applies to tensors.");
+    }
+    TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+    std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+    std::vector<ValuePtr> outTensorshape;
+    outTensorshape.emplace_back(Literal::create(1));
+    TypePtr elementType = inTensorType->getElementType();
+    return TensorType::create(elementType, outTensorshape);
+}
+
 TypePtr maxpool2dTypeContract(const TypePtr &inType) {
     // IR写完再来补参数
 
@@ -345,6 +357,13 @@ TypeContract::TypeContract() {
         }
         return batchnorm2dTypeContract(args[0], args[1], args[2], args[3],
                                        args[4]);
+    });
+    registerContract("mean", [](std::vector<TypePtr> args) {
+        if (args.size() != 1) {
+            throw ainl::core::AINLError(
+                "Invalid argument number for operator mean");
+        }
+        return meanTypeContract(args[0]);
     });
     registerContract("eq", [](std::vector<TypePtr> args) {
         if (args.size() != 2) {

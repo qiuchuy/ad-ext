@@ -52,6 +52,10 @@ void initOps(py::module_ &m) {
         return unary<ainl::core::ConvolutionPrimitive>(
             {inputValue, weightValue});
     });
+    m.def("maxpool2d",
+          [](const std::shared_ptr<ainl::core::Tracer> &inputValue) {
+              return unary<ainl::core::MaxPool2dPrimitive>({inputValue});
+          });
     m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
         return unary<ainl::core::ReluPrimitive>({input});
     });
@@ -65,9 +69,12 @@ void initOps(py::module_ &m) {
                   {input, scale, offset, mean, variance});
           });
 
-    // m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-    //     return ainl::core::mean();
-    // });
+    m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+        return unary<ainl::core::MeanPrimitive>({input});
+    });
+    m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+        return unary<ainl::core::MeanPrimitive>({input});
+    });
     m.def(
         "while_loop",
         [](const py::function &cond, const py::function &body,

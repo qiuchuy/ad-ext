@@ -18,6 +18,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
+#include <bits/stdint-intn.h>
 #include <initializer_list>
 #include <stdexcept>
 #include <string>
@@ -230,6 +231,23 @@ void StableHLOLoweringPass::visit(ReluPtr node) {
 
     insertValueMapping(node, op);
 }
+void StableHLOLoweringPass::visit(MeanPtr node) {
+    mlir::Value value = valueMap[node->getValue()];
+    mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(), builder.getZeroAttr(builder.getF32Type()));
+    llvm::SmallVector<mlir::Value, 1> inputs = {value};
+    llvm::SmallVector<mlir::Value, 1> initValues = {initValue};
+    llvm::ArrayRef<int64_t> dimensions = {2};
+    auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
+        builder.getUnknownLoc(), inputs, initValues, dimensions);
+    std::vector<int> inShape = node->getShape();
+    int64_t dimSize = inShape.size();
+    auto dimSizeValue = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(), builder.getI64IntegerAttr(dimSize));
+    auto meanValue = builder.create<mlir::stablehlo::DivOp>(
+        builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
+    insertValueMapping(node, dimSizeValue);
+}
 void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
     // input operand scale offset
 
@@ -249,6 +267,31 @@ void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
         builder.getUnknownLoc(), resultTypes, value, scale, offset, mean,
         variance, epsilon, feature_index);
     insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(Maxpool2dPtr node) {
+    // mlir::Value value = valueMap[node->getValue()];
+    // auto window_dimensions = builder.getDenseI64ArrayAttr({2, 1});
+    // auto window_strides = builder.getDenseI64ArrayAttr({4, 1});
+    // auto base_dilations = builder.getDenseI64ArrayAttr({2, 1});
+    // auto window_dilations = builder.getDenseI64ArrayAttr({3, 1});
+    // std::initializer_list<int64_t> padding_args = {2, 1, 0, 0};
+    // auto paddingTensorType =
+    //     mlir::RankedTensorType::get({2, 2}, builder.getIntegerType(64));
+    // mlir::DenseIntElementsAttr padding =
+    //     mlir::DenseIntElementsAttr::get(paddingTensorType, padding_args);
+    // auto resultType =
+    //     mlir::RankedTensorType::get({1, 2, 2, 1}, builder.getF32Type());
+
+    // mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+    //     builder.getUnknownLoc(),
+    //     builder.getZeroAttr(builder.getF32Type()));
+    // auto op = builder.create<mlir::stablehlo::ReduceWindowOp>(
+    //     builder.getUnknownLoc(), resultType, value, initValue,
+    //     window_dimensions, window_strides, base_dilations,
+    //     window_dilations, padding);
+
+    // insertValueMapping(node, op);
 }
 
 // void StableHLOLoweringPass::visit(BroadcastPtr node) {

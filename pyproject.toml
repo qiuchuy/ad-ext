@@ -11,6 +11,8 @@ markers = [
     "relu",
     "conv",
     "batchnorm2d",
-    "add : test add, transpose"
+    "add : test add, transpose",
+    "maxpool2d",
+    "mean"
 
 ]

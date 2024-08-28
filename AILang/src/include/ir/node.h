@@ -41,6 +41,7 @@ class Node : public Value {
         FLOORDIV,
         MOD,
         POW,
+        MEAN,
         LSHIFT,
         RSHIFT,
         BITOR,
@@ -214,7 +215,20 @@ class Relu : public Node {
   private:
     ValuePtr inValue;
 };
+NODE_PTR_TYPE_DECL(Mean)
+class Mean : public Node {
+  public:
+    Mean(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::MEAN; }
+    explicit operator std::string() const override;
+    // 在需要将 Relu 类的对象转换为字符串类型时使用。
+    ValuePtr getValue() const { return inValue; }
+    void accept(IRVisitor *visitor) override;
+    std::vector<int> getShape();
 
+  private:
+    ValuePtr inValue;
+};
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
   public:
@@ -238,6 +252,7 @@ class Maxpool2d : public Node {
     NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
     explicit operator std::string() const override;
     ValuePtr getValue() const { return inValue; }
+    void accept(IRVisitor *visitor) override;
 
   private:
     ValuePtr inValue;

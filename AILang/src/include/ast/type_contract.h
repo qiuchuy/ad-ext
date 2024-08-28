@@ -11,6 +11,7 @@ TypePtr matmulTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 TypePtr transposeTypeContract(const TypePtr &inType);
 TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 TypePtr reluTypeContract(const TypePtr &inType);
+TypePtr meanTypeContract(const TypePtr &inType);
 
 // TypePtr broadcastTypeContract(const TypePtr &inType);
 TypePtr maxpool2dTypeContract(const TypePtr &inType);
@@ -35,7 +36,7 @@ class TypeContract {
         if (functions.find(name) == functions.end()) {
             throw std::runtime_error("The type contract of operator [" + name +
                                      "] has not been registered yet.");
-        } 
+        }
         return functions[name](std::move(args));
     }
 
