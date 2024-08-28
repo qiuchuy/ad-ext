@@ -27,12 +27,10 @@
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/reference/Api.h"
 
-#include "ir/tensor.h"
-#include "ir/type.h"
-#include "pass/stablehlo_lowering.h"
+#include "ailang/IR/Tensor.h"
+#include "ailang/IR/Type.h"
+#include "ailang/Transforms/StablehloConversion.h"
 
 namespace ainl::ir {
-    mlir::Value compute_mean(){
-        
-    }
-}
+mlir::Value compute_mean() {}
+} // namespace ainl::ir

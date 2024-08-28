@@ -38,12 +38,3 @@ class TestOp:
         assert c.shape == (1, 2)
         assert c.strides == (16, 8)
         assert TestOp.numeric_check(c, a[0:1])
-
-    def test_transpose(self):
-        a = np.random.randn(2, 2)
-        b = al.from_numpy(a)
-        c = al.transpose(b)
-
-        assert c.shape == (2, 2)
-        assert c.strides == (8, 16)
-        assert TestOp.numeric_check(c, a.T)

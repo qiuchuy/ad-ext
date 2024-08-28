@@ -189,6 +189,7 @@ def get_packages():
     packages = [
         "ailang",
         "ailang/_C",
+        "ailang/nn",
     ]
     return packages
 

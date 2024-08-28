@@ -1,5 +1,4 @@
 add_ailang_library(AILangTransform
-    Autodiff.cpp
     Pass.cpp
     StablehloConversion.cpp
 

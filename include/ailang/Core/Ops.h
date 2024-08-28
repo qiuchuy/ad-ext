@@ -119,4 +119,47 @@ single(const std::vector<std::shared_ptr<Tracer>> &inputs, Args &&... args) {
 std::vector<int> getStridesFromShape(const std::vector<int> &shape,
                                      size_t itemsize);
 
+Array add(const Array &lhs, const Array &rhs);
+Array astype(const Array &input, Dtype dtype);
+Array maximum(const Array &lhs, const Array &rhs);
+Array minimum(const Array &lhs, const Array &rhs);
+Array multiply(const Array &rhs, const Array &lhs);
+Array sigmoid(const Array &input);
+Array subtract(const Array &lhs, const Array &rhs);
+Array sum(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array squeeze(const Array &input, const std::vector<int> &axes);
+Array square(const Array &input);
+Array sqrt(const Array &input);
+Array rsqrt(const Array &input);
+Array var(const Array &input, const std::vector<int> &axes, bool keepdims,
+          int ddof);
+Array var(const Array &input, bool keepdims);
+Array var(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array var(const Array &input, int axis, bool keepdims);
+Array mean(const Array &input, bool keepdims);
+Array mean(const Array &input, const std::vector<int> &axes, bool keepdims);
+Array mean(const Array &input, int axis, bool keepdims = false);
+Array flatten(const Array &input);
+Array broadcast_to(const Array &input, const std::vector<int> &shape);
+Array conv2d(const Array &input, const Array &weight,
+             const std::pair<int, int> &stride,
+             const std::pair<int, int> &padding,
+             const std::pair<int, int> &dilation);
+Array relu(const Array &input);
+
+std::vector<int> get_conv2d_output_shape(const std::vector<int> &in_shape,
+                                         const std::vector<int> &weight_shape,
+                                         const std::pair<int, int> &stride,
+                                         const std::pair<int, int> &padding,
+                                         const std::pair<int, int> &dilation);
+std::vector<int> getStridesFromShape(const std::vector<int> &shape,
+                                     size_t itemsize);
+std::vector<int> broadcastShapes(const std::vector<int> &shape1,
+                                 const std::vector<int> &shape2);
+std::vector<Array> broadcastArrays(const std::vector<Array> &inputs);
+Array getElementsNumber(const Array &arr, const std::vector<int> &axes,
+                        bool inverted, Dtype dtype);
+std::pair<std::vector<int>, std::vector<int>>
+getReduceShape(const std::vector<int> &axes, const std::vector<int> &shape);
+
 } // namespace ainl::core

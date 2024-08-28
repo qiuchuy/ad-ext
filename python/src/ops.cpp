@@ -78,4 +78,40 @@ void init_ailang_op(py::module_ &m) {
                      const std::shared_ptr<Tracer> &rhs) {
     return pyunary<MatMulPrimitive>({lhs, rhs});
   });
+
+  m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+      return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
+  });
+  m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
+                     const std::shared_ptr<ainl::core::Tracer> &weightValue,
+                     const std::pair<int, int> &stride = {2, 2},
+                     const std::pair<int, int> &padding = {0, 0},
+                     const std::pair<int, int> &dilation = {1, 1}) {
+      return pyunary<ainl::core::ConvolutionPrimitive>(
+          {inputValue, weightValue});
+  });
+  m.def("maxpool2d",
+        [](const std::shared_ptr<ainl::core::Tracer> &inputValue) {
+            return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue});
+        });
+  m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+      return pyunary<ainl::core::ReluPrimitive>({input});
+  });
+  m.def("batchnorm2d",
+        [](const std::shared_ptr<ainl::core::Tracer> &input,
+           const std::shared_ptr<ainl::core::Tracer> &scale,
+           const std::shared_ptr<ainl::core::Tracer> &offset,
+           const std::shared_ptr<ainl::core::Tracer> &mean,
+           const std::shared_ptr<ainl::core::Tracer> &variance) {
+            return pyunary<ainl::core::BatchnormInferencePrimitive>(
+                {input, scale, offset, mean, variance});
+        });
+
+  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+      return pyunary<ainl::core::MeanPrimitive>({input});
+  });
+  m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+        return pyunary<ainl::core::MeanPrimitive>({input});
+  });
 }

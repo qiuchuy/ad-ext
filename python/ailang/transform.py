@@ -72,6 +72,8 @@ def jit(f: Union[Callable]):
         tracer_args.extend(tracer_kwargs)
         module = al.trace_impl(f, tracer_args)
         print(module)
+        mlir_str = module.to_mlir()
+        print(mlir_str)
         target_backend, ireert_config = check_device(*tracer_args)
         compiled_flatbuffer = ireec.tools.compile_str(
             module.to_mlir(),

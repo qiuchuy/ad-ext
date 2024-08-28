@@ -15,29 +15,29 @@ int Node::LOCAL_COUNT = 0;
 Node::Node() { init(); }
 
 Node::Node(const TypePtr &type) : Value(type) {
-    init();
-    prefix = LOCAL_PREFIX;
-    name = LOCAL_NAME_PREFIX + std::to_string(LOCAL_COUNT++);
+  init();
+  prefix = LOCAL_PREFIX;
+  name = LOCAL_NAME_PREFIX + std::to_string(LOCAL_COUNT++);
 }
 
 void Node::setUse(ValuePtr value, int idx) {
-    auto use = new Use(this, value, idx);
-    value->insertUseAtEnd(use);
-    useList.push_back(use);
-    useValueList.push_back(value);
+  auto use = new Use(this, value, idx);
+  value->insertUseAtEnd(use);
+  useList.push_back(use);
+  useValueList.push_back(value);
 }
 
 void Node::addBlock() {
-    auto newBlock = new Block();
-    if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(newBlock);
-        return;
-    }
-    this->block->beginBlock = new Block();
-    this->block->endBlock = new Block();
-    this->block->beginBlock->setNext(this->block->endBlock);
-    this->block->endBlock->setPrev(this->block->beginBlock);
-    this->block->endBlock->insertBefore(block);
+  auto newBlock = new Block();
+  if (this->block->endBlock) {
+    this->block->endBlock->insertBefore(newBlock);
+    return;
+  }
+  this->block->beginBlock = new Block();
+  this->block->endBlock = new Block();
+  this->block->beginBlock->setNext(this->block->endBlock);
+  this->block->endBlock->setPrev(this->block->beginBlock);
+  this->block->endBlock->insertBefore(block);
 }
 
 std::vector<ValuePtr> Node::getOperands() {
@@ -57,24 +57,24 @@ ValuePtr Node::getOperand(size_t index) {
 }
 
 void Node::addBlockWithParam(NodePtr param, GraphPtr graph) {
-    auto newBlock = new Block(Block::blockCount++);
-    newBlock->paramNode = dynamic_cast<ParamPtr>(param);
-    for (auto &innerParam : dynamic_cast<ParamPtr>(param)->getParams()) {
-        innerParam->block = newBlock;
-    }
-    param->block = newBlock;
-    if (this->block->endBlock) {
-        this->block->endBlock->insertBefore(newBlock);
-        return;
-    }
-    /* for nested blocks */
-    this->block->beginBlock = new Block();
-    this->block->endBlock = new Block();
-    this->block->beginBlock->setNext(this->block->endBlock);
-    this->block->endBlock->setPrev(this->block->beginBlock);
+  auto newBlock = new Block(Block::blockCount++);
+  newBlock->paramNode = dynamic_cast<ParamPtr>(param);
+  for (auto &innerParam : dynamic_cast<ParamPtr>(param)->getParams()) {
+    innerParam->block = newBlock;
+  }
+  param->block = newBlock;
+  if (this->block->endBlock) {
+    this->block->endBlock->insertBefore(newBlock);
+    return;
+  }
+  /* for nested blocks */
+  this->block->beginBlock = new Block();
+  this->block->endBlock = new Block();
+  this->block->beginBlock->setNext(this->block->endBlock);
+  this->block->endBlock->setPrev(this->block->beginBlock);
 
-    /* insert this new block to graph */
-    graph->endBlock->insertBefore(newBlock);
+  /* insert this new block to graph */
+  graph->endBlock->insertBefore(newBlock);
 }
 
 void Node::accept(IRVisitor *visitor) { visitor->visit(this); }
@@ -101,22 +101,6 @@ ReturnOp::ReturnOp(const ValuePtr &value) : Node(value->getType()) {
 
 void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
-// Add
-Add::Add(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
-    : Node(opType) {
-  setUse(lhs, 0);
-  setUse(rhs, 1);
-  this->lhs = lhs;
-  this->rhs = rhs;
-}
-
-void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
-
-Add::operator std::string() const {
-  return getName() + " = " + getLHS()->getName() + " + " + getRHS()->getName() +
-         ": " + std::string(*getType());
-}
-
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
@@ -127,21 +111,21 @@ Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
 }
 
 Matmul::operator std::string() const {
-    return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
-           getRHS()->getName() + "): " + std::string(*getType());
+  return getName() + " = ailang::matmul(" + getLHS()->getName() + ", " +
+         getRHS()->getName() + "): " + std::string(*getType());
 }
 
 void Matmul::accept(IRVisitor *visitor) { visitor->visit(this); }
 // Add
 Add::Add(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
-    this->lhs = lhs;
-    this->rhs = rhs;
+  this->lhs = lhs;
+  this->rhs = rhs;
 }
 
 Add::operator std::string() const {
-    return getName() + " = ailang::add(" + getLHS()->getName() + ", " +
-           getRHS()->getName() + "): " + std::string(*getType());
+  return getName() + " = ailang::add(" + getLHS()->getName() + ", " +
+         getRHS()->getName() + "): " + std::string(*getType());
 }
 
 void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
@@ -159,40 +143,38 @@ void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Relu
 Relu::Relu(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
-    this->inValue = inValue;
+  this->inValue = inValue;
 }
 Relu::operator std::string() const {
-    return getName() + " = ailang::relu(" + getValue()->getName() +
-           "):" + std::string(*getType());
+  return getName() + " = ailang::relu(" + getValue()->getName() +
+         "):" + std::string(*getType());
 }
 void Relu::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 std::vector<int> Relu::getShape() {
-    if (auto tensorType =
-            dynamic_cast<TensorType *>(inValue->getType().get())) {
-        return tensorType->getConcreteShape();
-    } else {
-        throw std::runtime_error("ReLU input is not a tensor");
-    }
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("ReLU input is not a tensor");
+  }
 }
 // Mean
 
 Mean::Mean(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
-    this->inValue = inValue;
+  this->inValue = inValue;
 }
 Mean::operator std::string() const {
-    return getName() + " = ailang::mean(" + getValue()->getName() +
-           "):" + std::string(*getType());
+  return getName() + " = ailang::mean(" + getValue()->getName() +
+         "):" + std::string(*getType());
 }
 void Mean::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 std::vector<int> Mean::getShape() {
-    if (auto tensorType =
-            dynamic_cast<TensorType *>(inValue->getType().get())) {
-        return tensorType->getConcreteShape();
-    } else {
-        throw std::runtime_error("Mean input is not a tensor");
-    }
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Mean input is not a tensor");
+  }
 }
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
@@ -201,29 +183,28 @@ Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
   this->inValue = inValue;
 }
 Transpose::operator std::string() const {
-    return getName() + " = ailang::transpose(" + getValue()->getName() +
-           "):" + std::string(*getType());
+  return getName() + " = ailang::transpose(" + getValue()->getName() +
+         "):" + std::string(*getType());
 }
 
 void Transpose::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 std::vector<int> Transpose::getShape() {
-    if (auto tensorType =
-            dynamic_cast<TensorType *>(inValue->getType().get())) {
-        return tensorType->getConcreteShape();
-    } else {
-        throw std::runtime_error("Transpose input is not a tensor");
-    }
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Transpose input is not a tensor");
+  }
 }
 
 // Maxpool2d
 Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
-    this->inValue = inValue;
+  this->inValue = inValue;
 }
 Maxpool2d::operator std::string() const {
-    return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
-           "):" + std::string(*getType());
+  return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
+         "):" + std::string(*getType());
 }
 void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
@@ -231,12 +212,12 @@ void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
                          const ValuePtr &weightValue)
     : Node(opType) {
-    this->inputValue = inputValue;
-    this->weightValue = weightValue;
+  this->inputValue = inputValue;
+  this->weightValue = weightValue;
 }
 Convolution::operator std::string() const {
-    return getName() + " = ailang::convolution(" + getInputValue()->getName() +
-           "," + getWeightValue()->getName() + "):" + std::string(*getType());
+  return getName() + " = ailang::convolution(" + getInputValue()->getName() +
+         "," + getWeightValue()->getName() + "):" + std::string(*getType());
 }
 void Convolution::accept(IRVisitor *visitor) { visitor->visit(this); }
 
@@ -245,15 +226,15 @@ BatchNorm2d::BatchNorm2d(const TypePtr &opType, const ValuePtr &inValue,
                          const ValuePtr &scale, const ValuePtr &offset,
                          const ValuePtr &mean, const ValuePtr &variance)
     : Node(opType) {
-    this->inValue = inValue;
-    this->scale = scale;
-    this->offset = offset;
-    this->mean = mean;
-    this->variance = variance;
+  this->inValue = inValue;
+  this->scale = scale;
+  this->offset = offset;
+  this->mean = mean;
+  this->variance = variance;
 }
 BatchNorm2d::operator std::string() const {
-    return getName() + " = ailang::batchnorm2d(" + getValue()->getName() +
-           "):" + std::string(*getType());
+  return getName() + " = ailang::batchnorm2d(" + getValue()->getName() +
+         "):" + std::string(*getType());
 }
 void BatchNorm2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
@@ -261,51 +242,51 @@ void BatchNorm2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 WhileOp::WhileOp(const TypePtr &nodeType, const ModulePtr &condGraph,
                  const ModulePtr &bodyGraph, const std::vector<ValuePtr> &args)
     : Node(nodeType), cond(condGraph), body(bodyGraph), inits(std::move(args)) {
-    if (nodeType->isTupleType()) {
-        auto types = asType<TupleType>(nodeType)->getTypes();
-        for (const auto &type : types) {
-            outs.push_back(Node::create(type));
-        }
-    } else {
-        throw std::runtime_error("WhileOp output type must be a tuple type.");
+  if (nodeType->isTupleType()) {
+    auto types = asType<TupleType>(nodeType)->getTypes();
+    for (const auto &type : types) {
+      outs.push_back(Node::create(type));
     }
+  } else {
+    throw std::runtime_error("WhileOp output type must be a tuple type.");
+  }
 }
 
 WhileOp::operator std::string() const {
+  std::string result;
+  std::string lhs;
+  std::string indent = "\t\t";
+
+  auto addIndent = [&indent](const std::string &str) {
+    std::stringstream ss(str);
+    std::string line;
     std::string result;
-    std::string lhs;
-    std::string indent = "\t\t";
-
-    auto addIndent = [&indent](const std::string &str) {
-        std::stringstream ss(str);
-        std::string line;
-        std::string result;
-        while (std::getline(ss, line)) {
-            result += indent + line + "\n";
-        }
-        return result;
-    };
-
-    lhs += "(";
-    for (size_t i = 0; i < outs.size(); i++) {
-        if (i == outs.size() - 1) {
-            lhs += outs[i]->getName() + ") ";
-        } else {
-            lhs += outs[i]->getName() + ", ";
-        }
+    while (std::getline(ss, line)) {
+      result += indent + line + "\n";
     }
-    result += lhs + " = ailang::while (";
-    for (size_t i = 0; i < inits.size(); i++) {
-        if (i == inits.size() - 1) {
-            result += inits[i]->getName() + "): ";
-        } else {
-            result += inits[i]->getName() + ", ";
-        }
-    }
-    result += getType()->getName();
-    result += " {\n" + addIndent(std::string(*cond)) +
-              addIndent(std::string(*body)) + "\n\t}";
     return result;
+  };
+
+  lhs += "(";
+  for (size_t i = 0; i < outs.size(); i++) {
+    if (i == outs.size() - 1) {
+      lhs += outs[i]->getName() + ") ";
+    } else {
+      lhs += outs[i]->getName() + ", ";
+    }
+  }
+  result += lhs + " = ailang::while (";
+  for (size_t i = 0; i < inits.size(); i++) {
+    if (i == inits.size() - 1) {
+      result += inits[i]->getName() + "): ";
+    } else {
+      result += inits[i]->getName() + ", ";
+    }
+  }
+  result += getType()->getName();
+  result += " {\n" + addIndent(std::string(*cond)) +
+            addIndent(std::string(*body)) + "\n\t}";
+  return result;
 }
 
 CompareOp::CompareOp(const TypePtr &nodeType, const ValuePtr &lhs,
@@ -319,10 +300,9 @@ CompareOp::CompareOp(const TypePtr &nodeType, const ValuePtr &lhs,
 }
 
 CompareOp::operator std::string() const {
-    return getName() +
-           " = ailang::" + compareOpString[static_cast<size_t>(op)] + "(" +
-           lhs->getName() + ", " + rhs->getName() +
-           "): " + std::string(*getType());
+  return getName() + " = ailang::" + compareOpString[static_cast<size_t>(op)] +
+         "(" + lhs->getName() + ", " + rhs->getName() +
+         "): " + std::string(*getType());
 }
 
 void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
@@ -346,33 +326,33 @@ IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
 }
 
 IfOp::operator std::string() const {
+  std::string result;
+  std::string lhs;
+  std::string indent = "\t\t";
+
+  auto addIndent = [&indent](const std::string &str) {
+    std::stringstream ss(str);
+    std::string line;
     std::string result;
-    std::string lhs;
-    std::string indent = "\t\t";
-
-    auto addIndent = [&indent](const std::string &str) {
-        std::stringstream ss(str);
-        std::string line;
-        std::string result;
-        while (std::getline(ss, line)) {
-            result += indent + line + "\n";
-        }
-        return result;
-    };
-
-    for (size_t i = 0; i < outs.size(); i++) {
-        if (i == outs.size() - 1) {
-            lhs += outs[i]->getName();
-        } else {
-            lhs += outs[i]->getName() + ", ";
-        }
+    while (std::getline(ss, line)) {
+      result += indent + line + "\n";
     }
-    result += lhs + " = ailang::if (";
-    result += cond->getName() + ") : ";
-    result += getType()->getName();
-    result += " {\n" + addIndent(std::string(*trueBody)) + "\n\t} else {\n" +
-              addIndent(std::string(*elseBody)) + "\n\t}";
     return result;
+  };
+
+  for (size_t i = 0; i < outs.size(); i++) {
+    if (i == outs.size() - 1) {
+      lhs += outs[i]->getName();
+    } else {
+      lhs += outs[i]->getName() + ", ";
+    }
+  }
+  result += lhs + " = ailang::if (";
+  result += cond->getName() + ") : ";
+  result += getType()->getName();
+  result += " {\n" + addIndent(std::string(*trueBody)) + "\n\t} else {\n" +
+            addIndent(std::string(*elseBody)) + "\n\t}";
+  return result;
 }
 
 void IfOp::accept(IRVisitor *visitor) { visitor->visit(this); }

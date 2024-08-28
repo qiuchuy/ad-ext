@@ -3,9 +3,6 @@
 #include <memory>
 #include <vector>
 
-// #include "ailang/Core/Trace.h"
-#include "ailang/Core/Array.h"
-
 namespace ainl::core {
 
 class Array;

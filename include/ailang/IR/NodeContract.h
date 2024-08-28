@@ -44,27 +44,27 @@ ValuePtr ifNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                         const ModulePtr &falseModule, const ValuePtr &cond);
 
 class NodeContract {
-  public:
-    explicit NodeContract();
-    using AnyFunction = std::function<ValuePtr(ModulePtr, TypePtr nodeType,
-                                               std::vector<ValuePtr>)>;
+public:
+  explicit NodeContract();
+  using AnyFunction = std::function<ValuePtr(ModulePtr, TypePtr nodeType,
+                                             std::vector<ValuePtr>)>;
 
-    void registerContract(const std::string &name, AnyFunction func) {
-        functions[name] = std::move(func);
+  void registerContract(const std::string &name, AnyFunction func) {
+    functions[name] = std::move(func);
+  }
+
+  ValuePtr resolveContract(const std::string &name, ModulePtr module,
+                           TypePtr nodeType, std::vector<ValuePtr> args) {
+    if (functions.find(name) == functions.end()) {
+      throw std::runtime_error("The node contract of operator [" + name +
+                               "] has not been registered yet.");
     }
+    return functions[name](std::move(module), std::move(nodeType),
+                           std::move(args));
+  }
 
-    ValuePtr resolveContract(const std::string &name, ModulePtr module,
-                             TypePtr nodeType, std::vector<ValuePtr> args) {
-        if (functions.find(name) == functions.end()) {
-            throw std::runtime_error("The node contract of operator [" + name +
-                                     "] has not been registered yet.");
-        }
-        return functions[name](std::move(module), std::move(nodeType),
-                               std::move(args));
-    }
-
-  private:
-    std::map<std::string, AnyFunction> functions;
+private:
+  std::map<std::string, AnyFunction> functions;
 };
 
 NodeContract &getNodeContract();

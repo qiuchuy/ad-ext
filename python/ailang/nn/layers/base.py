@@ -1,7 +1,7 @@
 import ailang as al
 import textwrap
 from typing import Any, Callable, List, Optional, Tuple, Union, Dict, Iterator, Set
-from ailang import tensor
+from ailang import array
 
 
 class Module:
@@ -16,7 +16,7 @@ class Module:
     training: bool
     # _parameters: Dict[str, Optional[Parameter]]
     """[TODO]"""
-    _buffers: Dict[str, Optional[al.tensor]]
+    _buffers: Dict[str, Optional[al.array]]
 
     """can be called like a function """
 
