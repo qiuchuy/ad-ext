@@ -14,3 +14,15 @@ line-length = 120
 
 [tool.ruff.lint]
 ignore = ["E501", "E701", "E731", "E741"]
+
+[tool.pytest.ini_options]
+markers = [
+    "eval",
+    "relu",
+    "conv",
+    "batchnorm2d",
+    "add : test add, transpose",
+    "maxpool2d",
+    "mean"
+
+]

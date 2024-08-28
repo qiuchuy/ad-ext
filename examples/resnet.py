@@ -4,7 +4,6 @@ import ailang.nn as nn
 
 
 
-#[TODO] 继承nn.Module的时候会有问题 [DONE]
 
 class myConv(nn.Module):
 
