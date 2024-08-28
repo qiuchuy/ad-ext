@@ -28,6 +28,7 @@ jobs:
       - name: Run Docker container and Build AILang
         run: |
           docker run --rm -v ${{ github.workspace }}:/workspace ailang-build /bin/bash -c "
+          pwd
           ls -l
           # Build AILang
           cd /workspace/AILang && \
