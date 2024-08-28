@@ -13,6 +13,8 @@ ValuePtr reluNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                           const ValuePtr &inValue);
 ValuePtr meanNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                           const ValuePtr &inValue);
+ValuePtr varianceNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                              const ValuePtr &inValue);
 ValuePtr transposeNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                                const ValuePtr &inValue);
 ValuePtr matmulNodeContract(const ModulePtr &module, const TypePtr &nodeType,

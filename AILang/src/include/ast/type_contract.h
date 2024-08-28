@@ -12,7 +12,7 @@ TypePtr transposeTypeContract(const TypePtr &inType);
 TypePtr addTypeContract(const TypePtr &lhsType, const TypePtr &rhsType);
 TypePtr reluTypeContract(const TypePtr &inType);
 TypePtr meanTypeContract(const TypePtr &inType);
-
+TypePtr varianceTypeContract(const TypePtr &inType);
 // TypePtr broadcastTypeContract(const TypePtr &inType);
 TypePtr maxpool2dTypeContract(const TypePtr &inType);
 TypePtr convolutionTypeContract(const TypePtr &inputType,

@@ -13,6 +13,7 @@ markers = [
     "batchnorm2d",
     "add : test add, transpose",
     "maxpool2d",
-    "mean"
+    "mean",
+    "var",
 
 ]

@@ -43,7 +43,17 @@ class TestOP:
         def g(x):
             return al.mean(x)
 
-        a = np.array([[1, 2], [-1, 0],[3, 4]], dtype=np.float32)
+        a = np.array([[1, 2,3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        iree_result = g(b)
+        print("Result: ", iree_result)
+    @pytest.mark.var
+    def test_unary_op_var(self):
+        @al.jit(debug=True)
+        def g(x):
+            return al.var(x)
+
+        a = np.array([[1, 2,3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         iree_result = g(b)
         print("Result: ", iree_result)

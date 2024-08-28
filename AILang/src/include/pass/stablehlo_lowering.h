@@ -36,6 +36,7 @@ class StableHLOLoweringPass : public Pass, public IRVisitor {
     void visit(BatchNorm2dPtr node) override;
     void visit(ReluPtr node) override;
     void visit(MeanPtr node) override;
+    void visit(VariancePtr node) override;
     void visit(MatmulPtr node) override;
     void visit(AddPtr node) override;
     void visit(Maxpool2dPtr node) override;

@@ -41,6 +41,7 @@ class Node : public Value {
         FLOORDIV,
         MOD,
         POW,
+        VAR,
         MEAN,
         LSHIFT,
         RSHIFT,
@@ -221,11 +222,22 @@ class Mean : public Node {
     Mean(const TypePtr &nodeType, const ValuePtr &inValue);
     NodeKind kind() override { return Node::NodeKind::MEAN; }
     explicit operator std::string() const override;
-    // 在需要将 Relu 类的对象转换为字符串类型时使用。
     ValuePtr getValue() const { return inValue; }
     void accept(IRVisitor *visitor) override;
     std::vector<int> getShape();
 
+  private:
+    ValuePtr inValue;
+};
+NODE_PTR_TYPE_DECL(Variance)
+class Variance : public Node {
+  public:
+    Variance(const TypePtr &nodeType, const ValuePtr &inValue);
+    NodeKind kind() override { return Node::NodeKind::VAR; }
+    explicit operator std::string() const override;
+    ValuePtr getValue() const { return inValue; }
+    void accept(IRVisitor *visitor) override;
+    std::vector<int> getShape();
   private:
     ValuePtr inValue;
 };

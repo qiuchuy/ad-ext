@@ -340,6 +340,16 @@ class MeanPrimitive : public UnaryPrimitive {
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
 };
+class VariancePrimitive : public UnaryPrimitive {
+  public:
+    VariancePrimitive() = default;
+    void eval(const std::vector<Array> &inputs, Array &out) override;
+    void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+    void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+    void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+    std::string toString() const override;
+};
+
 class BatchnormInferencePrimitive : public UnaryPrimitive {
   public:
     BatchnormInferencePrimitive() = default;
@@ -357,6 +367,7 @@ class MaxPool2dPrimitive : public UnaryPrimitive {
     void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
     void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
     std::string toString() const override;
+
   private:
     std::vector<int> kernel_size;
 };

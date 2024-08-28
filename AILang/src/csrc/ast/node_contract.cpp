@@ -19,6 +19,13 @@ ValuePtr meanNodeContract(const ModulePtr &module, const TypePtr &nodeType,
     }
     return module->getGraph()->create<Mean>(nodeType, inValue);
 }
+ValuePtr varianceNodeContract(const ModulePtr &module, const TypePtr &nodeType,
+                          const ValuePtr &inValue) {
+    if (!inValue->getType()->isTensorType()) {
+        throw ainl::core::AINLError("var operator only applies to tensors.");
+    }
+    return module->getGraph()->create<Variance>(nodeType, inValue);
+}
 ValuePtr transposeNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                                const ValuePtr &inValue) {
     if (!inValue->getType()->isTensorType()) {
@@ -138,6 +145,16 @@ NodeContract::NodeContract() {
                                  "Invalid argument number for operator mean");
                          }
                          return meanNodeContract(module, nodeType, (args[0]));
+                     });
+    registerContract("variance",
+                     [](const ModulePtr &module, const TypePtr &nodeType,
+                        std::vector<ValuePtr> args) {
+                         if (args.size() != 1) {
+                             throw ainl::core::AINLError(
+                                 "Invalid argument number for operator var");
+                         }
+                         return varianceNodeContract(module, nodeType,
+                                                     (args[0]));
                      });
     registerContract("transpose", [](const ModulePtr &module,
                                      const TypePtr &nodeType,

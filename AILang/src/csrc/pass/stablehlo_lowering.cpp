@@ -237,17 +237,27 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
         builder.getUnknownLoc(), builder.getZeroAttr(builder.getF32Type()));
     llvm::SmallVector<mlir::Value, 1> inputs = {value};
     llvm::SmallVector<mlir::Value, 1> initValues = {initValue};
-    llvm::ArrayRef<int64_t> dimensions = {2};
+    auto dimensions = builder.getDenseI64ArrayAttr(0);
+    auto resultType = mlir::RankedTensorType::get({1}, builder.getF32Type());
+    llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
+
+    llvm::outs() << "prewasdiuasghduiwqad==================";
     auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
-        builder.getUnknownLoc(), inputs, initValues, dimensions);
+        builder.getUnknownLoc(), resultTypes, inputs, initValues, dimensions);
+    llvm::outs() << "reduceop" << reduceOp->getResult(0);
     std::vector<int> inShape = node->getShape();
     int64_t dimSize = inShape.size();
     auto dimSizeValue = builder.create<mlir::stablehlo::ConstantOp>(
         builder.getUnknownLoc(), builder.getI64IntegerAttr(dimSize));
+    llvm::outs() << "reduceop" << reduceOp->getResult(0);
     auto meanValue = builder.create<mlir::stablehlo::DivOp>(
         builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
-    insertValueMapping(node, dimSizeValue);
+    insertValueMapping(node, meanValue);
 }
+void StableHLOLoweringPass::visit(VariancePtr node) {
+   
+}
+
 void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
     // input operand scale offset
 

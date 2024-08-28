@@ -602,7 +602,41 @@ void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string MeanPrimitive::toString() const { return "mean"; }
+// Mean
 
+void VariancePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+    evalCPU(inputs, output);
+}
+
+void VariancePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[VariancePrimitive::evalCPU] expects exactly one input array.");
+    }
+    auto input = inputs[0];
+}
+
+void VariancePrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {
+    if (inputs.size() != 1) {
+        throw std::invalid_argument(
+            "[VariancePrimitive::jit] expects exactly one input tracer.");
+    }
+    auto input = inputs[0];
+    std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+    std::vector<ir::ValuePtr> inputValues = {input.value()};
+    auto outputType = ir::resolveContract("variance", inputType);
+    auto module = getTracedModule();
+    output.setValue(
+        ir::resolveContract("variance", module, outputType, inputValues));
+    output.setTracer(unary<VariancePrimitive>({input.tracer()}));
+}
+
+void VariancePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
+std::string VariancePrimitive::toString() const { return "var"; }
 // BatchnormInferencePrimitive
 void BatchnormInferencePrimitive::eval(const std::vector<Array> &inputs,
                                        Array &output) {

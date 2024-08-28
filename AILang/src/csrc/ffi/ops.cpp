@@ -73,7 +73,7 @@ void initOps(py::module_ &m) {
         return unary<ainl::core::MeanPrimitive>({input});
     });
     m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-        return unary<ainl::core::MeanPrimitive>({input});
+        return unary<ainl::core::VariancePrimitive>({input});
     });
     m.def(
         "while_loop",
