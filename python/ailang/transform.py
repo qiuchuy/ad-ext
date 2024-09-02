@@ -50,8 +50,6 @@ def check_device(*tracers):
     else:
         raise ValueError("All tracers must be on the same known device.")
 
-ref = []
-
 def jit(f: Union[Callable]):
     """
     Decorator that performs just-in-time (JIT) compilation of a function.

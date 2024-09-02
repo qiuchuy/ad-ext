@@ -7,8 +7,8 @@ from ailang import array
 
 class TestJIT:
     @staticmethod
-    def numeric_check(a: np.ndarray, b: np.ndarray):
-        return np.allclose(a, b)
+    def numeric_check(a: al.array, b: np.ndarray):
+        return np.allclose(a.tolist(), b.tolist())
 
     def test_transpose(self):
         @al.jit
@@ -19,6 +19,5 @@ class TestJIT:
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         iree_result = g(b)
-        # print(iree_result)
-        # np_result = np.transpose(a)
-        # assert TestJIT.numeric_check(iree_result, np_result)
+        np_result = np.transpose(a)
+        assert TestJIT.numeric_check(iree_result, np_result)
