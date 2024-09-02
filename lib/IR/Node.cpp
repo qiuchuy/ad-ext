@@ -160,13 +160,22 @@ std::vector<int> Relu::getShape() {
 }
 // Mean
 
-Mean::Mean(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
-  this->inValue = inValue;
-}
+Mean::Mean(const TypePtr &opType, const ValuePtr &inValue,
+           const std::vector<int64_t> &dim)
+    : Node(opType), inValue(inValue), dim(dim) {}
 Mean::operator std::string() const {
-  return getName() + " = ailang::mean(" + getValue()->getName() +
-         "):" + std::string(*getType());
+  auto prefix = getName() + " = ailang::mean(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
 }
+
 void Mean::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 std::vector<int> Mean::getShape() {

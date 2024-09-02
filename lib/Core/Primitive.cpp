@@ -13,6 +13,7 @@
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Graph.h"
+#include "ailang/IR/Literal.h"
 #include "ailang/IR/NodeContract.h"
 #include "ailang/IR/Type.h"
 #include "ailang/IR/TypeContract.h"
@@ -544,6 +545,21 @@ void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
+TypePtr MeanPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<ValuePtr> outTensorshape;
+  for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
+    if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
+      outTensorshape.push_back(inTensorShape[Idx]);
+    }
+  }
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorshape);
+}
+
 void MeanPrimitive::jit(const std::vector<JITTracer> &inputs,
                         JITTracer &output) {
   if (inputs.size() != 1) {
@@ -551,12 +567,10 @@ void MeanPrimitive::jit(const std::vector<JITTracer> &inputs,
         "[MeanPrimitive::jit] expects exactly one input tracer.");
   }
   auto input = inputs[0];
-  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {input.value()};
-  auto outputType = ir::resolveContract("mean", inputType);
-  auto module = getTracedModule();
-  output.setValue(ir::resolveContract("mean", module, outputType, inputValues));
-  output.setTracer(single<MeanPrimitive>({input.tracer()}));
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Mean>(
+      outputType, input.value(), dim));
+  output.setTracer(single<MeanPrimitive>({input.tracer()}, dim));
 }
 
 void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,

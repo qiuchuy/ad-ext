@@ -108,10 +108,10 @@ void init_ailang_op(py::module_ &m) {
                 {input, scale, offset, mean, variance});
         });
 
-  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-      return pyunary<ainl::core::MeanPrimitive>({input});
+  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input, const std::vector<int64_t>& dim) {
+      return pyunary<ainl::core::MeanPrimitive>({input}, dim);
   });
-  m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-        return pyunary<ainl::core::MeanPrimitive>({input});
-  });
+  // m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+  //       return pyunary<ainl::core::MeanPrimitive>({input});
+  // });
 }

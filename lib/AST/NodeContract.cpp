@@ -12,13 +12,7 @@ ValuePtr reluNodeContract(const ModulePtr &module, const TypePtr &nodeType,
   }
   return module->getGraph()->create<Relu>(nodeType, inValue);
 }
-ValuePtr meanNodeContract(const ModulePtr &module, const TypePtr &nodeType,
-                          const ValuePtr &inValue) {
-  if (!inValue->getType()->isTensorType()) {
-    throw ainl::core::AINLError("mean operator only applies to tensors.");
-  }
-  return module->getGraph()->create<Mean>(nodeType, inValue);
-}
+
 ValuePtr transposeNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                                const ValuePtr &inValue) {
   if (!inValue->getType()->isTensorType()) {
@@ -122,13 +116,6 @@ NodeContract::NodeContract() {
       throw ainl::core::AINLError("Invalid argument number for operator relu");
     }
     return reluNodeContract(module, nodeType, (args[0]));
-  });
-  registerContract("mean", [](const ModulePtr &module, const TypePtr &nodeType,
-                              std::vector<ValuePtr> args) {
-    if (args.size() != 1) {
-      throw ainl::core::AINLError("Invalid argument number for operator mean");
-    }
-    return meanNodeContract(module, nodeType, (args[0]));
   });
   registerContract("transpose",
                    [](const ModulePtr &module, const TypePtr &nodeType,

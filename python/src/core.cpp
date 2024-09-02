@@ -179,7 +179,14 @@ void init_ailang_core(py::module &m) {
       });
 
   py::class_<JVPTracer, Tracer, std::shared_ptr<JVPTracer>>(m, "jvptracer");
-  py::class_<JITTracer, Tracer, std::shared_ptr<JITTracer>>(m, "jittracer");
+  py::class_<JITTracer, Tracer, std::shared_ptr<JITTracer>>(m, "jittracer")
+    .def_property_readonly("shape", [](JITTracer &tracer) {
+      auto array_tracer = asTracer<Array>(tracer.aval());
+      if (!array_tracer->evaluated()) {
+        array_tracer->eval();
+      }
+      return array_tracer->shape();
+    });
   py::class_<Array, Tracer, std::shared_ptr<Array>>(m, "array",
                                                     py::buffer_protocol())
       .def(py::init<>([]() { return Array(0.0f); }))
@@ -307,7 +314,6 @@ m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
     Dtype dtype = getDtypeFromFormat(buffer.format);
     auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
     auto stride = std::vector<int>(buffer.strides.begin(), buffer.strides.end());
-    
     Device dev;
     if (device == "cpu") {
         dev = cpu;

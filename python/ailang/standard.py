@@ -1,11 +1,13 @@
 import inspect
 import ailang as al
 
+from typing import List
 from ailang import array
 from ailang import jit
 
 
-def _tensor_member_fn(fn: T) -> T:
+
+def _tensor_member_fn(fn):
     """Decorator that adds this free function as a member fn on class tensor.
 
     When called as a member function on class tensor, the first argument to `fn`
@@ -49,6 +51,14 @@ def _tensor_member_fn(fn: T) -> T:
 
 @_tensor_member_fn
 @jit
+def mean(x: array, dim: List[int]) -> array:
+    """Computes the mean of a tensor."""
+    return al.prim.mean(x, dim)
+
+@_tensor_member_fn
+@jit
 def mean(x: array) -> array:
     """Computes the mean of a tensor."""
-    return al.mean(x)
+    shape = x.shape
+    dim = list(range(len(shape)))
+    return al.prim.mean(x, dim)

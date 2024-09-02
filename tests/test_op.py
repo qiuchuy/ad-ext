@@ -4,6 +4,11 @@ import numpy as np
 
 from ailang import array
 
+a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+b = al.from_numpy(a)
+c = al.mean(b)
+print(c)
+
 class TestOp:
     @staticmethod
     def numeric_check(a: array, b: np.ndarray):
@@ -38,3 +43,9 @@ class TestOp:
         assert c.shape == (1, 2)
         assert c.strides == (16, 8)
         assert TestOp.numeric_check(c, a[0:1])
+
+    def test_mean(self):
+        a = np.random.randn(3, 2)
+        b = al.from_numpy(a)
+        c = al.mean(b)
+        assert TestOp.numeric_check(c, np.mean(a))

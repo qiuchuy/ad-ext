@@ -10,39 +10,6 @@
 
 namespace ainl::core {
 
-class JVPTrace : public BaseTrace {
-public:
-  JVPTrace(int level) : BaseTrace(level, BaseTrace::TraceMode::jvp) {}
-  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  void process(const std::shared_ptr<Primitive> &prim,
-               const std::vector<std::shared_ptr<Tracer>> &inputs,
-               const std::vector<std::shared_ptr<Tracer>> &output);
-  std::string toString() const override;
-
-private:
-  void update(const std::vector<std::shared_ptr<Tracer>> &inputs,
-              const std::vector<JVPTracer> &output);
-};
-
-class JITTrace : public BaseTrace {
-public:
-  JITTrace(const ir::ModulePtr &module, int level)
-      : BaseTrace(level, BaseTrace::TraceMode::jit), module_(module) {}
-  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
-  void process(const std::shared_ptr<Primitive> &prim,
-               const std::vector<std::shared_ptr<Tracer>> &inputs,
-               const std::vector<std::shared_ptr<Tracer>> &output);
-  std::string toString() const override;
-  ir::ModulePtr module() { return module_; }
-
-private:
-  ir::ModulePtr module_;
-  void update(const std::vector<std::shared_ptr<Tracer>> &inputs,
-              const std::vector<JITTracer> &output);
-};
-
 class JITTracer : public Tracer {
 public:
   JITTracer(const std::shared_ptr<Tracer> &tracer, const ir::ValuePtr &value)
@@ -112,6 +79,39 @@ public:
 private:
   std::shared_ptr<Tracer> primal_;
   std::shared_ptr<Tracer> tangent_;
+};
+
+class JVPTrace : public BaseTrace {
+public:
+  JVPTrace(int level) : BaseTrace(level, BaseTrace::TraceMode::jvp) {}
+  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void process(const std::shared_ptr<Primitive> &prim,
+               const std::vector<std::shared_ptr<Tracer>> &inputs,
+               const std::vector<std::shared_ptr<Tracer>> &output);
+  std::string toString() const override;
+
+private:
+  void update(const std::vector<std::shared_ptr<Tracer>> &inputs,
+              const std::vector<JVPTracer> &output);
+};
+
+class JITTrace : public BaseTrace {
+public:
+  JITTrace(const ir::ModulePtr &module, int level)
+      : BaseTrace(level, BaseTrace::TraceMode::jit), module_(module) {}
+  void pack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void unpack(std::vector<std::shared_ptr<Tracer>> &inputs);
+  void process(const std::shared_ptr<Primitive> &prim,
+               const std::vector<std::shared_ptr<Tracer>> &inputs,
+               const std::vector<std::shared_ptr<Tracer>> &output);
+  std::string toString() const override;
+  ir::ModulePtr module() { return module_; }
+
+private:
+  ir::ModulePtr module_;
+  void update(const std::vector<std::shared_ptr<Tracer>> &inputs,
+              const std::vector<JITTracer> &output);
 };
 
 std::shared_ptr<Tracer>

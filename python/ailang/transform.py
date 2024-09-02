@@ -40,6 +40,7 @@ dtype_mapping = {
     al.bool: bool,
     # (yuqiuchu) run IREE with float32
     al.f32: np.float32,
+    al.f64: np.float64,
 }
 
 def check_device(*tracers):

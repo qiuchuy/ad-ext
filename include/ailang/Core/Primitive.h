@@ -4,6 +4,10 @@
 #include "ailang/Core/Array.h"
 #include "ailang/Core/Device.h"
 #include "ailang/IR/Node.h"
+#include "ailang/IR/Use.h"
+#include "ailang/IR/Value.h"
+
+using namespace ainl::ir;
 
 namespace ainl::core {
 
@@ -33,6 +37,9 @@ public:
                    std::vector<JITTracer> &output) = 0;
   virtual void jvp(const std::vector<JVPTracer> &inputs,
                    std::vector<JVPTracer> &output) = 0;
+
+  virtual TypePtr inferType(const std::vector<TypePtr> &inputTypes) = 0;
+
   virtual std::string toString() const = 0;
   operator std::string() const { return toString(); }
 
@@ -73,6 +80,9 @@ public:
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -84,6 +94,9 @@ public:
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -95,6 +108,9 @@ public:
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -106,6 +122,9 @@ public:
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -125,6 +144,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -141,6 +163,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -154,6 +179,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -164,6 +192,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -175,7 +206,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -191,6 +224,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -204,6 +240,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 class MinimumPrimitive : public UnaryPrimitive {
@@ -213,6 +252,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -223,6 +265,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 class SubtractPrimitive : public UnaryPrimitive {
@@ -232,6 +277,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -242,6 +290,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -253,6 +304,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -269,6 +323,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -285,6 +342,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -300,6 +360,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 
@@ -310,6 +373,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -325,16 +391,23 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 class MeanPrimitive : public UnaryPrimitive {
 public:
-  MeanPrimitive() = default;
+  MeanPrimitive(const std::vector<int64_t> &dim) : dim(dim) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
+
+private:
+  std::vector<int64_t> dim;
 };
 class BatchnormInferencePrimitive : public UnaryPrimitive {
 public:
@@ -343,6 +416,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 };
 class MaxPool2dPrimitive : public UnaryPrimitive {
@@ -352,6 +428,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
 
 private:
@@ -366,6 +445,9 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
+    throw std::runtime_error("Not implemented");
+  };
   std::string toString() const override;
   ir::CompareOp::CompareType op_;
 
