@@ -131,7 +131,7 @@ public:
 public:
   Value();
   explicit Value(const TypePtr &type);
-  static Value *create(const TypePtr &type) { return new Value(type); }
+  static ValuePtr create(const TypePtr &type) { return new Value(type); }
   ~Value() override = default;
   TypePtr getType() const { return type; }
 

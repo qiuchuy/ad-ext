@@ -25,6 +25,9 @@ public:
     static int FPARAM_COUNT;
     int idx;
     explicit operator std::string() const override;
+    static GraphParam *create(const TypePtr &type, int idx) {
+      return new GraphParam(type, idx);
+    }
 
   public:
     GraphParam(TypePtr type, int idx);

@@ -1,14 +1,15 @@
-#include "ailang/Core/Transformation.h"
 
 #include <memory>
 
 #include "ailang/Core/Array.h"
 #include "ailang/Core/Trace.h"
+#include "ailang/Core/Transformation.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Literal.h"
 #include "ailang/IR/Node.h"
 #include "ailang/IR/Type.h"
+#include "ailang/Transforms/Autodiff.h"
 
 namespace ainl::core {
 
@@ -218,6 +219,16 @@ ir::ModulePtr jit(std::function<std::vector<std::shared_ptr<Tracer>>(
   }
   popLastTrace();
   return module;
+}
+
+ir::ModulePtr grad(std::function<std::vector<std::shared_ptr<Tracer>>(
+                       std::vector<std::shared_ptr<Tracer>>)>
+                       f,
+                   std::string FuncName,
+                   const std::vector<std::shared_ptr<Tracer>> &Inputs) {
+  auto Module = jit(f, "d" + FuncName, Inputs);
+  ir::autodiffOnModule(Module);
+  return Module;
 }
 
 void eval(const std::vector<std::shared_ptr<Tracer>> &inputs) {

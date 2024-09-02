@@ -1,9 +1,11 @@
+#include "ailang/Core/Allocator.h"
 #include "ailang/Core/Array.h"
 #include "ailang/Core/Device.h"
 #include "ailang/Core/Ops.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Transformation.h"
 #include "ailang/IR/Function.h"
+#include "ailang/Transforms/Autodiff.h"
 #include "ailang/Transforms/StablehloConversion.h"
 
 #include <pybind11/cast.h>
@@ -301,6 +303,42 @@ void init_ailang_core(py::module &m) {
       .def("tolist", [](Array &a) { return to_pylist(a); });
 
 m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
+    py::buffer_info buffer = arr.request();
+    Dtype dtype = getDtypeFromFormat(buffer.format);
+    auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
+    auto stride = std::vector<int>(buffer.strides.begin(), buffer.strides.end());
+    
+    Device dev;
+    if (device == "cpu") {
+        dev = cpu;
+    } else if (device == "gpu") {
+        dev = gpu;
+    } else {
+        throw std::invalid_argument("Invalid device type when creating array from numpy array.");
+    }
+
+    // Calculate total size of the array
+    size_t total_size = buffer.itemsize;
+    for (auto dim : shape) {
+        total_size *= dim;
+    }
+
+    // Allocate new memory and copy data
+    void* new_data = std::malloc(total_size);
+    if (!new_data) {
+        throw std::runtime_error("Failed to allocate memory for array copy");
+    }
+    std::memcpy(new_data, buffer.ptr, total_size);
+
+    // Create a new Buffer with the copied data
+    auto new_buffer = allocator::Buffer(new_data);
+
+    auto result = std::make_shared<Array>(std::move(new_buffer), dtype, shape, stride, dev);
+    return result;
+}, "construct ainl array from numpy array", py::arg("arr"), py::arg("device") = "cpu");
+
+/*
+m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
     arr.inc_ref();
     py::buffer_info buffer = arr.request();
     Dtype dtype = getDtypeFromFormat(buffer.format);
@@ -338,6 +376,7 @@ m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
       throw std::runtime_error("Invalid return type");
     }
   });
+*/
 
   m.def(
       "trace_impl",
@@ -368,4 +407,29 @@ m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
         return module;
       },
       "jit compilation of python function with high level tracing", py::arg(), py::arg());
+
+  m.def("grad_impl", [](py::function &f, std::vector<std::shared_ptr<Tracer>> inputs) {
+    auto func = [&f](std::vector<std::shared_ptr<Tracer>> inputs)
+        -> std::vector<std::shared_ptr<Tracer>> {
+      py::tuple posArgs = py::tuple(inputs.size());
+      for (size_t i = 0; i < inputs.size(); i++) {
+        posArgs[i] = inputs[i];
+      }
+      auto result = f(*posArgs);
+      if (py::isinstance<py::tuple>(result) ||
+          py::isinstance<py::list>(result)) {
+        std::vector<std::shared_ptr<Tracer>> resultVec;
+        for (auto &item : result.cast<py::tuple>()) {
+          resultVec.push_back(item.cast<std::shared_ptr<Tracer>>());
+        }
+        return resultVec;
+      } else {
+        auto containedResult = std::vector<std::shared_ptr<Tracer>>();
+        containedResult.push_back(result.cast<std::shared_ptr<Tracer>>());
+        return containedResult;
+      }
+    };
+    auto module = grad(func, py::str(getattr(f, "__name__")), inputs);
+    return module;
+  });
 }

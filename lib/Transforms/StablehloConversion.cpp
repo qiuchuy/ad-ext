@@ -34,7 +34,7 @@ namespace ainl::ir {
 StableHLOLoweringPass::StableHLOLoweringPass(mlir::MLIRContext &context,
                                              const std::string &name)
     : builder(&context) {
-  theModule = mlir::ModuleOp::create(builder.getUnknownLoc(), "main");
+  theModule = mlir::ModuleOp::create(builder.getUnknownLoc(), name);
 }
 
 mlir::ModuleOp StableHLOLoweringPass::module() { return theModule; }
