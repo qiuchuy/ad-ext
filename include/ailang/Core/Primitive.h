@@ -7,6 +7,10 @@
 #include "ailang/IR/Use.h"
 #include "ailang/IR/Value.h"
 
+#include <pybind11/pybind11.h>
+
+extern std::map<std::string, pybind11::function> eval_callback;
+
 using namespace ainl::ir;
 
 namespace ainl::core {
@@ -176,7 +180,7 @@ class TransposePrimitive : public UnaryPrimitive {
 public:
   TransposePrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &output) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {

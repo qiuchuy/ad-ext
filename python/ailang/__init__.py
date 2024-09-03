@@ -1,7 +1,8 @@
-from . import prim
 from ._C.libailang import *
-from .transform import jit, grad
+from ._C.libailang import _register_eval_callback
 from .random import randn
-from .standard import (
-    mean,
-)
+from .transform import jit, grad
+from . import prim
+from . import standard
+
+_register_eval_callback("transpose", standard.transpose)

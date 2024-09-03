@@ -74,9 +74,18 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR}/include) 
 
+# we need pybind11 to register callback functions
+# so that we can call python functions for evalCPU from C++
+# move this inside AILANG_BUILD_PYTHON_MODULE after we have a stable evalCPU implementation
+# find pybind11
+find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
+find_package(pybind11 CONFIG REQUIRED HINTS "${Python3_SITELIB}")
+# link pybind11 libraries
+include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
+list(APPEND AILANG_LIBS ${pybind11_LIBRARIES})
+
 add_subdirectory(include)
 add_subdirectory(lib)
-
 
 set(AILANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AILANG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -86,14 +95,6 @@ if(AILANG_BUILD_PYTHON_MODULE)
   message(STATUS "Adding Python module")
   set(PYTHON_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/python/src)
   include_directories(${PYTHON_SRC_PATH})
-
-  # find pybind11
-  find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
-  find_package(pybind11 CONFIG REQUIRED HINTS "${Python3_SITELIB}")
-  # link pybind11 libraries
-  include_directories(SYSTEM ${pybind11_INCLUDE_DIRS})
-  list(APPEND AILANG_LIBS ${pybind11_LIBRARIES})
-
   # Important: If loading StableHLO in this fashion, it must come last,
   # after all of our libraries and test targets have been defined.
   # It seems that they both abuse upstream CMake macros that accumulate

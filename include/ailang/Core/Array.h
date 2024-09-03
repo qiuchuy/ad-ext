@@ -103,6 +103,7 @@ public:
     shape_ = std::make_shared<std::vector<int>>();
     *(reinterpret_cast<T *>(ptr_)) = val;
     stride_ = std::make_shared<std::vector<int>>();
+    trace_ = getStandardEvalTrace();
     LOG_DEBUG("[malloc] Fill address %d with value: %f",
               reinterpret_cast<uintptr_t>(ptr_), val);
   }
@@ -120,6 +121,7 @@ public:
     dtype_ = dtype;
     size_ = vec.size() * sizeof(T);
     stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
+    trace_ = getStandardEvalTrace();
     std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(ptr_));
   }
 

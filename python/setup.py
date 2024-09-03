@@ -191,6 +191,7 @@ def get_packages():
         "ailang/_C",
         "ailang/nn",
         "ailang/prim",
+        "ailang/standard",
     ]
     return packages
 

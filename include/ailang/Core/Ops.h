@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ailang/Core/Array.h"
+#include "ailang/Core/Trace.h"
 #include "ailang/Core/Transformation.h"
 
 namespace ainl::core {
@@ -31,7 +32,7 @@ public:
   std::vector<std::shared_ptr<Tracer>>
   build(const std::vector<std::shared_ptr<Tracer>> &inputs, unsigned output_num,
         Args... args) {
-    auto trace_mode = getCurrentTrace()->mode;
+    auto trace_mode = findTopTrace(inputs)->mode;
     auto tracers = createTracers<PrimTy>(trace_mode, inputs, output_num,
                                          std::forward<Args>(args)...);
     setupSiblings(tracers);

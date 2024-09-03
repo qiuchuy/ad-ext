@@ -107,7 +107,11 @@ auto parse_attr = [](const py::object &obj) -> int {
     throw std::invalid_argument("Invalid slice indices");
   }
 };
+
+
 } // anonymous namespace
+
+std::map<std::string, py::function> eval_callback;
 
 void init_ailang_core(py::module &m) {
   py::class_<Dtype>(m, "dtype")
@@ -181,11 +185,13 @@ void init_ailang_core(py::module &m) {
   py::class_<JVPTracer, Tracer, std::shared_ptr<JVPTracer>>(m, "jvptracer");
   py::class_<JITTracer, Tracer, std::shared_ptr<JITTracer>>(m, "jittracer")
     .def_property_readonly("shape", [](JITTracer &tracer) {
-      auto array_tracer = asTracer<Array>(tracer.aval());
-      if (!array_tracer->evaluated()) {
-        array_tracer->eval();
+      if (!tracer.evaluated()) {
+        tracer.eval();
       }
-      return array_tracer->shape();
+      tracer.tracer()->eval();
+      auto array_tracer = asTracer<Array>(tracer.tracer());
+      auto shape = array_tracer->shape();
+      return shape;
     });
   py::class_<Array, Tracer, std::shared_ptr<Array>>(m, "array",
                                                     py::buffer_protocol())
@@ -437,5 +443,9 @@ m.def("from_numpy", [](py::buffer arr, const std::string& device = "cpu") {
     };
     auto module = grad(func, py::str(getattr(f, "__name__")), inputs);
     return module;
+  });
+
+  m.def("_register_eval_callback", [](const std::string &name, py::function &f) {
+    eval_callback[name] = f;
   });
 }

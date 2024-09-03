@@ -70,6 +70,10 @@ std::shared_ptr<BaseTrace> getCurrentTrace() {
   return traceManager().getCurrentTrace();
 }
 
+std::shared_ptr<BaseTrace> getStandardEvalTrace() {
+  return std::make_shared<EvaluationTrace>(0);
+}
+
 ir::ModulePtr getTracedModule() {
   auto trace = getCurrentTrace();
   if (auto jit = std::dynamic_pointer_cast<JITTrace>(trace)) {

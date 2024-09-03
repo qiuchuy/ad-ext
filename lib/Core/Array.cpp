@@ -27,6 +27,7 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
   inputs_ = inputTracers;
   shape_ = std::make_shared<std::vector<int>>(shape);
   stride_ = std::make_shared<std::vector<int>>(stride);
+  trace_ = getStandardEvalTrace();
   idx_ = 0;
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
@@ -35,7 +36,9 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
 
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
              const std::shared_ptr<Primitive> &prim)
-    : Tracer(inputs, prim) {}
+    : Tracer(inputs, prim) {
+  trace_ = getStandardEvalTrace();
+}
 
 Array::Array(const allocator::Buffer &buffer, Dtype dtype,
              const std::vector<int> &shape, const std::vector<int> &stride,
@@ -47,6 +50,7 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
       shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
   ptr_ = buffer.ptr();
+  trace_ = getCurrentTrace();
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
@@ -54,11 +58,11 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 
 Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
                const std::shared_ptr<Primitive> &prim)
-    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(0) {}
+    : inputs_(inputs), prim_(prim), trace_(findTopTrace(inputs)), idx_(0) {}
 
 Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
                const std::shared_ptr<Primitive> &prim, uint64_t idx)
-    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(idx) {}
+    : inputs_(inputs), prim_(prim), trace_(findTopTrace(inputs)), idx_(idx) {}
 
 void Tracer::eval() {
   LOG_DEBUG("%s", "Starting evaluating tracers as a subgraph.");

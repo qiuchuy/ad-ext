@@ -1,1 +1,4 @@
-from .._C.libailang import mean
+from .._C.libailang import (
+    mean,
+    transpose,
+)

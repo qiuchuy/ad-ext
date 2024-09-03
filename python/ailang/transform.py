@@ -36,12 +36,14 @@ def transform(module, *args):
     Pipeline.apply(module)
     return module
 
+
 dtype_mapping = {
     al.bool: bool,
     # (yuqiuchu) run IREE with float32
     al.f32: np.float32,
     al.f64: np.float64,
 }
+
 
 def check_device(*tracers):
     if all(tracer.device == "cpu" for tracer in tracers):
@@ -51,10 +53,12 @@ def check_device(*tracers):
     else:
         raise ValueError("All tracers must be on the same known device.")
 
+
 def jit(f: Union[Callable]):
     """
     Decorator that performs just-in-time (JIT) compilation of a function.
     """
+
     def jitted_f(*args, **kwargs):
         tracer_args = [arg for arg in args if isinstance(arg, tracer)]
         tracer_kwargs = [arg for arg in kwargs.values() if isinstance(arg, tracer)]
@@ -87,10 +91,12 @@ def jit(f: Union[Callable]):
 
     return jitted_f
 
+
 def grad(f: Union[Callable]):
     """
     Decorator that performs automatic differentiation of a function.
     """
+
     def grad_f(*args, **kwargs):
         tracer_args = [arg for arg in args if isinstance(arg, tracer)]
         tracer_kwargs = [arg for arg in kwargs.values() if isinstance(arg, tracer)]
@@ -115,9 +121,7 @@ def grad(f: Union[Callable]):
         numpy_args = [
             np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in args
         ]
-        numpy_arg_tangents = [
-            np.ones_like(arg) for arg in numpy_args
-        ]
+        numpy_arg_tangents = [np.ones_like(arg) for arg in numpy_args]
 
         numpy_args.extend(numpy_arg_tangents)
 

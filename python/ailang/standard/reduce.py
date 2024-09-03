@@ -1,0 +1,14 @@
+import ailang as al
+
+from typing import List
+from .common import _tensor_member_fn
+
+
+@_tensor_member_fn
+@al.jit
+def mean(x: al.array, dim: List[int] = None) -> al.array:
+    """Computes the mean of a tensor."""
+    if dim is None:
+        shape = x.shape
+        dim = list(range(len(shape)))
+    return al.prim.mean(x, dim)

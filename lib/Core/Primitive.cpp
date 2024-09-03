@@ -263,6 +263,7 @@ void ReshapePrimitive::evalCPU(const std::vector<Array> &inputs,
   output.copyBySharing(input, size, 0, shape_);
 }
 
+// [TODO] Implement the JIT method for ReshapePrimitive
 void ReshapePrimitive::jit(const std::vector<JITTracer> &inputs,
                            JITTracer &output) {}
 
@@ -281,6 +282,16 @@ std::string ReshapePrimitive::toString() const { return "Reshape"; }
 
 void TransposePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
+}
+
+void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TransposePrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["transpose"](input));
 }
 
 void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,

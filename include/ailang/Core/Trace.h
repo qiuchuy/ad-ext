@@ -78,6 +78,7 @@ private:
 std::shared_ptr<BaseTrace> popLastTrace();
 void pushTrace(std::shared_ptr<BaseTrace> trace);
 std::shared_ptr<BaseTrace> getCurrentTrace();
+std::shared_ptr<BaseTrace> getStandardEvalTrace();
 ir::ModulePtr getTracedModule();
 size_t getTraceStackSize();
 std::shared_ptr<BaseTrace>
