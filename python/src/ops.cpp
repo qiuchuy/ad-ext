@@ -42,14 +42,15 @@ py::object pyop(const std::vector<std::shared_ptr<Tracer>> &inputs,
 
 template <typename PrimTy, typename... Args>
 py::object pyunary(const std::vector<std::shared_ptr<Tracer>> &inputs,
-                Args &&... args) {
+                   Args &&... args) {
   auto result = pyop<PrimTy>(inputs, 1, std::forward<Args>(args)...);
   if (py::isinstance<py::list>(result)) {
     return py::cast<py::list>(result)[0];
   } else if (py::isinstance<py::tuple>(result)) {
     return py::cast<py::tuple>(result)[0];
   } else {
-    throw std::invalid_argument("Expect a list or tuple of tracers as output in unary operators");
+    throw std::invalid_argument(
+        "Expect a list or tuple of tracers as output in unary operators");
   }
 }
 
@@ -82,50 +83,55 @@ void init_ailang_op(py::module_ &m) {
 
   m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
-      return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
+    return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
   });
   m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
                      const std::shared_ptr<ainl::core::Tracer> &weightValue,
                      const std::pair<int, int> &stride = {2, 2},
                      const std::pair<int, int> &padding = {0, 0},
                      const std::pair<int, int> &dilation = {1, 1}) {
-      return pyunary<ainl::core::ConvolutionPrimitive>(
-          {inputValue, weightValue});
+    return pyunary<ainl::core::ConvolutionPrimitive>({inputValue, weightValue});
   });
-  m.def("maxpool2d",
-        [](const std::shared_ptr<ainl::core::Tracer> &inputValue, const std::pair<int, int> &kernel_size) {
-            return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue}, kernel_size);
-        });
+  m.def("maxpool2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
+                        const std::pair<int, int> &kernel_size) {
+    return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue}, kernel_size);
+  });
   m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-      return pyunary<ainl::core::ReluPrimitive>({input});
+    return pyunary<ainl::core::ReluPrimitive>({input});
   });
-  m.def("batchnorm2d",
-        [](const std::shared_ptr<ainl::core::Tracer> &input,
-           const std::shared_ptr<ainl::core::Tracer> &scale,
-           const std::shared_ptr<ainl::core::Tracer> &offset,
-           const std::shared_ptr<ainl::core::Tracer> &mean,
-           const std::shared_ptr<ainl::core::Tracer> &variance) {
-            return pyunary<ainl::core::BatchnormInferencePrimitive>(
-                {input, scale, offset, mean, variance});
-        });
+  m.def("batchnorm2d", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                          const std::shared_ptr<ainl::core::Tracer> &scale,
+                          const std::shared_ptr<ainl::core::Tracer> &offset,
+                          const std::shared_ptr<ainl::core::Tracer> &mean,
+                          const std::shared_ptr<ainl::core::Tracer> &variance) {
+    return pyunary<ainl::core::BatchnormInferencePrimitive>(
+        {input, scale, offset, mean, variance});
+  });
 
-  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input, const std::vector<int64_t>& dim) {
-      return pyunary<ainl::core::MeanPrimitive>({input}, dim);
+  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                   const std::vector<int64_t> &dim) {
+    return pyunary<ainl::core::MeanPrimitive>({input}, dim);
   });
-  m.def("cat", [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs, int dim) {
-      return pyunary<ainl::core::ConcatPrimitive>(inputs, dim);
-  });
+  m.def("cat",
+        [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
+           int dim) {
+          return pyunary<ainl::core::ConcatPrimitive>(inputs, dim);
+        });
   m.def("exp", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-      return pyunary<ainl::core::ExpPrimitive>({input});
+    return pyunary<ainl::core::ExpPrimitive>({input});
   });
   m.def("tanh", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-      return pyunary<ainl::core::TanhPrimitive>({input});
+    return pyunary<ainl::core::TanhPrimitive>({input});
   });
   m.def("neg", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-      return pyunary<ainl::core::NegPrimitive>({input});
+    return pyunary<ainl::core::NegPrimitive>({input});
   });
   m.def("div", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
-                 const std::shared_ptr<ainl::core::Tracer> &rhs) {
-      return pyunary<ainl::core::DivPrimitive>({lhs, rhs});
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return pyunary<ainl::core::DivPrimitive>({lhs, rhs});
+  });
+  m.def("broadcast_to", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                           const std::vector<int> &shape) {
+    return pyunary<ainl::core::BroadcastPrimitive>({input}, shape);
   });
 }

@@ -14,3 +14,9 @@ def transpose(x: al.array) -> al.array:
 def cat(arrays: Union[Tuple[al.array], List[al.array]], dim: int) -> al.array:
     """Concatenates the given sequence of seq tensors in the given dimension."""
     return al.prim.cat(arrays, dim)
+
+@_tensor_member_fn
+@al.jit
+def broadcast_to(x: al.array, shape: Tuple[int, Tuple[int]]) -> al.array:
+    """Broadcasts a tensor to a new shape."""
+    return al.prim.broadcast_to(x, shape)

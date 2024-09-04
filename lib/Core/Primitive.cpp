@@ -367,42 +367,72 @@ void AsTypePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
 std::string AsTypePrimitive::toString() const { return "AsType"; }
+
 // broadcast
 void BroadcastPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
+TypePtr BroadcastPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 1) {
+    throw std::runtime_error(
+        "[BroadcastPrimitive::inferType] expects exactly one input type.");
+  }
+  auto InputType = inputTypes[0];
+  auto TensorType = asType<ir::TensorType>(InputType);
+  auto ResultShape = broadcastShapes(TensorType->getConcreteShape(), shape_);
+  std::vector<ValuePtr> ResultShapeValue;
+  for (auto Dim : ResultShape) {
+    ResultShapeValue.push_back(ir::Literal::create(Dim));
+  }
+  return TensorType::create(TensorType->getElementType(), ResultShapeValue);
+}
+
 void BroadcastPrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
-  // if (inputs.size() != 2) {
-  //     throw std::invalid_argument(
-  //         "[BroadcastPrimitive::jit] expects exactly one input tracers.");
-  // }
-  // auto input = inputs[0];
-  // // literal or attribute
-  // // std::vector<ir::ValuePtr> outputShape_;
-  // // to be confirmed. literal value has no Array's achivement.so put all
-  // // dims into inputValues.
-  // std::vector<ir::ValuePtr> inputValues = {input.value()};
-
-  // for (const auto &dim : shape_) {
-  //     inputValues.push_back(ir::Literal::create(dim));
-  // }
-
-  // std::vector<ir::TypePtr> inputType = {input.value()->getType()};
-
-  // auto outputType = ir::resolveContract("broadcast", inputType);
-
-  // auto module = getTracedModule();
-
-  // output.setValue(
-  //     ir::resolveContract("broadcast", module, outputType, inputValues));
-  // output.setTracer(
-  //     unary<BroadcastPrimitive>({input.tracer()}, shape_)); // Args...args
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[BroadcastPrimitive::jit] expects exactly one input tracers.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::ValuePtr> inputValues = {input.value()};
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(
+      getTracedModule()->create<Broadcast>(outputType, input.value(), shape_));
+  output.setTracer(single<BroadcastPrimitive>({input.tracer()}, shape_));
 }
+
 void BroadcastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                              JVPTracer &output) {}
 std::string BroadcastPrimitive::toString() const { return "Broadcast"; }
+
+std::vector<int>
+BroadcastPrimitive::broadcastShapes(const std::vector<int> &shape1,
+                                    const std::vector<int> &shape2) {
+  std::vector<int> resultShape;
+  auto it1 = shape1.rbegin();
+  auto it2 = shape2.rbegin();
+
+  while (it1 != shape1.rend() || it2 != shape2.rend()) {
+    int dim1 = (it1 != shape1.rend()) ? *it1 : 1;
+    int dim2 = (it2 != shape2.rend()) ? *it2 : 1;
+
+    if (dim1 != dim2 && dim1 != 1 && dim2 != 1) {
+      throw std::runtime_error("Shapes are not compatible for broadcasting.");
+    }
+
+    resultShape.push_back(std::max(dim1, dim2));
+
+    if (it1 != shape1.rend())
+      ++it1;
+    if (it2 != shape2.rend())
+      ++it2;
+  }
+
+  std::reverse(resultShape.begin(), resultShape.end());
+  return resultShape;
+}
 
 // max
 void MaximumPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
@@ -819,9 +849,7 @@ void ExpPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-
-}
+void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
 
 TypePtr ExpPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
@@ -831,7 +859,8 @@ TypePtr ExpPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   return inTensorType;
 }
 
-void ExpPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+void ExpPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
   if (inputs.size() != 1) {
     throw std::invalid_argument(
         "[ExpPrimitive::jit] expects exactly one input tracer.");
@@ -849,11 +878,10 @@ void TanhPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
 
-}
-
-void TanhPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+void TanhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {
   if (inputs.size() != 1) {
     throw std::invalid_argument(
         "[TanhPrimitive::jit] expects exactly one input tracer.");
@@ -879,9 +907,7 @@ void DivPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-
-}
+void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
 
 TypePtr DivPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
@@ -896,7 +922,8 @@ TypePtr DivPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   return inTensorType0;
 }
 
-void DivPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+void DivPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
   if (inputs.size() != 2) {
     throw std::invalid_argument(
         "[DivPrimitive::jit] expects exactly two input tracers.");
@@ -907,7 +934,8 @@ void DivPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) 
                                         input1.value()->getType()};
   std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
   auto outputType = inferType(inputType);
-  output.setValue(getTracedModule()->create<Div>(outputType, input0.value(), input1.value()));
+  output.setValue(getTracedModule()->create<Div>(outputType, input0.value(),
+                                                 input1.value()));
   output.setTracer(single<DivPrimitive>({input0.tracer(), input1.tracer()}));
 }
 
@@ -917,9 +945,7 @@ void NegPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-
-}
+void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
 
 TypePtr NegPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 1 && "Neg operator only applies to one tensor.");
@@ -929,7 +955,8 @@ TypePtr NegPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   return inTensorType;
 }
 
-void NegPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+void NegPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
   if (inputs.size() != 1) {
     throw std::invalid_argument(
         "[NegPrimitive::jit] expects exactly one input tracer.");
@@ -942,7 +969,5 @@ void NegPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) 
 }
 
 std::string NegPrimitive::toString() const { return "Neg"; }
-
-
 
 } // namespace ainl::core

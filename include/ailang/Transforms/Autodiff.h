@@ -29,6 +29,8 @@ public:
   void visit(TanhPtr Node) override{};
   void visit(NegPtr Node) override{};
   void visit(DivPtr Node) override{};
+  void visit(BroadcastPtr Node) override{};
+
 private:
   llvm::DenseMap<ValuePtr, ValuePtr> TangentMap;
 };

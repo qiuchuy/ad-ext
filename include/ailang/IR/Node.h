@@ -196,21 +196,20 @@ private:
   ValuePtr rhs;
 };
 
-// NODE_PTR_TYPE_DECL(Broadcast)
-// class Broadcast : public Node {
-//   public:
-//     Broadcast(const TypePtr &nodeType, const ValuePtr &inValue,
-//               std::vector<ValuePtr> args);
-//     NodeKind kind() override { return Node::NodeKind::BROADCAST; }
-//     explicit operator std::string() const override;
-//     // 在需要将 Broadcast 类的对象转换为字符串类型时使用。
-//     ValuePtr getValue() const { return inValue; }
-//     ValuePtr getArgs() const { return shape[0]; }
+NODE_PTR_TYPE_DECL(Broadcast)
+class Broadcast : public Node {
+public:
+  Broadcast(const TypePtr &nodeType, const ValuePtr &inValue,
+            std::vector<int> shape);
+  NodeKind kind() override { return Node::NodeKind::BROADCAST; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<int> getBroadCastShape() const { return shape; }
 
-//   private:
-//     ValuePtr inValue;
-//     std::vector<ValuePtr> shape;
-// };
+private:
+  ValuePtr inValue;
+  std::vector<int> shape;
+};
 
 NODE_PTR_TYPE_DECL(Relu)
 class Relu : public Node {
@@ -218,7 +217,6 @@ public:
   Relu(const TypePtr &nodeType, const ValuePtr &inValue);
   NodeKind kind() override { return Node::NodeKind::RELU; }
   explicit operator std::string() const override;
-  // 在需要将 Relu 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
   std::vector<int> getShape();
@@ -381,13 +379,13 @@ const std::array<std::string,
 NODE_PTR_TYPE_DECL(Concat)
 class Concat : public Node {
 public:
-  Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs,
-         int dim);
+  Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs, int dim);
   NodeKind kind() override { return Node::NodeKind::CONCAT; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   std::vector<ValuePtr> getInputs() { return inputs; }
   int getDim() { return dim; }
+
 private:
   std::vector<ValuePtr> inputs;
   int dim;
@@ -400,6 +398,7 @@ public:
   NodeKind kind() override { return Node::NodeKind::EXP; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
+
 private:
   ValuePtr inValue;
 };
@@ -411,6 +410,7 @@ public:
   NodeKind kind() override { return Node::NodeKind::TANH; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
+
 private:
   ValuePtr inValue;
 };
@@ -422,6 +422,7 @@ public:
   NodeKind kind() override { return Node::NodeKind::DIV; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
+
 private:
   ValuePtr lhs;
   ValuePtr rhs;
@@ -434,11 +435,9 @@ public:
   NodeKind kind() override { return Node::NodeKind::NEG; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
+
 private:
   ValuePtr inValue;
 };
-
-
-
 
 } // namespace ainl::ir
