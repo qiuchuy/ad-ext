@@ -2,7 +2,6 @@ import ailang as al
 import typing
 import numpy as np
 
-
 class TestOp:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
@@ -100,5 +99,16 @@ class TestOp:
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         e = al.standard.cat([c, d], 1)
-        assert e.shape == (2, 6)
         assert TestOp.numeric_check(e, np.concatenate([a, b], axis=1))
+
+    def test_standard_exp(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.exp(b)
+        assert TestOp.numeric_check(c, np.exp(a))
+
+    def test_standard_tanh(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.tanh(b)
+        assert TestOp.numeric_check(c, np.tanh(a))

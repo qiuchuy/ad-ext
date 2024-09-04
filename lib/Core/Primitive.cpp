@@ -815,4 +815,64 @@ TypePtr ConcatPrimitive::inferType(const std::vector<TypePtr> &input_types) {
 
 std::string ConcatPrimitive::toString() const { return "Concat"; }
 
+void ExpPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+TypePtr ExpPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Exp operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+void ExpPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ExpPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Exp>(outputType, input.value()));
+  output.setTracer(single<ExpPrimitive>({input.tracer()}));
+}
+
+std::string ExpPrimitive::toString() const { return "Exp"; }
+
+void TanhPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+void TanhPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TanhPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Tanh>(outputType, input.value()));
+  output.setTracer(single<ExpPrimitive>({input.tracer()}));
+}
+
+TypePtr TanhPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Exp operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+std::string TanhPrimitive::toString() const { return "Tanh"; }
+
 } // namespace ainl::core

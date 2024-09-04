@@ -25,6 +25,8 @@ public:
   void visit(Maxpool2dPtr Node) override{};
   void visit(CompareOpPtr Node) override{};
   void visit(ConcatPtr Node) override{};
+  void visit(ExpPtr Node) override{};
+  void visit(TanhPtr Node) override{};
 
 private:
   llvm::DenseMap<ValuePtr, ValuePtr> TangentMap;

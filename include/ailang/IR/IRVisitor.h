@@ -20,6 +20,8 @@ public:
   virtual void visit(Maxpool2dPtr node) = 0;
   virtual void visit(CompareOpPtr node) = 0;
   virtual void visit(ConcatPtr node) = 0;
+  virtual void visit(ExpPtr node) = 0;
+  virtual void visit(TanhPtr node) = 0;
   ~IRVisitor() = default;
 };
 

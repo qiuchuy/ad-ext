@@ -341,6 +341,30 @@ Concat::operator std::string() const {
 
 void Concat::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+Exp::Exp(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Exp::operator std::string() const {
+  return getName() + " = ailang::exp(" + inValue->getName() + "): " +
+         std::string(*getType());
+}
+
+void Exp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Tanh::Tanh(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Tanh::operator std::string() const {
+  return getName() + " = ailang::tanh(" + inValue->getName() + "): " +
+         std::string(*getType());
+}
+
+void Tanh::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
            const ModulePtr &falseBranch, const ValuePtr &cond)
     : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond) {
