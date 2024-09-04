@@ -10,8 +10,11 @@ class TestOp:
     def gen_random_nparray(
         self, shape: typing.Tuple[int], dtype: np.dtype
     ) -> np.ndarray:
-        random_nparray = np.random.randn(*shape).astype(dtype)
-        return random_nparray
+        if len(shape):
+            random_nparray = np.random.randn(*shape).astype(dtype)
+            return random_nparray
+        else:
+            return dtype(np.random.randn())
 
     def test_flatten(self):
         a = self.gen_random_nparray((2, 2), np.float32)
@@ -126,4 +129,15 @@ class TestOp:
         b = al.from_numpy(a)
         c = al.standard.tanh(b)
         assert TestOp.numeric_check(c, np.tanh(a))
+
+    def test_standard_broadcast_to(self):
+        a = self.gen_random_nparray((2, 1), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.broadcast_to(b, (2, 3))
+        assert TestOp.numeric_check(c, np.broadcast_to(a, (2, 3)))
+
+        d = self.gen_random_nparray((), np.float32)
+        e = al.from_numpy(d)
+        f = al.standard.broadcast_to(e, (2, 3))
+        assert TestOp.numeric_check(f, np.broadcast_to(d, (2, 3)))
 

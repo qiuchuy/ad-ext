@@ -454,7 +454,7 @@ void init_ailang_core(py::module &m) {
                 Types.push_back(ArrayInput.getJITType());
                 ArrayInputs.push_back(ArrayInput);
               }
-            }  
+            }
           }
         }
         auto ArgType = ainl::ir::TupleType::createUnnamedTuple(Types);

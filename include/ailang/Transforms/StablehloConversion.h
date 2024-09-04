@@ -45,6 +45,7 @@ public:
   void visit(TanhPtr node) override;
   void visit(NegPtr node) override;
   void visit(DivPtr node) override;
+  void visit(BroadcastPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

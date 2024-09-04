@@ -341,17 +341,38 @@ void StableHLOLoweringPass::visit(Maxpool2dPtr node) {
   // insertValueMapping(node, op);
 }
 
-// void StableHLOLoweringPass::visit(BroadcastPtr node) {
-//     mlir::Value value = valueMap[node->getValue()];
-//     auto shape = node->getShape();
-//     std::vector<int64_t> perm;
-//     for (size_t i = 0; i < shape.size(); ++i) {
-//         perm.push_back(shape.size() - 1 - i);
-//     }
-//     auto op = builder.create<mlir::stablehlo::BroadcastOp>(
-//         builder.getUnknownLoc(), value, perm);
-//     insertValueMapping(node, op);
-// }
+void StableHLOLoweringPass::visit(BroadcastPtr Node) {
+  mlir::Value Value = valueMap[Node->getOperand(0)];
+  auto Shape = Node->getBroadCastShape();
+  auto InputTensorType = asType<TensorType>(Node->getOperand(0)->getType());
+  auto PrevShape = InputTensorType->getConcreteShape();
+  std::vector<int64_t> BroadCastDimensions;
+  size_t OperandIndex = 0;
+  size_t OperandRank = PrevShape.size();
+  size_t TargetRank = Shape.size();
+  for (size_t Idx = 0; Idx < Shape.size(); ++Idx) {
+    if (OperandIndex < OperandRank && (PrevShape[OperandIndex] == 1 ||
+                                       Shape[Idx] == PrevShape[OperandIndex])) {
+      BroadCastDimensions.push_back(Idx);
+      ++OperandIndex;
+    }
+  }
+  if (OperandIndex < OperandRank) {
+    throw std::runtime_error("Invalid broadcast shape");
+  }
+  std::vector<ValuePtr> ResultValueShape;
+  for (auto Dim : Shape) {
+    ResultValueShape.push_back(Literal::create(static_cast<int>(Dim)));
+  }
+  auto ResultTensorType =
+      TensorType::create(InputTensorType->getElementType(), ResultValueShape);
+  auto Op = builder.create<mlir::stablehlo::BroadcastInDimOp>(
+      builder.getUnknownLoc(),
+      createRankedTensorTypeFromTensorType(ResultTensorType,
+                                           *theModule->getContext()),
+      Value, ArrayRef<int64_t>(BroadCastDimensions));
+  insertValueMapping(Node, Op);
+}
 
 void StableHLOLoweringPass::visit(CompareOpPtr node) {
   auto lhs = valueMap[node->getLHS()];
@@ -407,30 +428,30 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
 void StableHLOLoweringPass::visit(ExpPtr node) {
   mlir::Value value = valueMap[node->getOperand(0)];
-  auto op = builder.create<mlir::stablehlo::ExpOp>(builder.getUnknownLoc(),
-                                                  value);
+  auto op =
+      builder.create<mlir::stablehlo::ExpOp>(builder.getUnknownLoc(), value);
   insertValueMapping(node, op);
 }
 
 void StableHLOLoweringPass::visit(TanhPtr node) {
   mlir::Value value = valueMap[node->getOperand(0)];
-  auto op = builder.create<mlir::stablehlo::TanhOp>(builder.getUnknownLoc(),
-                                                   value);
+  auto op =
+      builder.create<mlir::stablehlo::TanhOp>(builder.getUnknownLoc(), value);
   insertValueMapping(node, op);
 }
 
 void StableHLOLoweringPass::visit(NegPtr node) {
   mlir::Value value = valueMap[node->getOperand(0)];
-  auto op = builder.create<mlir::stablehlo::NegOp>(builder.getUnknownLoc(),
-                                                  value);
+  auto op =
+      builder.create<mlir::stablehlo::NegOp>(builder.getUnknownLoc(), value);
   insertValueMapping(node, op);
 }
 
 void StableHLOLoweringPass::visit(DivPtr node) {
   mlir::Value lhs = valueMap[node->getOperand(0)];
   mlir::Value rhs = valueMap[node->getOperand(1)];
-  auto op = builder.create<mlir::stablehlo::DivOp>(builder.getUnknownLoc(), lhs,
-                                                 rhs);
+  auto op =
+      builder.create<mlir::stablehlo::DivOp>(builder.getUnknownLoc(), lhs, rhs);
   insertValueMapping(node, op);
 }
 
