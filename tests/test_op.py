@@ -2,6 +2,9 @@ import ailang as al
 import typing
 import numpy as np
 
+a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+b = al.from_numpy(a)
+c = al.standard.mean(b)
 
 class TestOp:
     @staticmethod
@@ -44,16 +47,53 @@ class TestOp:
         assert c.strides == (8, 4)
         assert TestOp.numeric_check(c, a[0:1])
 
-    def test_mean(self):
+    def test_standard_mean(self):
         a = self.gen_random_nparray((3, 2), np.float32)
         b = al.from_numpy(a)
         c = al.standard.mean(b)
-        print(c)
         assert TestOp.numeric_check(c, np.mean(a))
 
-    def test_transpose(self):
+    def test_standard_transpose(self):
         a = self.gen_random_nparray((2, 3), np.float32)
         b = al.from_numpy(a)
         c = al.standard.transpose(b)
         assert c.shape == (3, 2)
         assert TestOp.numeric_check(c, a.T)
+
+    def test_standard_add(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((2, 3), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.add(c, d)
+        assert TestOp.numeric_check(e, a + b)
+
+    def test_standard_relu(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.relu(b)
+        assert TestOp.numeric_check(c, np.maximum(a, 0))
+
+    def test_standard_conv2d(self):
+        a = self.gen_random_nparray((1, 4, 4, 1), np.float32)
+        b = self.gen_random_nparray((3, 3, 1, 1), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.conv2d(c, d, (2, 2), (0, 0), (1, 1))
+        assert e.shape == (1, 2, 2, 1)
+
+    def test_standard_var(self):
+        # [TODO]
+        raise NotImplementedError
+
+    def test_standard_batchnorm2d(self):
+        # [TODO]
+        raise NotImplementedError
+
+    def test_standard_maxpool2d(self):
+        raise NotImplementedError
+
+    def test_standard_avgpool2d(self):
+        # [TODO]
+        raise NotImplementedError
+

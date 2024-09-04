@@ -4,7 +4,7 @@ import ailang as al
 from enum import Enum
 from iree import compiler as ireec
 from iree import runtime as ireert
-from typing import Union, Tuple, Callable
+from typing import Union, Tuple, Callable, List
 
 from ailang import tracer
 
@@ -63,7 +63,7 @@ def jit(f: Union[Callable]):
         tracer_args = [arg for arg in args if isinstance(arg, tracer)]
         tracer_kwargs = [arg for arg in kwargs.values() if isinstance(arg, tracer)]
         tracer_args.extend(tracer_kwargs)
-        module = al.trace_impl(f, tracer_args)
+        module = al.trace_impl(f, args)
         print(module)
         mlir_str = module.to_mlir()
         print(mlir_str)
@@ -81,7 +81,7 @@ def jit(f: Union[Callable]):
         ctx.add_vm_module(vm_module)
 
         numpy_args = [
-            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in args
+            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in tracer_args
         ]
 
         _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]

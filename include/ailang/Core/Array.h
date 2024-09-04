@@ -110,7 +110,7 @@ public:
 
   template <typename T>
   /* Construct an array from a flattened vector*/
-  Array(const std::vector<T> &vec, const std::vector<int> &shape,
+  Array(const std::vector<T> &vec, const std::vector<int> &shape, Device device,
         Dtype dtype = TypeToDtype<T>())
       : Tracer({}, nullptr), shape_(std::make_shared<std::vector<int>>(shape)) {
     auto buffer = allocator::malloc(sizeof(T) * vec.size());
@@ -120,9 +120,19 @@ public:
     device_ = cpu;
     dtype_ = dtype;
     size_ = vec.size() * sizeof(T);
-    stride_ = std::make_shared<std::vector<int>>(shape.size(), 1);
     trace_ = getStandardEvalTrace();
-    std::copy(vec.begin(), vec.end(), reinterpret_cast<T *>(ptr_));
+    for (size_t i = 0; i < vec.size(); ++i) {
+      *(data<T>() + i) = vec[i];
+    }
+    std::vector<int> strides;
+    for (size_t i = 0; i < shape.size(); i++) {
+      int stride = 1;
+      for (size_t j = i + 1; j < shape.size(); j++) {
+        stride *= shape[j];
+      }
+      strides.push_back(stride * sizeof(T));
+    }
+    stride_ = std::make_shared<std::vector<int>>(strides);
   }
 
   /* Construct an array from buffer*/

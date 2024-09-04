@@ -1,6 +1,7 @@
 #include "ailang/Core/Ops.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Trace.h"
+#include "ailang/Utils/Logger.h"
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -92,8 +93,8 @@ void init_ailang_op(py::module_ &m) {
           {inputValue, weightValue});
   });
   m.def("maxpool2d",
-        [](const std::shared_ptr<ainl::core::Tracer> &inputValue) {
-            return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue});
+        [](const std::shared_ptr<ainl::core::Tracer> &inputValue, const std::vector<int>& kernel_size) {
+            return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue}, kernel_size);
         });
   m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
       return pyunary<ainl::core::ReluPrimitive>({input});

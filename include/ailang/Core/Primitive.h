@@ -427,7 +427,7 @@ public:
 };
 class MaxPool2dPrimitive : public UnaryPrimitive {
 public:
-  MaxPool2dPrimitive() = default;
+  MaxPool2dPrimitive(const std::vector<int> &kernel_size) : kernel_size(kernel_size) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
