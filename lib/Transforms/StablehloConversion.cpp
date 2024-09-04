@@ -1,3 +1,4 @@
+#include "ailang/IR/Node.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
@@ -7,8 +8,10 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/IR/Verifier.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -234,6 +237,32 @@ void StableHLOLoweringPass::visit(ReluPtr node) {
   insertValueMapping(node, op);
 }
 
+mlir::Value computeReduce(mlir::Location loc, mlir::TypeRange resultType,
+                          mlir::ValueRange operand, mlir::ValueRange zero,
+                          mlir::DenseI64ArrayAttr &dimensions,
+                          mlir::OpBuilder &builder) {
+  auto CurrentBlock = builder.getInsertionBlock();
+  llvm::SmallVector<mlir::Value, 1> inputs = {operand};
+  llvm::SmallVector<mlir::Value, 1> initValues = {zero};
+  auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
+      builder.getUnknownLoc(), resultType, inputs, initValues, dimensions);
+  auto *Body = builder.createBlock(&reduceOp.getBodyRegion());
+  mlir::Type ElementType =
+      operand[0].getType().cast<mlir::TensorType>().getElementType();
+  mlir::Value Element = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  mlir::Value Accumulator = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  builder.setInsertionPointToEnd(Body);
+  std::vector<mlir::Value> AddArgs = {Element, Accumulator};
+  auto AddResult =
+      builder.create<mlir::stablehlo::AddOp>(builder.getUnknownLoc(), AddArgs);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddResult.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+  return reduceOp->getResult(0);
+}
+
 void StableHLOLoweringPass::visit(MeanPtr node) {
   auto CurrentBlock = builder.getInsertionBlock();
   auto ResultType = createRankedTensorTypeFromTensorType(
@@ -247,6 +276,7 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
   auto dimensions = builder.getDenseI64ArrayAttr(node->getDim());
   auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
       builder.getUnknownLoc(), ResultType, inputs, initValues, dimensions);
+
   auto *Body = builder.createBlock(&reduceOp.getBodyRegion());
   mlir::Type ElementType =
       value.getType().cast<mlir::TensorType>().getElementType();
@@ -294,6 +324,90 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
   auto meanValue = builder.create<mlir::stablehlo::DivOp>(
       builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
   insertValueMapping(node, meanValue);
+}
+void StableHLOLoweringPass::visit(VariancePtr node) {
+  auto CurrentBlock = builder.getInsertionBlock();
+  auto ResultType = createRankedTensorTypeFromTensorType(
+      node->getType(), *theModule.getContext());
+  mlir::Value value = valueMap[node->getValue()];
+  mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(),
+      builder.getZeroAttr(ResultType.getElementType()));
+  llvm::SmallVector<mlir::Value, 1> inputs = {value};
+  llvm::SmallVector<mlir::Value, 1> initValues = {initValue};
+  auto dimensions = builder.getDenseI64ArrayAttr(node->getDim());
+  auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
+      builder.getUnknownLoc(), ResultType, inputs, initValues, dimensions);
+
+  auto *Body = builder.createBlock(&reduceOp.getBodyRegion());
+  mlir::Type ElementType =
+      value.getType().cast<mlir::TensorType>().getElementType();
+  mlir::Value Element = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  mlir::Value Accumulator = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  builder.setInsertionPointToEnd(Body);
+  std::vector<mlir::Value> AddArgs = {Element, Accumulator};
+  auto AddResult =
+      builder.create<mlir::stablehlo::AddOp>(builder.getUnknownLoc(), AddArgs);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddResult.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+  std::vector<int> inShape = node->getShape();
+
+  mlir::RankedTensorType tensorType =
+      mlir::RankedTensorType::get({}, ElementType);
+  mlir::DenseElementsAttr attr;
+  mlir::DenseElementsAttr correction_attr;
+  if (ElementType.isa<mlir::FloatType>()) {
+    float dimSizeValue = 1;
+
+    for (auto dim : inShape) {
+      dimSizeValue *= dim;
+    }
+    float correction = dimSizeValue - 1;
+    // Create a DenseElementsAttr with the dimSize value
+    attr = mlir::DenseElementsAttr::get(tensorType,
+                                        llvm::ArrayRef<float>{dimSizeValue});
+    correction_attr = mlir::DenseElementsAttr::get(
+        tensorType, llvm::ArrayRef<float>{correction});
+  } else {
+    throw std::runtime_error("Unsupported data type lowering VarianceOp.");
+  }
+
+  // Create a ConstantOp with the tensor type and attribute
+  auto dimSizeValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(), tensorType, attr);
+  auto meanValue = builder.create<mlir::stablehlo::DivOp>(
+      builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
+
+  // Broadcast in dim to match ranks
+  std::vector<int64_t> int64Shape(inShape.size());
+  std::transform(inShape.begin(), inShape.end(), int64Shape.begin(),
+                 [](int val) { return static_cast<int64_t>(val); });
+  mlir::Type BroadcastType = mlir::RankedTensorType::get(
+      mlir::ArrayRef<int64_t>(int64Shape),
+      mlir::FloatType::getF32(builder.getContext()));
+  std::vector<int64_t> axes(inShape.size());
+  std::iota(axes.begin(), axes.end(), 0);
+  mlir::DenseI64ArrayAttr axes_attr = builder.getDenseI64ArrayAttr({});
+
+  auto broadcastOP = builder.create<mlir::stablehlo::BroadcastInDimOp>(
+      builder.getUnknownLoc(), BroadcastType, meanValue, axes_attr);
+  // Compute substract
+  auto subValue = builder.create<mlir::stablehlo::SubtractOp>(
+      builder.getUnknownLoc(), value, broadcastOP);
+  auto squareValue = builder.create<mlir::stablehlo::MulOp>(
+      builder.getUnknownLoc(), subValue, subValue);
+  llvm::SmallVector<mlir::Value, 1> squareInputs = {squareValue};
+  auto squareSumValue =
+      computeReduce(builder.getUnknownLoc(), ResultType, squareInputs,
+                    initValues, dimensions, builder);
+  auto correctionValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(), tensorType, correction_attr);
+  auto varValue = builder.create<mlir::stablehlo::DivOp>(
+      builder.getUnknownLoc(), squareSumValue, correctionValue);
+  insertValueMapping(node, varValue);
 }
 
 void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {

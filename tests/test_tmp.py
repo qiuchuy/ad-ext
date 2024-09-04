@@ -8,6 +8,13 @@ def convert(x: np.array):
 
 
 class TestOP:
+    @pytest.mark.new
+    def test_new(self):
+        a = np.array([[1, 2], [9, 6]], dtype=np.float32)
+        b = al.from_numpy(a)
+        d = al.standard.var(b)
+        print(d)
+    
     @pytest.mark.batchnorm2d
     def test_batchnorm2d(self):
         # // %operand: [

@@ -185,6 +185,33 @@ std::vector<int> Mean::getShape() {
     throw std::runtime_error("Mean input is not a tensor");
   }
 }
+// Variance
+
+Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,
+                   const std::vector<int64_t> &dim)
+    : Node(opType), inValue(inValue), dim(dim) {}
+Variance::operator std::string() const {
+  auto prefix = getName() + " = ailang::variance(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Variance::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Variance::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Variance input is not a tensor");
+  }
+}
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {

@@ -63,8 +63,8 @@ public:
     TRANSPOSE,
     UNZIPPING,
     UNKNOWN,
+    VARIANCE,
     WHILE
-
   };
 
   void init() {
@@ -84,7 +84,7 @@ public:
   }
 
   template <typename NodeType, typename... ARGS>
-  static NodePtr create(ARGS &&... args) {
+  static NodePtr create(ARGS &&...args) {
     NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
     return Node;
   }
@@ -229,12 +229,26 @@ public:
        const std::vector<int64_t> &dim);
   NodeKind kind() override { return Node::NodeKind::MEAN; }
   explicit operator std::string() const override;
-  // 在需要将 Relu 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
   std::vector<int64_t> getDim() { return dim; };
   std::vector<int> getShape();
 
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> dim;
+};
+NODE_PTR_TYPE_DECL(Variance)
+class Variance : public Node {
+public:
+  Variance(const TypePtr &nodeType, const ValuePtr &inValue,
+           const std::vector<int64_t> &dim);
+  NodeKind kind() override { return Node::NodeKind::VARIANCE; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<int64_t> getDim() { return dim; };
+  std::vector<int> getShape();
 private:
   ValuePtr inValue;
   std::vector<int64_t> dim;

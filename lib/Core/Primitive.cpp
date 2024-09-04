@@ -529,6 +529,14 @@ std::string ConvolutionPrimitive::toString() const { return "Conv"; }
 void ReluPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
+void ReluPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ReluPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["relu"](input));
+}
 
 void ReluPrimitive::jit(const std::vector<JITTracer> &inputs,
                         JITTracer &output) {
@@ -551,11 +559,17 @@ void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string ReluPrimitive::toString() const { return "relu"; }
 // Mean
-
 void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
-
+void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[MeanPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["mean"](input));
+}
 TypePtr MeanPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inType->isTensorType() && "mean operator only applies to tensors.");
   auto inType = inputTypes[0];
@@ -588,7 +602,51 @@ void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string MeanPrimitive::toString() const { return "mean"; }
+// VariancePrimitive
+void VariancePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+void VariancePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[VariancePrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["var"](input));
+}
+TypePtr VariancePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<ValuePtr> outTensorshape;
+  for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
+    if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
+      outTensorshape.push_back(inTensorShape[Idx]);
+    }
+  }
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorshape);
+}
 
+void VariancePrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[VariancePrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Variance>(
+      outputType, input.value(), dim));
+  output.setTracer(single<VariancePrimitive>({input.tracer()}, dim));
+}
+
+void VariancePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
+std::string VariancePrimitive::toString() const { return "var"; }
 // BatchnormInferencePrimitive
 void BatchnormInferencePrimitive::eval(const std::vector<Array> &inputs,
                                        Array &output) {

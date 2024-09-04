@@ -15,6 +15,7 @@ public:
   virtual void visit(AddPtr node) = 0;
   virtual void visit(ReluPtr node) = 0;
   virtual void visit(MeanPtr node) = 0;
+  virtual void visit(VariancePtr node) = 0;
   virtual void visit(BatchNorm2dPtr node) = 0;
   virtual void visit(Maxpool2dPtr node) = 0;
   virtual void visit(CompareOpPtr node) = 0;
