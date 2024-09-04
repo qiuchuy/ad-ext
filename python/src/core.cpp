@@ -240,8 +240,8 @@ void init_ailang_core(py::module &m) {
              } else if (device == "gpu") {
                dev = gpu;
              } else {
-               throw std::invalid_argument(
-                   "Invalid device type when creating array from python iterable.");
+               throw std::invalid_argument("Invalid device type when creating "
+                                           "array from python iterable.");
              }
              if (std::all_of(flattened.begin(), flattened.end(),
                              [](const py::object &item) {
@@ -430,29 +430,60 @@ void init_ailang_core(py::module &m) {
 
   m.def(
       "trace_impl",
-      [](py::function &F, const std::vector<py::object>& Inputs) {
+      [](py::function &F, const std::vector<py::object> &Inputs) {
         std::vector<py::object> JittedInputs;
         std::vector<Array> ArrayInputs;
         std::vector<ainl::ir::TypePtr> Types;
-        for (const auto& Input : Inputs) {
+        for (const auto &Input : Inputs) {
           if (py::isinstance<Array>(Input)) {
-            auto ArrayInput = Input.cast<Array>();  
+            auto ArrayInput = Input.cast<Array>();
             Types.push_back(ArrayInput.getJITType());
             ArrayInputs.push_back(ArrayInput);
+          } else if (py::isinstance<py::list>(Input) ||
+                     py::isinstance<py::tuple>(Input)) {
+            if (std::all_of(Input.cast<py::tuple>().begin(),
+                            Input.cast<py::tuple>().end(), [](auto &Item) {
+                              return py::isinstance<Array>(Item);
+                            })) {
+              for (const auto &Item : Input.cast<py::tuple>()) {
+                auto ArrayInput = Item.cast<Array>();
+                Types.push_back(ArrayInput.getJITType());
+                ArrayInputs.push_back(ArrayInput);
+              }
+            }
           }
         }
         auto ArgType = ainl::ir::TupleType::createUnnamedTuple(Types);
-        auto Module = ainl::ir::ALModule::create(py::getattr(F, "__name__").cast<std::string>(), ArgType);
+        auto Module = ainl::ir::ALModule::create(
+            py::getattr(F, "__name__").cast<std::string>(), ArgType);
         auto Params = Module->getParams();
         pushTrace(std::make_shared<JITTrace>(Module, getTraceStackSize()));
         std::vector<std::shared_ptr<Tracer>> JITTracers;
         for (size_t Idx = 0; Idx < Params.size(); ++Idx) {
-          auto JITTracer = JITTracer::create(std::make_shared<Array>(ArrayInputs[Idx]), Params[Idx]);
+          auto JITTracer = JITTracer::create(
+              std::make_shared<Array>(ArrayInputs[Idx]), Params[Idx]);
           JITTracers.push_back(JITTracer);
         }
+        size_t ArrayIdx = 0;
         for (size_t Idx = 0; Idx < Inputs.size(); ++Idx) {
           if (py::isinstance<Array>(Inputs[Idx])) {
-            JittedInputs.push_back(py::cast(JITTracers[Idx]));
+            JittedInputs.push_back(py::cast(JITTracers[ArrayIdx]));
+            ArrayIdx++;
+          } else if (py::isinstance<py::list>(Inputs[Idx]) ||
+                     py::isinstance<py::tuple>(Inputs[Idx])) {
+            if (std::all_of(
+                    Inputs[Idx].cast<py::tuple>().begin(),
+                    Inputs[Idx].cast<py::tuple>().end(),
+                    [](auto &Item) { return py::isinstance<Array>(Item); })) {
+              std::vector<py::object> JittedInputsVector;
+              for (const auto &Item : Inputs[Idx].cast<py::tuple>()) {
+                JittedInputsVector.push_back(py::cast(JITTracers[ArrayIdx]));
+                ArrayIdx++;
+              }
+              JittedInputs.push_back(py::cast(JittedInputsVector));
+            } else {
+              JittedInputs.push_back(Inputs[Idx]);
+            }
           } else {
             JittedInputs.push_back(Inputs[Idx]);
           }
@@ -462,10 +493,11 @@ void init_ailang_core(py::module &m) {
           PosArgs[Idx] = JittedInputs[Idx];
         }
         auto Result = F(*PosArgs);
-        if (py::isinstance<py::tuple>(Result) || py::isinstance<py::list>(Result)) {
+        if (py::isinstance<py::tuple>(Result) ||
+            py::isinstance<py::list>(Result)) {
           std::vector<ainl::ir::TypePtr> ResultTypes;
           std::vector<ainl::ir::ValuePtr> ResultValues;
-          for (const auto & Item : Result.cast<py::tuple>()) {
+          for (const auto &Item : Result.cast<py::tuple>()) {
             auto ResultTracer = Item.cast<std::shared_ptr<JITTracer>>();
             ResultTracer->eval();
             ResultTypes.push_back(ResultTracer->value()->getType());

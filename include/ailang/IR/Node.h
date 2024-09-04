@@ -40,6 +40,7 @@ public:
     BROADCAST,
     CALL,
     COMPARE,
+    CONCAT,
     CONVOLUTION,
     DIV,
     FLOORDIV,
@@ -373,5 +374,20 @@ private:
 const std::array<std::string,
                  static_cast<size_t>(CompareOp::CompareType::COMPARETYPE)>
     compareOpString = {"eq", "ne", "ge", "gt", "le", "lt"};
+
+NODE_PTR_TYPE_DECL(Concat)
+class Concat : public Node {
+public:
+  Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs,
+         int dim);
+  NodeKind kind() override { return Node::NodeKind::CONCAT; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<ValuePtr> getInputs() { return inputs; }
+  int getDim() { return dim; }
+private:
+  std::vector<ValuePtr> inputs;
+  int dim;
+};
 
 } // namespace ainl::ir

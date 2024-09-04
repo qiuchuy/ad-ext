@@ -93,7 +93,7 @@ void init_ailang_op(py::module_ &m) {
           {inputValue, weightValue});
   });
   m.def("maxpool2d",
-        [](const std::shared_ptr<ainl::core::Tracer> &inputValue, const std::vector<int>& kernel_size) {
+        [](const std::shared_ptr<ainl::core::Tracer> &inputValue, const std::pair<int, int> &kernel_size) {
             return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue}, kernel_size);
         });
   m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
@@ -112,7 +112,7 @@ void init_ailang_op(py::module_ &m) {
   m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input, const std::vector<int64_t>& dim) {
       return pyunary<ainl::core::MeanPrimitive>({input}, dim);
   });
-  // m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input) {
-  //       return pyunary<ainl::core::MeanPrimitive>({input});
-  // });
+  m.def("cat", [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs, int dim) {
+      return pyunary<ainl::core::ConcatPrimitive>(inputs, dim);
+  });
 }

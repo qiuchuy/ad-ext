@@ -59,10 +59,18 @@ def jit(f: Union[Callable]):
     Decorator that performs just-in-time (JIT) compilation of a function.
     """
 
+    def flatten(*args):
+        flattened_arg = []
+        for arg in args:
+            if isinstance(arg, (list, tuple)):
+                flattened_arg.extend(arg)
+            else:
+                flattened_arg.append(arg)
+        return flattened_arg
+
     def jitted_f(*args, **kwargs):
-        tracer_args = [arg for arg in args if isinstance(arg, tracer)]
-        tracer_kwargs = [arg for arg in kwargs.values() if isinstance(arg, tracer)]
-        tracer_args.extend(tracer_kwargs)
+        flattened_args = flatten(*args)
+        tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
         module = al.trace_impl(f, args)
         print(module)
         mlir_str = module.to_mlir()
@@ -81,7 +89,9 @@ def jit(f: Union[Callable]):
         ctx.add_vm_module(vm_module)
 
         numpy_args = [
-            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in tracer_args
+            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype])
+            for arg in flattened_args
+            if isinstance(arg, tracer)
         ]
 
         _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]

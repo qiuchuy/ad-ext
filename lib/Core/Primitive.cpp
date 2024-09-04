@@ -644,7 +644,7 @@ void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
   auto module = getTracedModule();
   output.setValue(
       ir::resolveContract("maxpool2d", module, outputType, inputValues));
-  output.setTracer(single<MaxPool2dPrimitive>({input.tracer()}));
+  output.setTracer(single<MaxPool2dPrimitive>({input.tracer()}, kernel_size));
 }
 
 void MaxPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -752,5 +752,67 @@ void ComparePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
 std::string ComparePrimitive::toString() const { return "Compare"; }
+
+void ConcatPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void ConcatPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+void ConcatPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {
+  std::vector<ir::TypePtr> input_types;
+  std::vector<ir::ValuePtr> input_values;
+  std::vector<std::shared_ptr<Tracer>> tracers;
+  for (const auto &input : inputs) {
+    input_types.push_back(input.value()->getType());
+    input_values.push_back(input.value());
+    tracers.push_back(input.tracer());
+  }
+  auto output_type = inferType(input_types);
+  output.setValue(getTracedModule()->getGraph()->create<Concat>(
+      output_type, input_values, dim));
+  output.setTracer(single<ConcatPrimitive>(tracers, dim));
+}
+
+TypePtr ConcatPrimitive::inferType(const std::vector<TypePtr> &input_types) {
+  assert(input_types.size() > 0 && "Concat operator requires at least one "
+                                   "input tensor.");
+  std::vector<ValuePtr> out_tensor_shape;
+  auto tensor_type = SAFE_TYPE_DOWNCAST(input_types[0], TensorType);
+  auto element_type = tensor_type->getElementType();
+  for (size_t Idx = 0; Idx < tensor_type->getShape().size(); ++Idx) {
+    if (Idx == dim) {
+      int concated_dim = 0;
+      for (const auto &input_type : input_types) {
+        auto tensor_type = SAFE_TYPE_DOWNCAST(input_type, TensorType);
+        auto tensor_shape = tensor_type->getConcreteShape();
+        concated_dim += tensor_shape[Idx];
+      }
+      out_tensor_shape.push_back(ir::Literal::create(concated_dim));
+    } else {
+      out_tensor_shape.push_back(tensor_type->getShape()[Idx]);
+    }
+  }
+  // TypePtr element_type;
+
+  // for (const auto &input_type : input_types) {
+  //   TensorTypePtr tensor_type = SAFE_TYPE_DOWNCAST(input_type, TensorType);
+  //   element_type = tensor_type->getElementType();
+  //   std::vector<ValuePtr> tensor_shape = tensor_type->getShape();
+  //   for (size_t i = 0; i < tensor_shape.size(); ++i) {
+  //     if (i == dim) {
+  //       uint concated_dim = 0;
+  //       for ()
+  //     }
+  //     out_tensor_shape.push_back(tensor_shape[i]);
+  //   }
+  // }
+  return TensorType::create(element_type, out_tensor_shape);
+}
+
+std::string ConcatPrimitive::toString() const { return "Concat"; }
 
 } // namespace ainl::core

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ailang/AST/ASTNode.h"
 #include "ailang/IR/Node.h"
 
 namespace ainl::ir {
@@ -18,6 +19,7 @@ public:
   virtual void visit(BatchNorm2dPtr node) = 0;
   virtual void visit(Maxpool2dPtr node) = 0;
   virtual void visit(CompareOpPtr node) = 0;
+  virtual void visit(ConcatPtr node) = 0;
   ~IRVisitor() = default;
 };
 

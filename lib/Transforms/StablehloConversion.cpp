@@ -370,6 +370,16 @@ void StableHLOLoweringPass::visit(CompareOpPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(ConcatPtr Node) {
+  llvm::SmallVector<mlir::Value, 4> inputs;
+  for (auto value : Node->getInputs()) {
+    inputs.push_back(valueMap[value]);
+  }
+  auto op = builder.create<mlir::stablehlo::ConcatenateOp>(
+      builder.getUnknownLoc(), inputs, Node->getDim());
+  insertValueMapping(Node, op);
+}
+
 mlir::RankedTensorType
 createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
 
