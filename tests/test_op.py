@@ -2,9 +2,6 @@ import ailang as al
 import typing
 import numpy as np
 
-a = np.array([[1, 2], [3, 4]], dtype=np.float32)
-b = al.from_numpy(a)
-c = al.standard.mean(b)
 
 class TestOp:
     @staticmethod
@@ -97,3 +94,11 @@ class TestOp:
         # [TODO]
         raise NotImplementedError
 
+    def test_standard_cat(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((2, 3), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.cat([c, d], 1)
+        assert e.shape == (2, 6)
+        assert TestOp.numeric_check(e, np.concatenate([a, b], axis=1))

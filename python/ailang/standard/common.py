@@ -42,3 +42,17 @@ def _tensor_member_fn(fn):
 
     setattr(al.array, fn.__name__, wrapper)
     return fn
+
+def flatten_pytree(pytree):
+    """Flatten a pytree into a list."""
+    leaves = []
+
+    def _flatten_pytree(pytree):
+        if isinstance(pytree, (tuple, list)):
+            for x in pytree:
+                _flatten_pytree(x)
+        else:
+            leaves.append(pytree)
+
+    _flatten_pytree(pytree)
+    return leaves

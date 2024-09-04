@@ -316,6 +316,31 @@ CompareOp::operator std::string() const {
 
 void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+Concat::Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs,
+               int dim)
+    : Node(nodeType), inputs(inputs), dim(dim) {
+  for (size_t i = 0; i < inputs.size(); i++) {
+    setUse(inputs[i], i);
+  }
+}
+
+Concat::operator std::string() const {
+  std::string result;
+  std::string lhs;
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (i == inputs.size() - 1) {
+      lhs += inputs[i]->getName();
+    } else {
+      lhs += inputs[i]->getName() + ", ";
+    }
+  }
+  result += getName() + " = ailang::concat(" + lhs + ", " + std::to_string(dim) +
+            "): " + std::string(*getType());
+  return result;
+}
+
+void Concat::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
            const ModulePtr &falseBranch, const ValuePtr &cond)
     : Node(nodeType), trueBody(trueBranch), elseBody(falseBranch), cond(cond) {
