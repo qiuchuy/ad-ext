@@ -43,6 +43,7 @@ public:
     CONCAT,
     CONVOLUTION,
     DIV,
+    EXP,
     FLOORDIV,
     GETELEMENTPTR,
     IF,
@@ -61,6 +62,7 @@ public:
     RSHIFT,
     STORE,
     SUB,
+    TANH,
     TRANSPOSE,
     UNZIPPING,
     UNKNOWN,
@@ -388,6 +390,28 @@ public:
 private:
   std::vector<ValuePtr> inputs;
   int dim;
+};
+
+NODE_PTR_TYPE_DECL(Exp)
+class Exp : public Node {
+public:
+  Exp(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::EXP; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+private:
+  ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Tanh)
+class Tanh : public Node {
+public:
+  Tanh(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::TANH; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+private:
+  ValuePtr inValue;
 };
 
 } // namespace ainl::ir

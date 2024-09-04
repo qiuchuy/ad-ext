@@ -33,3 +33,15 @@ def maxpool2d(x: al.array) -> al.array:
     """Maxpool2d."""
     return al.prim.maxpool2d(x)
 
+@_tensor_member_fn
+@al.jit
+def exp(x: al.array) -> al.array:
+    """Exponential."""
+    return al.prim.exp(x)
+
+@_tensor_member_fn
+@al.jit
+def tanh(x: al.array) -> al.array:
+    """Tanh."""
+    return al.prim.tanh(x)
+

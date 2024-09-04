@@ -405,6 +405,20 @@ createRankedTensorTypeFromTensorType(TypePtr type, mlir::MLIRContext &context) {
   }
 }
 
+void StableHLOLoweringPass::visit(ExpPtr node) {
+  mlir::Value value = valueMap[node->getOperand(0)];
+  auto op = builder.create<mlir::stablehlo::ExpOp>(builder.getUnknownLoc(),
+                                                  value);
+  insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(TanhPtr node) {
+  mlir::Value value = valueMap[node->getOperand(0)];
+  auto op = builder.create<mlir::stablehlo::TanhOp>(builder.getUnknownLoc(),
+                                                   value);
+  insertValueMapping(node, op);
+}
+
 mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {
   switch (type->kind()) {
   case Type::TypeKind::BoolType:

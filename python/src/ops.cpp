@@ -115,4 +115,10 @@ void init_ailang_op(py::module_ &m) {
   m.def("cat", [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs, int dim) {
       return pyunary<ainl::core::ConcatPrimitive>(inputs, dim);
   });
+  m.def("exp", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+      return pyunary<ainl::core::ExpPrimitive>({input});
+  });
+  m.def("tanh", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+      return pyunary<ainl::core::TanhPrimitive>({input});
+  });
 }

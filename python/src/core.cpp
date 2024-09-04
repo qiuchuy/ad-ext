@@ -439,18 +439,22 @@ void init_ailang_core(py::module &m) {
             auto ArrayInput = Input.cast<Array>();
             Types.push_back(ArrayInput.getJITType());
             ArrayInputs.push_back(ArrayInput);
-          } else if (py::isinstance<py::list>(Input) ||
-                     py::isinstance<py::tuple>(Input)) {
-            if (std::all_of(Input.cast<py::tuple>().begin(),
-                            Input.cast<py::tuple>().end(), [](auto &Item) {
-                              return py::isinstance<Array>(Item);
-                            })) {
-              for (const auto &Item : Input.cast<py::tuple>()) {
+          } else if (py::isinstance<py::list>(Input)) {
+            auto ListInput = Input.cast<py::list>();
+            bool AllArray = true;
+            for (const auto &Item : ListInput) {
+              if (!py::isinstance<Array>(Item)) {
+                AllArray = false;
+                break;
+              }
+            }
+            if (AllArray) {
+              for (const auto &Item : ListInput) {
                 auto ArrayInput = Item.cast<Array>();
                 Types.push_back(ArrayInput.getJITType());
                 ArrayInputs.push_back(ArrayInput);
               }
-            }
+            }  
           }
         }
         auto ArgType = ainl::ir::TupleType::createUnnamedTuple(Types);
@@ -469,14 +473,18 @@ void init_ailang_core(py::module &m) {
           if (py::isinstance<Array>(Inputs[Idx])) {
             JittedInputs.push_back(py::cast(JITTracers[ArrayIdx]));
             ArrayIdx++;
-          } else if (py::isinstance<py::list>(Inputs[Idx]) ||
-                     py::isinstance<py::tuple>(Inputs[Idx])) {
-            if (std::all_of(
-                    Inputs[Idx].cast<py::tuple>().begin(),
-                    Inputs[Idx].cast<py::tuple>().end(),
-                    [](auto &Item) { return py::isinstance<Array>(Item); })) {
+          } else if (py::isinstance<py::list>(Inputs[Idx])) {
+            auto ListInput = Inputs[Idx].cast<py::list>();
+            bool AllArray = true;
+            for (const auto &Item : ListInput) {
+              if (!py::isinstance<Array>(Item)) {
+                AllArray = false;
+                break;
+              }
+            }
+            if (AllArray) {
               std::vector<py::object> JittedInputsVector;
-              for (const auto &Item : Inputs[Idx].cast<py::tuple>()) {
+              for (const auto &Item : ListInput) {
                 JittedInputsVector.push_back(py::cast(JITTracers[ArrayIdx]));
                 ArrayIdx++;
               }
