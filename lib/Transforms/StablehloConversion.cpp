@@ -419,6 +419,21 @@ void StableHLOLoweringPass::visit(TanhPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(NegPtr node) {
+  mlir::Value value = valueMap[node->getOperand(0)];
+  auto op = builder.create<mlir::stablehlo::NegOp>(builder.getUnknownLoc(),
+                                                  value);
+  insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(DivPtr node) {
+  mlir::Value lhs = valueMap[node->getOperand(0)];
+  mlir::Value rhs = valueMap[node->getOperand(1)];
+  auto op = builder.create<mlir::stablehlo::DivOp>(builder.getUnknownLoc(), lhs,
+                                                 rhs);
+  insertValueMapping(node, op);
+}
+
 mlir::Type createTypeFromElementType(TypePtr type, mlir::MLIRContext &context) {
   switch (type->kind()) {
   case Type::TypeKind::BoolType:

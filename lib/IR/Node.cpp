@@ -40,7 +40,7 @@ void Node::addBlock() {
   this->block->endBlock->insertBefore(block);
 }
 
-std::vector<ValuePtr> Node::getOperands() {
+std::vector<ValuePtr> Node::getOperands() const {
   std::vector<ValuePtr> Operands;
   for (auto &Use : useList) {
     Operands.push_back(Use->used);
@@ -48,7 +48,7 @@ std::vector<ValuePtr> Node::getOperands() {
   return Operands;
 }
 
-ValuePtr Node::getOperand(size_t index) {
+ValuePtr Node::getOperand(size_t index) const {
   if (index >= useList.size()) {
     throw std::runtime_error(
         "Index out of range when getting IR Node operand.");
@@ -364,6 +364,34 @@ Tanh::operator std::string() const {
 }
 
 void Tanh::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Neg::Neg(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Neg::operator std::string() const {
+  return getName() + " = ailang::neg(" + inValue->getName() + "): " +
+         std::string(*getType());
+}
+
+void Neg::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Div::Div(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+  this->lhs = lhs;
+  this->rhs = rhs;
+}
+
+Div::operator std::string() const {
+  return getName() + " = ailang::matmul(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + "): " + std::string(*getType());
+}
+
+void Div::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
            const ModulePtr &falseBranch, const ValuePtr &cond)

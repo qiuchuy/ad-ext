@@ -45,3 +45,15 @@ def tanh(x: al.array) -> al.array:
     """Tanh."""
     return al.prim.tanh(x)
 
+@_tensor_member_fn
+@al.jit
+def neg(x: al.array) -> al.array:
+    """Negation."""
+    return al.prim.neg(x)
+
+@_tensor_member_fn
+@al.jit
+def div(x: al.array, y: al.array) -> al.array:
+    """Division."""
+    return al.prim.div(x, y)
+

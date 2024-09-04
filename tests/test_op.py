@@ -93,6 +93,20 @@ class TestOp:
         # [TODO]
         raise NotImplementedError
 
+    def test_standard_div(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((2, 3), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.div(c, d)
+        assert TestOp.numeric_check(e, a / b)
+
+    def test_standard_neg(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.neg(b)
+        assert TestOp.numeric_check(c, -a)
+
     def test_standard_cat(self):
         a = self.gen_random_nparray((2, 3), np.float32)
         b = self.gen_random_nparray((2, 3), np.float32)
@@ -112,3 +126,4 @@ class TestOp:
         b = al.from_numpy(a)
         c = al.standard.tanh(b)
         assert TestOp.numeric_check(c, np.tanh(a))
+

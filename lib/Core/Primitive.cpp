@@ -875,4 +875,74 @@ TypePtr TanhPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
 
 std::string TanhPrimitive::toString() const { return "Tanh"; }
 
+void DivPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+TypePtr DivPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
+  auto inType0 = inputTypes[0];
+  auto inType1 = inputTypes[1];
+  assert(inType0->isTensorType() && "Div operator only applies to tensors.");
+  assert(inType1->isTensorType() && "Div operator only applies to tensors.");
+  auto inTensorType0 = SAFE_TYPE_DOWNCAST(inType0, TensorType);
+  auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
+  assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
+         "Div operator only applies to tensors with the same element type.");
+  return inTensorType0;
+}
+
+void DivPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[DivPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Div>(outputType, input0.value(), input1.value()));
+  output.setTracer(single<DivPrimitive>({input0.tracer(), input1.tracer()}));
+}
+
+std::string DivPrimitive::toString() const { return "Div"; }
+
+void NegPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+TypePtr NegPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Neg operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Neg operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+void NegPrimitive::jit(const std::vector<JITTracer> &inputs, JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[NegPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Neg>(outputType, input.value()));
+  output.setTracer(single<NegPrimitive>({input.tracer()}));
+}
+
+std::string NegPrimitive::toString() const { return "Neg"; }
+
+
+
 } // namespace ainl::core

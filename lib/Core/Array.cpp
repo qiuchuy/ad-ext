@@ -213,11 +213,11 @@ ir::TypePtr Array::getJITType() {
     // tensor which has empty shape_ will be jitted into literals
     switch (dtype_.type) {
     case Dtype::DataType::BoolType:
-      return ir::BoolTypePtr::get();
+      return ir::TensorType::create(ir::BoolTypePtr::get(), {});
     case Dtype::DataType::Int32Type:
-      return ir::IntTypePtr::get();
+      return ir::TensorType::create(ir::IntTypePtr::get(), {});
     case Dtype::DataType::Float32Type:
-      return ir::FloatTypePtr::get();
+      return ir::TensorType::create(ir::FloatTypePtr::get(), {});
     default:
       throw std::invalid_argument("Unsupported jit dtype");
     }
