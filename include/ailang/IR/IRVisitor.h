@@ -22,6 +22,8 @@ public:
   virtual void visit(ConcatPtr node) = 0;
   virtual void visit(ExpPtr node) = 0;
   virtual void visit(TanhPtr node) = 0;
+  virtual void visit(NegPtr node) = 0;
+  virtual void visit(DivPtr node) = 0;
   ~IRVisitor() = default;
 };
 

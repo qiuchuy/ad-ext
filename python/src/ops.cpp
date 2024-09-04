@@ -121,4 +121,11 @@ void init_ailang_op(py::module_ &m) {
   m.def("tanh", [](const std::shared_ptr<ainl::core::Tracer> &input) {
       return pyunary<ainl::core::TanhPrimitive>({input});
   });
+  m.def("neg", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+      return pyunary<ainl::core::NegPrimitive>({input});
+  });
+  m.def("div", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                 const std::shared_ptr<ainl::core::Tracer> &rhs) {
+      return pyunary<ainl::core::DivPrimitive>({lhs, rhs});
+  });
 }

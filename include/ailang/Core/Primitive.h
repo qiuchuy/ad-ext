@@ -520,4 +520,26 @@ public:
   std::string toString() const override;
 };
 
+class DivPrimitive : public UnaryPrimitive {
+public:
+  DivPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {throw std::runtime_error("Not implemented");};
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+};
+
+class NegPrimitive : public UnaryPrimitive {
+public:
+  NegPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {throw std::runtime_error("Not implemented");};
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+};
+
 } // namespace ainl::core

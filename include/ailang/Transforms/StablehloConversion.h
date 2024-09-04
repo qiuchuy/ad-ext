@@ -43,6 +43,8 @@ public:
   void visit(ConcatPtr node) override;
   void visit(ExpPtr node) override;
   void visit(TanhPtr node) override;
+  void visit(NegPtr node) override;
+  void visit(DivPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

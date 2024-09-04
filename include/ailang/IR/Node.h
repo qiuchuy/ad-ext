@@ -55,6 +55,7 @@ public:
     MEAN,
     MOD,
     MUL,
+    NEG,
     PARAM,
     POW,
     RELU,
@@ -92,8 +93,8 @@ public:
     return Node;
   }
 
-  std::vector<ValuePtr> getOperands();
-  ValuePtr getOperand(size_t index);
+  std::vector<ValuePtr> getOperands() const;
+  ValuePtr getOperand(size_t index) const;
 
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
   virtual void accept(IRVisitor *visitor);
@@ -413,5 +414,31 @@ public:
 private:
   ValuePtr inValue;
 };
+
+NODE_PTR_TYPE_DECL(Div)
+class Div : public Node {
+public:
+  Div(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::DIV; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+};
+
+NODE_PTR_TYPE_DECL(Neg)
+class Neg : public Node {
+public:
+  Neg(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::NEG; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+private:
+  ValuePtr inValue;
+};
+
+
+
 
 } // namespace ainl::ir
