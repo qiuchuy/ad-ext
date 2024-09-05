@@ -47,6 +47,7 @@ public:
   void visit(DivPtr node) override;
   void visit(BroadcastPtr node) override;
   void visit(MulPtr node) override;
+  void visit(ConstantDefPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

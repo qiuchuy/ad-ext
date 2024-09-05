@@ -94,7 +94,7 @@ class AddPrimitive : public UnaryPrimitive {
 public:
   AddPrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &output) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;

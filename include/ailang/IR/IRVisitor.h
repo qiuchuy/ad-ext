@@ -26,6 +26,7 @@ public:
   virtual void visit(NegPtr node) = 0;
   virtual void visit(DivPtr node) = 0;
   virtual void visit(MulPtr node) = 0;
+  virtual void visit(ConstantDefPtr node) = 0;
   ~IRVisitor() = default;
 };
 

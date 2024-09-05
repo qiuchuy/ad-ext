@@ -133,8 +133,8 @@ def element_wise(f):
         broadcasted_shape.reverse()
 
         # Determine which array needs broadcasting
-        array1_needs_broadcasting = tuple(shape1[::-1]) != broadcasted_shape
-        array2_needs_broadcasting = tuple(shape2[::-1]) != broadcasted_shape
+        array1_needs_broadcasting = (shape1[::-1]) != broadcasted_shape
+        array2_needs_broadcasting = (shape2[::-1]) != broadcasted_shape
         return broadcasted_shape, array1_needs_broadcasting, array2_needs_broadcasting
 
     def wrapper(*args, **kwargs):
@@ -144,10 +144,10 @@ def element_wise(f):
                 "element_wise_binary decorator expects exactly two tensor arguments."
             )
         array1, array2 = args
-        if not isinstance(array1, al.array):
-            array1 = al.array(array1)
-        if not isinstance(array2, al.array):
-            array2 = al.array(array2)
+        if not isinstance(array1, al.tracer):
+            array1 = al.create_tracer(array1)
+        if not isinstance(array2, al.tracer):
+            array2 = al.create_tracer(array2)
         shape1 = list(array1.shape)
         shape2 = list(array2.shape)
         broadcasted_shape, array1_need_broadcast, array2_need_broadcast = (
@@ -156,9 +156,9 @@ def element_wise(f):
         expanded_array1 = array1
         expanded_array2 = array2
         if array1_need_broadcast:
-            expanded_array1 = al.standard.broadcast_to(array1, broadcasted_shape)
+            expanded_array1 = al.prim.broadcast_to(array1, broadcasted_shape)
         if array2_need_broadcast:
-            expanded_array2 = al.standard.broadcast_to(array2, broadcasted_shape)
+            expanded_array2 = al.prim.broadcast_to(array2, broadcasted_shape)
         result = f(expanded_array1, expanded_array2, **kwargs)
         return result
 

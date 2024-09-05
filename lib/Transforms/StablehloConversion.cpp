@@ -142,9 +142,40 @@ void StableHLOLoweringPass::visit(TransposePtr node) {
 void StableHLOLoweringPass::visit(MulPtr node) {
   mlir::Value lhs = valueMap[node->getOperand(0)];
   mlir::Value rhs = valueMap[node->getOperand(1)];
-  auto op = builder.create<mlir::stablehlo::MulOp>(
-      builder.getUnknownLoc(), lhs.getType(), lhs, rhs);
+  auto op = builder.create<mlir::stablehlo::MulOp>(builder.getUnknownLoc(),
+                                                   lhs.getType(), lhs, rhs);
   insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(ConstantDefPtr Node) {
+  auto ResultTensorType = asType<TensorType>(Node->getType());
+  auto ElementType = ResultTensorType->getElementType();
+  if (ElementType->isFloatType()) {
+    auto *LiteralValue = asValueType<Literal>(Node->getOperand(0));
+    auto FloatValue = LiteralValue->getFloatConcreteValue();
+    auto ResultType = createRankedTensorTypeFromTensorType(
+        ResultTensorType, *theModule.getContext());
+    auto Attr = mlir::DenseElementsAttr::get(
+        ResultType,
+        builder.getFloatAttr(ResultType.getElementType(), FloatValue));
+    auto Op = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(), ResultType, Attr);
+    insertValueMapping(Node, Op);
+  } else if (ElementType->isIntType()) {
+    auto *LiteralValue = asValueType<Literal>(Node->getOperand(0));
+    auto IntValue = LiteralValue->getIntConcreteValue();
+    auto ResultType = createRankedTensorTypeFromTensorType(
+        ResultTensorType, *theModule.getContext());
+    auto Attr = mlir::DenseElementsAttr::get(
+        ResultType,
+        builder.getIntegerAttr(ResultType.getElementType(), IntValue));
+    auto Op = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(), ResultType, Attr);
+    insertValueMapping(Node, Op);
+  } else {
+    throw std::runtime_error(
+        "Unsupported element type when lowering a constant node.");
+  }
 }
 
 void StableHLOLoweringPass::visit(MatmulPtr node) {

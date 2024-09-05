@@ -31,6 +31,7 @@ public:
   void visit(DivPtr Node) override{};
   void visit(BroadcastPtr Node) override{};
   void visit(MulPtr Node) override{};
+  void visit(ConstantDefPtr Node) override{};
 
 private:
   llvm::DenseMap<ValuePtr, ValuePtr> TangentMap;

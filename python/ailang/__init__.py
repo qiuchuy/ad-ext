@@ -5,5 +5,24 @@ from .transform import jit, grad
 from . import prim
 from . import standard
 
-_register_eval_callback("transpose", standard.transpose)
+from .prim import add as _add, mul as _mul, div as _div
+from .standard import element_wise
+
+@element_wise
+def add(x, y):
+    return _add(x, y)
+
+@element_wise
+def mul(x, y):
+    return _mul(x, y)
+
+@element_wise
+def div(x, y):
+    return _div(x, y)
+
+_register_eval_callback("add", standard.add)
 _register_eval_callback("broadcast_to", standard.broadcast_to)
+_register_eval_callback("exp", standard.exp)
+_register_eval_callback("neg", standard.neg)
+_register_eval_callback("tanh", standard.tanh)
+_register_eval_callback("transpose", standard.transpose)

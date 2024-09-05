@@ -19,6 +19,8 @@
 #include "ailang/IR/TypeContract.h"
 #include "ailang/IR/Value.h"
 
+#include <pybind11/stl.h> 
+
 namespace ainl::core {
 
 void UnaryPrimitive::eval(const std::vector<Array> &inputs,
@@ -64,6 +66,16 @@ std::string IdentityPrimitive::toString() const { return "Identity"; }
 
 void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
+}
+
+void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[AddPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["add"](input0, input1));
 }
 
 void AddPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -380,6 +392,7 @@ void BroadcastPrimitive::evalCPU(const std::vector<Array> &inputs,
         "[BroadcastPrimitive::evalCPU] expects exactly one input array.");
   }
   auto input = inputs[0];
+  auto b = eval_callback["broadcast_to"](input, shape_);
   output = pybind11::cast<Array>(eval_callback["broadcast_to"](input, shape_));
 }
 
@@ -480,9 +493,8 @@ TypePtr MultiplyPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
   assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
          "Div operator only applies to tensors with the same element type.");
-  return inTensorType0; 
+  return inTensorType0;
 }
-
 
 void MultiplyPrimitive::jit(const std::vector<JITTracer> &inputs,
                             JITTracer &output) {
@@ -498,8 +510,8 @@ void MultiplyPrimitive::jit(const std::vector<JITTracer> &inputs,
   auto outputType = inferType(inputType);
   output.setValue(getTracedModule()->create<Mul>(outputType, input0.value(),
                                                  input1.value()));
-  output.setTracer(single<MultiplyPrimitive>({input0.tracer(), input1.tracer()}));
-
+  output.setTracer(
+      single<MultiplyPrimitive>({input0.tracer(), input1.tracer()}));
 }
 
 void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -889,7 +901,14 @@ void ExpPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ExpPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["exp"](input));
+}
 
 TypePtr ExpPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
@@ -918,7 +937,14 @@ void TanhPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TanhPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["tanh"](input));
+}
 
 void TanhPrimitive::jit(const std::vector<JITTracer> &inputs,
                         JITTracer &output) {
@@ -930,13 +956,13 @@ void TanhPrimitive::jit(const std::vector<JITTracer> &inputs,
   std::vector<ir::TypePtr> inputType = {input.value()->getType()};
   auto outputType = inferType(inputType);
   output.setValue(getTracedModule()->create<Tanh>(outputType, input.value()));
-  output.setTracer(single<ExpPrimitive>({input.tracer()}));
+  output.setTracer(single<TanhPrimitive>({input.tracer()}));
 }
 
 TypePtr TanhPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
+  assert(inputTypes.size() == 1 && "Tanh operator only applies to one tensor.");
   auto inType = inputTypes[0];
-  assert(inType->isTensorType() && "Exp operator only applies to tensors.");
+  assert(inType->isTensorType() && "Tanh operator only applies to tensors.");
   auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
   return inTensorType;
 }
@@ -985,7 +1011,14 @@ void NegPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[NegPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["neg"](input));
+}
 
 TypePtr NegPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 1 && "Neg operator only applies to one tensor.");
