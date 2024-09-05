@@ -139,6 +139,21 @@ class TestOp:
         k = al.standard.div(m, n)
         assert TestOp.numeric_check(k, x / y)
 
+    def test_standard_mul(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((2, 3), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.mul(c, d)
+        assert TestOp.numeric_check(e, a * b)
+
+        x = self.gen_random_nparray((), np.float32)
+        y = self.gen_random_nparray((2, 3), np.float32)
+        m = al.from_numpy(x)
+        n = al.from_numpy(y)
+        k = al.standard.mul(m, n)
+        assert TestOp.numeric_check(k, x * y)
+
     def test_standard_neg(self):
         a = self.gen_random_nparray((2, 3), np.float32)
         b = al.from_numpy(a)
@@ -175,4 +190,12 @@ class TestOp:
         e = al.from_numpy(d)
         f = al.standard.broadcast_to(e, (2, 3))
         assert TestOp.numeric_check(f, np.broadcast_to(d, (2, 3)))
+
+    def test_standard_matmul(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((3, 4), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.matmul(c, d)
+        assert TestOp.numeric_check(e, np.matmul(a, b))
 

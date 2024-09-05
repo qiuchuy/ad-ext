@@ -269,11 +269,10 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 };
+
 class SubtractPrimitive : public UnaryPrimitive {
 public:
   SubtractPrimitive() = default;
