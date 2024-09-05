@@ -4,8 +4,8 @@ from typing import List
 from .common import _tensor_member_fn, element_wise
 
 @_tensor_member_fn
-@al.jit
 @element_wise
+@al.jit
 def add(x: al.array, y: al.array) -> al.array:
     """Add two tensors."""
     return al.prim.add(x, y)
@@ -53,15 +53,15 @@ def neg(x: al.array) -> al.array:
     return al.prim.neg(x)
 
 @_tensor_member_fn
-@al.jit
 @element_wise
+@al.jit
 def div(x: al.array, y: al.array) -> al.array:
     """Division."""
     return al.prim.div(x, y)
 
 @_tensor_member_fn
-@al.jit
 @element_wise
+@al.jit
 def sub(x: al.array, y: al.array) -> al.array:
     """Subtraction."""
     return al.prim.add(x, al.prim.neg(y))

@@ -144,17 +144,21 @@ def element_wise(f):
                 "element_wise_binary decorator expects exactly two tensor arguments."
             )
         array1, array2 = args
-        shape1 = array1.shape
-        shape2 = array2.shape
+        if not isinstance(array1, al.array):
+            array1 = al.array(array1)
+        if not isinstance(array2, al.array):
+            array2 = al.array(array2)
+        shape1 = list(array1.shape)
+        shape2 = list(array2.shape)
         broadcasted_shape, array1_need_broadcast, array2_need_broadcast = (
             broadcast_info(shape1, shape2)
         )
         expanded_array1 = array1
         expanded_array2 = array2
         if array1_need_broadcast:
-            expanded_array1 = al.prim.broadcast_to(array1, broadcasted_shape)
+            expanded_array1 = al.standard.broadcast_to(array1, broadcasted_shape)
         if array2_need_broadcast:
-            expanded_array2 = al.prim.broadcast_to(array2, broadcasted_shape)
+            expanded_array2 = al.standard.broadcast_to(array2, broadcasted_shape)
         result = f(expanded_array1, expanded_array2, **kwargs)
         return result
 
