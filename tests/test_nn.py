@@ -16,7 +16,6 @@ x_t = np.random.rand(input_size, 1).astype(np.float32)
 h_prev = np.random.rand(hidden_size, 1).astype(np.float32)
 c_prev = np.random.rand(hidden_size, 1).astype(np.float32)
 
-
 class LSTMCell(nn.Module):
     def __init__(self, input_size: int, hidden_size: int) -> None:
         super().__init__()
@@ -41,14 +40,11 @@ class LSTMCell(nn.Module):
         x = al.standard.cat([h_prev, x_t], 0)
         f = self.sigmoid(al.standard.add(al.standard.matmul(self.wf, x), self.bf))
         i = self.sigmoid(al.standard.add(al.standard.matmul(self.wi, x), self.bi))
-        c_hat = al.standard.tanh(
-            al.standard.add(al.standard.matmul(self.wc, x), self.bc)
-        )
+        c_hat = al.standard.tanh(al.standard.add(al.standard.matmul(self.wc, x), self.bc))
         c = al.standard.add(al.standard.mul(f, c_prev), al.standard.mul(i, c_hat))
         o = self.sigmoid(al.standard.add(al.standard.matmul(self.wo, x), self.bo))
         h = al.standard.mul(o, al.standard.tanh(c))
         return h, c
-
 
 lstm_cell = LSTMCell(input_size, hidden_size)
 
@@ -60,12 +56,11 @@ al_h_t, al_c_t = lstm_cell.forward(al_x_t, al_h_prev, al_c_prev)
 print("Next hidden state (h_t):", al_h_t)
 print("Next cell state (c_t):", al_c_t)
 
-
 class NumpyLSTMCell:
     def __init__(self, input_size, hidden_size):
         self.input_size = input_size
         self.hidden_size = hidden_size
-
+        
         # Initialize weights and biases
         self.Wf = wf
         self.bf = bf
@@ -78,32 +73,31 @@ class NumpyLSTMCell:
 
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-
+    
     def tanh(self, x):
         return np.tanh(x)
-
+    
     def forward(self, x_t, h_prev, c_prev):
         # Concatenate input and previous hidden state
         combined = np.vstack((h_prev, x_t))
-
+        
         # Forget gate
         f_t = self.sigmoid(self.Wf @ combined + self.bf)
-
+        
         # Input gate
         i_t = self.sigmoid(self.Wi @ combined + self.bi)
         c_tilde_t = self.tanh(self.Wc @ combined + self.bc)
-
+        
         # New cell state
         c_t = f_t * c_prev + i_t * c_tilde_t
-
+        
         # Output gate
         o_t = self.sigmoid(self.Wo @ combined + self.bo)
-
+        
         # New hidden state
         h_t = o_t * self.tanh(c_t)
-
+        
         return h_t, c_t
-
 
 lstm_cell = NumpyLSTMCell(input_size, hidden_size)
 h_t, c_t = lstm_cell.forward(x_t, h_prev, c_prev)
@@ -112,3 +106,8 @@ print("Next cell state (c_t):", c_t)
 
 assert np.allclose(al_h_t.tolist(), h_t.tolist())
 assert np.allclose(al_c_t.tolist(), c_t.tolist())
+
+
+
+
+

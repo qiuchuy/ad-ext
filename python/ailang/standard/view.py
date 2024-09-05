@@ -17,6 +17,6 @@ def cat(arrays: Union[Tuple[al.array], List[al.array]], dim: int) -> al.array:
 
 @_tensor_member_fn
 @al.jit
-def broadcast_to(x: al.array, shape: Tuple[int, Tuple[int]]) -> al.array:
+def broadcast_to(x: al.array, shape) -> al.array:
     """Broadcasts a tensor to a new shape."""
     return al.prim.broadcast_to(x, shape)

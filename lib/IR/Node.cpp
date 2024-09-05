@@ -368,6 +368,18 @@ Concat::operator std::string() const {
 
 void Concat::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+ConstantDef::ConstantDef(const TypePtr &nodeType, const ValuePtr &value)
+    : Node(nodeType), value(value) {
+  setUse(value, 0);
+}
+
+ConstantDef::operator std::string() const {
+  return getName() + " = ailang::constant(" + value->getName() +
+         "): " + std::string(*getType());
+}
+
+void ConstantDef::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 Exp::Exp(const TypePtr &nodeType, const ValuePtr &inValue)
     : Node(nodeType), inValue(inValue) {
   setUse(inValue, 0);

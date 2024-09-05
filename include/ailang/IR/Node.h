@@ -41,6 +41,7 @@ public:
     CALL,
     COMPARE,
     CONCAT,
+    CONSTANT,
     CONVOLUTION,
     DIV,
     EXP,
@@ -188,6 +189,7 @@ public:
   NodeKind kind() override { return Node::NodeKind::MUL; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
+
 private:
   ValuePtr lhs;
   ValuePtr rhs;
@@ -401,6 +403,18 @@ public:
 private:
   std::vector<ValuePtr> inputs;
   int dim;
+};
+
+NODE_PTR_TYPE_DECL(ConstantDef)
+class ConstantDef : public Node {
+public:
+  ConstantDef(const TypePtr &nodeType, const ValuePtr &value);
+  NodeKind kind() override { return Node::NodeKind::CONSTANT; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr value;
 };
 
 NODE_PTR_TYPE_DECL(Exp)

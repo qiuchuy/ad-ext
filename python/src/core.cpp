@@ -7,6 +7,7 @@
 #include "ailang/Core/Transformation.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
+#include "ailang/IR/Literal.h"
 #include "ailang/IR/Type.h"
 #include "ailang/Transforms/Autodiff.h"
 #include "ailang/Transforms/StablehloConversion.h"
@@ -557,4 +558,42 @@ void init_ailang_core(py::module &m) {
         [](const std::string &name, py::function &f) {
           eval_callback[name] = f;
         });
+
+  m.def("create_tracer", [](const py::object &non_tracer_object) {
+    if (py::isinstance<py::int_>(non_tracer_object)) {
+      auto value = non_tracer_object.cast<int>();
+      if (getCurrentTrace()->mode == BaseTrace::TraceMode::jit) {
+        auto array_tracer = std::make_shared<Array>(value);
+        auto int_literal = Literal::create(value);
+        auto ConstantNode = getTracedModule()->create<ConstantDef>(
+            TensorType::create(int_literal->getType(), {}), int_literal);
+        auto jit_tracer = JITTracer::create(array_tracer, ConstantNode);
+        return py::cast(jit_tracer);
+      } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
+        auto array_tracer = std::make_shared<Array>(value);
+        return py::cast(array_tracer);
+      } else {
+        throw std::runtime_error(
+            "Invalid trace mode when creating tracer from non tracer objects.");
+      }
+    } else if (py::isinstance<py::float_>(non_tracer_object)) {
+      auto value = non_tracer_object.cast<float>();
+      if (getCurrentTrace()->mode == BaseTrace::TraceMode::jit) {
+        auto array_tracer = std::make_shared<Array>(value);
+        auto float_literal = Literal::create(value);
+        auto ConstantNode = getTracedModule()->create<ConstantDef>(
+            TensorType::create(float_literal->getType(), {}), float_literal);
+        auto jit_tracer = JITTracer::create(array_tracer, ConstantNode);
+        return py::cast(jit_tracer);
+      } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
+        auto array_tracer = std::make_shared<Array>(value);
+        return py::cast(array_tracer);
+      } else {
+        throw std::runtime_error(
+            "Invalid trace mode when creating tracer from non tracer objects.");
+      }
+    } else {
+      throw std::invalid_argument("Invalid object type when creating tracer.");
+    }
+  });
 }
