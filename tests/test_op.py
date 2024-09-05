@@ -176,3 +176,11 @@ class TestOp:
         f = al.standard.broadcast_to(e, (2, 3))
         assert TestOp.numeric_check(f, np.broadcast_to(d, (2, 3)))
 
+    def test_standard_matmul(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((3, 4), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.matmul(c, d)
+        assert TestOp.numeric_check(e, np.matmul(a, b))
+

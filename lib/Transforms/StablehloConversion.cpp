@@ -140,12 +140,20 @@ void StableHLOLoweringPass::visit(TransposePtr node) {
 }
 
 void StableHLOLoweringPass::visit(MatmulPtr node) {
-  llvm::SmallVector<mlir::Value, 4> inputs = {valueMap[node->getLHS()],
-                                              valueMap[node->getRHS()]};
-  llvm::SmallVector<mlir::NamedAttribute, 4> attributes;
-  auto op = builder.create<mlir::stablehlo::MulOp>(builder.getUnknownLoc(),
-                                                   inputs, attributes);
-  insertValueMapping(node, op);
+  auto LHSType = asType<TensorType>(node->getLHS()->getType());
+  auto RHSType = asType<TensorType>(node->getRHS()->getType());
+  auto NodeTensorType = asType<TensorType>(node->getType());
+  auto Attr = mlir::stablehlo::DotDimensionNumbersAttr::get(
+      theModule.getContext(), {}, {},
+      {static_cast<int64_t>(LHSType->getConcreteShape().size() - 1)}, {0});
+  auto ResultType = createRankedTensorTypeFromTensorType(
+      NodeTensorType, *theModule.getContext());
+  auto Op = builder.create<mlir::stablehlo::DotGeneralOp>(
+      builder.getUnknownLoc(), ResultType,
+      ValueRange{valueMap[node->getLHS()], valueMap[node->getRHS()]},
+      ArrayRef<NamedAttribute>{
+          builder.getNamedAttr("dot_dimension_numbers", Attr)});
+  insertValueMapping(node, Op);
 }
 
 void StableHLOLoweringPass::visit(AddPtr node) {

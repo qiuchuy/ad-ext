@@ -6,6 +6,7 @@ from .._C.libailang import (
     conv2d,
     div,
     exp,
+    matmul,
     mean,
     neg,
     relu,

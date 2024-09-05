@@ -66,3 +66,8 @@ def sub(x: al.array, y: al.array) -> al.array:
     """Subtraction."""
     return al.prim.add(x, al.prim.neg(y))
 
+@_tensor_member_fn
+@al.jit
+def matmul(x: al.array, y: al.array) -> al.array:
+    """Matrix multiplication."""
+    return al.prim.matmul(x, y)
