@@ -139,6 +139,14 @@ void StableHLOLoweringPass::visit(TransposePtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(MulPtr node) {
+  mlir::Value lhs = valueMap[node->getOperand(0)];
+  mlir::Value rhs = valueMap[node->getOperand(1)];
+  auto op = builder.create<mlir::stablehlo::MulOp>(
+      builder.getUnknownLoc(), lhs.getType(), lhs, rhs);
+  insertValueMapping(node, op);
+}
+
 void StableHLOLoweringPass::visit(MatmulPtr node) {
   auto LHSType = asType<TensorType>(node->getLHS()->getType());
   auto RHSType = asType<TensorType>(node->getRHS()->getType());

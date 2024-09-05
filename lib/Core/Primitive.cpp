@@ -469,8 +469,39 @@ std::string MinimumPrimitive::toString() const { return "Min"; }
 void MultiplyPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
   evalCPU(inputs, out);
 }
+
+TypePtr MultiplyPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
+  auto inType0 = inputTypes[0];
+  auto inType1 = inputTypes[1];
+  assert(inType0->isTensorType() && "Div operator only applies to tensors.");
+  assert(inType1->isTensorType() && "Div operator only applies to tensors.");
+  auto inTensorType0 = SAFE_TYPE_DOWNCAST(inType0, TensorType);
+  auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
+  assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
+         "Div operator only applies to tensors with the same element type.");
+  return inTensorType0; 
+}
+
+
 void MultiplyPrimitive::jit(const std::vector<JITTracer> &inputs,
-                            JITTracer &output) {}
+                            JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MultiplyPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Mul>(outputType, input0.value(),
+                                                 input1.value()));
+  output.setTracer(single<MultiplyPrimitive>({input0.tracer(), input1.tracer()}));
+
+}
+
 void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
 

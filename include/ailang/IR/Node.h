@@ -181,6 +181,18 @@ private:
   ValuePtr rhs;
 };
 
+NODE_PTR_TYPE_DECL(Mul)
+class Mul : public Node {
+public:
+  Mul(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::MUL; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+};
+
 NODE_PTR_TYPE_DECL(Matmul)
 class Matmul : public Node {
 public:

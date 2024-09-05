@@ -8,6 +8,7 @@ from .._C.libailang import (
     exp,
     matmul,
     mean,
+    mul,
     neg,
     relu,
     tanh,

@@ -130,6 +130,10 @@ void init_ailang_op(py::module_ &m) {
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
     return pyunary<ainl::core::DivPrimitive>({lhs, rhs});
   });
+  m.def("mul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return pyunary<ainl::core::MultiplyPrimitive>({lhs, rhs});
+  });
   m.def("broadcast_to", [](const std::shared_ptr<ainl::core::Tracer> &input,
                            const std::vector<int> &shape) {
     return pyunary<ainl::core::BroadcastPrimitive>({input}, shape);

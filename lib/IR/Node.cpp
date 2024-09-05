@@ -101,6 +101,21 @@ ReturnOp::ReturnOp(const ValuePtr &value) : Node(value->getType()) {
 
 void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+Mul::Mul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+  this->lhs = lhs;
+  this->rhs = rhs;
+}
+
+Mul::operator std::string() const {
+  return getName() + " = ailang::mul(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + "): " + std::string(*getType());
+}
+
+void Mul::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
