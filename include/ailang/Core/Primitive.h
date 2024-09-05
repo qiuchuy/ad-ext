@@ -225,7 +225,7 @@ public:
   BroadcastPrimitive() = default;
   explicit BroadcastPrimitive(const std::vector<int> &shape) : shape_(shape) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;

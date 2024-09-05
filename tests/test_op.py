@@ -67,6 +67,34 @@ class TestOp:
         e = al.standard.add(c, d)
         assert TestOp.numeric_check(e, a + b)
 
+        x = self.gen_random_nparray((), np.float32)
+        y = self.gen_random_nparray((2, 3), np.float32)
+        m = al.from_numpy(x)
+        n = al.from_numpy(y)
+        k = al.standard.add(m, n)
+        assert TestOp.numeric_check(k, x + y)
+
+        i = 1.
+        j = self.gen_random_nparray((2, 3), np.float32)
+        al_j = al.from_numpy(j)
+        r = al.standard.add(i, al_j)
+        assert TestOp.numeric_check(r, i + j)
+
+    def test_standard_sub(self):
+        a = self.gen_random_nparray((2, 3), np.float32)
+        b = self.gen_random_nparray((2, 3), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        e = al.standard.sub(c, d)
+        assert TestOp.numeric_check(e, a - b)
+
+        x = self.gen_random_nparray((), np.float32)
+        y = self.gen_random_nparray((2, 3), np.float32)
+        m = al.from_numpy(x)
+        n = al.from_numpy(y)
+        k = al.standard.sub(m, n)
+        assert TestOp.numeric_check(k, x - y)
+
     def test_standard_relu(self):
         a = self.gen_random_nparray((2, 3), np.float32)
         b = al.from_numpy(a)
@@ -103,6 +131,13 @@ class TestOp:
         d = al.from_numpy(b)
         e = al.standard.div(c, d)
         assert TestOp.numeric_check(e, a / b)
+
+        x = self.gen_random_nparray((), np.float32)
+        y = self.gen_random_nparray((2, 3), np.float32)
+        m = al.from_numpy(x)
+        n = al.from_numpy(y)
+        k = al.standard.div(m, n)
+        assert TestOp.numeric_check(k, x / y)
 
     def test_standard_neg(self):
         a = self.gen_random_nparray((2, 3), np.float32)

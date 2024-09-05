@@ -373,6 +373,16 @@ void BroadcastPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
+void BroadcastPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[BroadcastPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["broadcast_to"](input, shape_));
+}
+
 TypePtr BroadcastPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   if (inputTypes.size() != 1) {
     throw std::runtime_error(
@@ -429,7 +439,6 @@ BroadcastPrimitive::broadcastShapes(const std::vector<int> &shape1,
     if (it2 != shape2.rend())
       ++it2;
   }
-
   std::reverse(resultShape.begin(), resultShape.end());
   return resultShape;
 }
