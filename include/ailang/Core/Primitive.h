@@ -8,6 +8,7 @@
 #include "ailang/IR/Value.h"
 
 #include <pybind11/pybind11.h>
+#include <vector>
 
 extern std::map<std::string, pybind11::function> eval_callback;
 
@@ -372,20 +373,27 @@ public:
 
 class ConvolutionPrimitive : public UnaryPrimitive {
 public:
-  explicit ConvolutionPrimitive() {};
+  explicit ConvolutionPrimitive( std::vector<int64_t> window_strides,
+                                 std::vector<int64_t> lhsDilation,
+                                 std::vector<int64_t> rhsDilation,
+                                 std::vector<int64_t> padding_args,
+                                 std::vector<int64_t> window_reversal)
+      : window_strides(window_strides), lhsDilation(lhsDilation),
+        rhsDilation(rhsDilation), padding_args(padding_args),
+        window_reversal(window_reversal) {};
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
-  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs , JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 
 private:
-  std::vector<int> stride_;
-  std::vector<int> padding_;
-  std::vector<int> dilation_;
+   std::vector<int64_t> window_strides;
+   std::vector<int64_t> lhsDilation;
+   std::vector<int64_t> rhsDilation;
+   std::vector<int64_t> padding_args;
+   std::vector<int64_t> window_reversal;
 };
 
 class ReluPrimitive : public UnaryPrimitive {
@@ -430,24 +438,20 @@ class BatchnormInferencePrimitive : public UnaryPrimitive {
 public:
   BatchnormInferencePrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 };
 class MaxPool2dPrimitive : public UnaryPrimitive {
 public:
   MaxPool2dPrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 
 private:

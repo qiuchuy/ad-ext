@@ -249,6 +249,7 @@ public:
   void accept(IRVisitor *visitor) override;
   std::vector<int64_t> getDim() { return dim; };
   std::vector<int> getShape();
+
 private:
   ValuePtr inValue;
   std::vector<int64_t> dim;
@@ -286,16 +287,29 @@ NODE_PTR_TYPE_DECL(Convolution)
 class Convolution : public Node {
 public:
   Convolution(const TypePtr &nodeType, const ValuePtr &inputValue,
-              const ValuePtr &weightValue);
+              const ValuePtr &weightValue, std::vector<int64_t> &window_strides,
+              std::vector<int64_t> &lhsDilation,
+              std::vector<int64_t> &rhsDilation,
+              std::vector<int64_t> &padding_args,
+              std::vector<int64_t> &window_reversal);
   NodeKind kind() override { return Node::NodeKind::CONVOLUTION; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   ValuePtr getInputValue() const { return inputValue; }
   ValuePtr getWeightValue() const { return weightValue; }
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_strides, lhsDilation, rhsDilation, padding_args,
+            window_reversal};
+  }
 
 private:
   ValuePtr inputValue;
   ValuePtr weightValue;
+  std::vector<int64_t> &window_strides;
+  std::vector<int64_t> &lhsDilation;
+  std::vector<int64_t> &rhsDilation;
+  std::vector<int64_t> &padding_args;
+  std::vector<int64_t> &window_reversal;
 };
 
 NODE_PTR_TYPE_DECL(BatchNorm2d)

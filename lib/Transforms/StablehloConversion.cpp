@@ -8,6 +8,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/Region.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
@@ -171,10 +172,11 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
   auto resultType =
       mlir::RankedTensorType::get({1, 2, 2, 1}, builder.getF32Type());
   llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
-
-  auto windowStrides = builder.getDenseI64ArrayAttr({4, 4});
-  auto lhsDilation = builder.getDenseI64ArrayAttr({2, 2}); // lhs_dilation
-  auto rhsDilation = builder.getDenseI64ArrayAttr({1, 1}); // rhs_dilation
+  auto convArgs = node->getArgs();
+  auto windowStrides = builder.getDenseI64ArrayAttr(convArgs[0]);
+  auto lhsDilation = builder.getDenseI64ArrayAttr(convArgs[1]); // lhs_dilation
+  auto rhsDilation = builder.getDenseI64ArrayAttr(convArgs[2]); // rhs_dilation
+  // default 0 0
   auto window_reversal =
       builder.getDenseBoolArrayAttr({0, 0}); // window_reversal
 
@@ -421,7 +423,7 @@ void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
   // // same shape
   auto resultType = value.getType();
   llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
-  mlir::FloatAttr epsilon = builder.getF32FloatAttr(0.000001);
+  mlir::FloatAttr epsilon = builder.getF32FloatAttr(0.0);
   mlir::IntegerAttr feature_index = builder.getI64IntegerAttr(2);
 
   auto op = builder.create<mlir::stablehlo::BatchNormInferenceOp>(
@@ -431,41 +433,41 @@ void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
 }
 
 void StableHLOLoweringPass::visit(Maxpool2dPtr node) {
-  // mlir::Value value = valueMap[node->getValue()];
-  // auto window_dimensions = builder.getDenseI64ArrayAttr({2, 1});
-  // auto window_strides = builder.getDenseI64ArrayAttr({4, 1});
-  // auto base_dilations = builder.getDenseI64ArrayAttr({2, 1});
-  // auto window_dilations = builder.getDenseI64ArrayAttr({3, 1});
-  // std::initializer_list<int64_t> padding_args = {2, 1, 0, 0};
-  // auto paddingTensorType =
-  //     mlir::RankedTensorType::get({2, 2}, builder.getIntegerType(64));
-  // mlir::DenseIntElementsAttr padding =
-  //     mlir::DenseIntElementsAttr::get(paddingTensorType, padding_args);
-  // auto resultType =
-  //     mlir::RankedTensorType::get({1, 2, 2, 1}, builder.getF32Type());
+  auto CurrentBlock = builder.getInsertionBlock();
+  mlir::Value value = valueMap[node->getValue()];
+  auto window_dimensions = builder.getDenseI64ArrayAttr({2, 2});
+  auto window_strides = builder.getDenseI64ArrayAttr({2, 2});
+  auto base_dilations = builder.getDenseI64ArrayAttr({1, 1});
+  auto window_dilations = builder.getDenseI64ArrayAttr({1, 1});
+  std::initializer_list<int64_t> padding_args = {0, 0, 0, 0};
+  auto paddingTensorType =
+      mlir::RankedTensorType::get({2, 2}, builder.getIntegerType(64));
+  mlir::DenseIntElementsAttr padding =
+      mlir::DenseIntElementsAttr::get(paddingTensorType, padding_args);
+  auto resultType = mlir::RankedTensorType::get({2, 2}, builder.getF32Type());
 
-  // mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
-  //     builder.getUnknownLoc(),
-  //     builder.getZeroAttr(builder.getF32Type()));
-  // auto op = builder.create<mlir::stablehlo::ReduceWindowOp>(
-  //     builder.getUnknownLoc(), resultType, value, initValue,
-  //     window_dimensions, window_strides, base_dilations,
-  //     window_dilations, padding);
+  mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(), builder.getZeroAttr(builder.getF32Type()));
+  auto ReduceWindowOp = builder.create<mlir::stablehlo::ReduceWindowOp>(
+      builder.getUnknownLoc(), resultType, value, initValue, window_dimensions,
+      window_strides, base_dilations, window_dilations, padding);
+  auto *Body = builder.createBlock(&ReduceWindowOp.getBodyRegion());
 
-  // insertValueMapping(node, op);
+  mlir::Type ElementType =
+      value.getType().cast<mlir::TensorType>().getElementType();
+  mlir::Value Element = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  mlir::Value Accumulator = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  builder.setInsertionPointToEnd(Body);
+  std::vector<mlir::Value> AddArgs = {Element, Accumulator};
+  auto AddResult =
+      builder.create<mlir::stablehlo::MaxOp>(builder.getUnknownLoc(), AddArgs);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddResult.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+  insertValueMapping(node, ReduceWindowOp->getResult(0));
 }
-
-// void StableHLOLoweringPass::visit(BroadcastPtr node) {
-//     mlir::Value value = valueMap[node->getValue()];
-//     auto shape = node->getShape();
-//     std::vector<int64_t> perm;
-//     for (size_t i = 0; i < shape.size(); ++i) {
-//         perm.push_back(shape.size() - 1 - i);
-//     }
-//     auto op = builder.create<mlir::stablehlo::BroadcastOp>(
-//         builder.getUnknownLoc(), value, perm);
-//     insertValueMapping(node, op);
-// }
 
 void StableHLOLoweringPass::visit(CompareOpPtr node) {
   auto lhs = valueMap[node->getLHS()];

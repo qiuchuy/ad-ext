@@ -42,3 +42,34 @@ def _tensor_member_fn(fn):
 
     setattr(al.array, fn.__name__, wrapper)
     return fn
+
+
+@_tensor_member_fn
+@al.jit
+def batchnorm2d(input:al.array,scale:al.array,offset:al.array,mean:al.array,variance:al.array)->al.array:
+    "Compute the batchnrom of the input with mean,variance"
+    """
+    :params: input
+    :params: scale
+    :params: offset
+    :params: mean
+    :params: variance
+    """
+    return al.prim.batchnorm2d(input,scale,offset,mean,variance)
+
+@_tensor_member_fn
+@al.jit
+def maxpool2d(input)->al.array:
+    "Compute the maxpool2d of the input "
+    return al.prim.maxpool2d(input)
+
+@_tensor_member_fn
+@al.jit
+def conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
+        padding_args, window_reversal)->al.array:
+    "Compute the maxpool2d of the input "
+    return al.prim.conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
+        padding_args, window_reversal)
+
+
+    

@@ -191,7 +191,8 @@ Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,
                    const std::vector<int64_t> &dim)
     : Node(opType), inValue(inValue), dim(dim) {}
 Variance::operator std::string() const {
-  auto prefix = getName() + " = ailang::variance(" + getValue()->getName() + ")";
+  auto prefix =
+      getName() + " = ailang::variance(" + getValue()->getName() + ")";
   std::string postfix = "<dim=[";
   for (auto d : dim) {
     if (d == dim.back())
@@ -246,8 +247,15 @@ void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Convolution
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
-                         const ValuePtr &weightValue)
-    : Node(opType) {
+                         const ValuePtr &weightValue,
+                         std::vector<int64_t> &window_strides,
+                         std::vector<int64_t> &lhsDilation,
+                         std::vector<int64_t> &rhsDilation,
+                         std::vector<int64_t> &padding_args,
+                         std::vector<int64_t> &window_reversal)
+    : Node(opType), window_strides(window_strides), lhsDilation(lhsDilation),
+      rhsDilation(rhsDilation), padding_args(padding_args),
+      window_reversal(window_reversal) {
   this->inputValue = inputValue;
   this->weightValue = weightValue;
 }

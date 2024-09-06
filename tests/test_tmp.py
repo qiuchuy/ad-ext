@@ -32,25 +32,17 @@ class TestOP:
         )
         offset = convert(np.array([1.0, 1.0], dtype=np.float32))
         scale = convert(np.array([1.0, 1.0], dtype=np.float32))
-        mean = convert(np.array([1.0, 2.0], dtype=np.float32))
+        mean = convert(np.array([2.0, 3.0], dtype=np.float32))
         variance = convert(np.array([1.0, 1.0], dtype=np.float32))
-
-        @al.jit
-        def g(operand, scale, offset, mean, variance):
-            return al.batchnorm2d(operand, scale, offset, mean, variance)
-
-        res = g(operand, scale, offset, mean, variance)
+        res = al.standard.batchnorm2d(operand, scale, offset, mean, variance)
         print("eval res", res)
 
     @pytest.mark.maxpool2d
     def test_unary_op_maxpool(self):
-        @al.jit
-        def g(x):
-            return al.maxpool2d(x)
 
-        x = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
+        x = np.array([[1,2,3,4],[1,6,3,1],[2,2,2,2],[2,2,2,2]], dtype=np.float32)
         x = al.from_numpy(x)
-        iree_result = g(x)
+        iree_result = al.standard.maxpool2d(x)
         print("Result: ", iree_result)
 
     @pytest.mark.mean
@@ -83,15 +75,11 @@ class TestOP:
 
     @pytest.mark.conv
     def test_unary_op_conv(self):
-        @al.jit
-        def g(x, y):
-            return al.conv2d(x, y, (2, 2), (0, 0), (1, 1))
-
         a = np.ones((1, 4, 4, 1), dtype=np.float32)
         b = np.ones((3, 3, 1, 1), dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
-        iree_result = g(c, d)
+        iree_result = al.standard.conv2d(c, d,a1=(4,4),a2=(2,2),a3=(1,1),a4=(1,1),a5=(0,0))
         print("Result: ", iree_result)
 
     @pytest.mark.relu

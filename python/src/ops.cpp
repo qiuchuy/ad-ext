@@ -6,6 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <vector>
 
 namespace py = pybind11;
 
@@ -36,7 +37,7 @@ template <typename PrimTy, typename... Args>
 py::object pyop(const std::vector<std::shared_ptr<Tracer>> &inputs,
                 unsigned output_num, Args &&...args) {
   auto &builder = PyTracerBuilder::getInstance();
-  return builder.build<PrimTy>(inputs, output_num, std::forward<Args>(args)...);
+  return builder.build<PrimTy>(inputs, ouAtput_num, std::forward<Args>(args)...);
 }
 
 template <typename PrimTy, typename... Args>
@@ -86,10 +87,14 @@ void init_ailang_op(py::module_ &m) {
   });
   m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
                      const std::shared_ptr<ainl::core::Tracer> &weightValue,
-                     const std::pair<int, int> &stride = {2, 2},
-                     const std::pair<int, int> &padding = {0, 0},
-                     const std::pair<int, int> &dilation = {1, 1}) {
-    return pyunary<ainl::core::ConvolutionPrimitive>({inputValue, weightValue});
+                     std::vector<int64_t> window_stride = {4, 4},
+                     std::vector<int64_t> lhs_dilation = {2, 2},
+                     std::vector<int64_t> rhs_dilation = {1, 1},
+                     std::vector<int64_t> padding_args = {1, 1},
+                     std::vector<int64_t> window_reversal = {0, 0}) {
+    return pyunary<ainl::core::ConvolutionPrimitive>(
+        {inputValue, weightValue}, window_stride, lhs_dilation, rhs_dilation,
+        padding_args, window_reversal);
   });
   m.def("maxpool2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue) {
     return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue});
