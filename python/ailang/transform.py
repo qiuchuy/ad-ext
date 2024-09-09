@@ -77,7 +77,7 @@ def jit(f: Union[Callable]):
         print(mlir_str)
         target_backend, ireert_config, device = check_device(*tracer_args)
         compiled_flatbuffer = ireec.tools.compile_str(
-            module.to_mlir(),
+            mlir_str,
             input_type="stablehlo",
             target_backends=[target_backend],
             # extra_args=["--mlir-print-ir-before-all"],
@@ -95,10 +95,14 @@ def jit(f: Union[Callable]):
         ]
 
         _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
-        results = _jitted_f(*numpy_args).to_host()
-        al_array = al.from_numpy(results, device=device)
-        return al_array
-
+        result = _jitted_f(*numpy_args)
+        if isinstance(result, tuple): 
+            al_arrays = []
+            for res in result:
+                al_arrays.append(al.from_numpy(res.to_host(), device=device))
+        else:
+            al_arrays = al.from_numpy(result.to_host(), device=device)
+        return al_arrays
     return jitted_f
 
 
