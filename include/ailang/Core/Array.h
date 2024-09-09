@@ -240,6 +240,13 @@ public:
     return *(data<T>());
   }
 
+  template <typename T> T at(size_t offset) {
+    if (!evaluated()) {
+      eval();
+    }
+    return *(data<T>() + offset);
+  }
+
   template <typename T> T *data() { return static_cast<T *>(ptr_); };
 
   template <typename T> const T *data() const {

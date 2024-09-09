@@ -565,9 +565,10 @@ void init_ailang_core(py::module &m) {
       if (getCurrentTrace()->mode == BaseTrace::TraceMode::jit) {
         auto array_tracer = std::make_shared<Array>(value);
         auto int_literal = Literal::create(value);
-        auto ConstantNode = getTracedModule()->create<ConstantDef>(
-            TensorType::create(int_literal->getType(), {}), int_literal);
-        auto jit_tracer = JITTracer::create(array_tracer, ConstantNode);
+        auto container = TupleContainer::create({int_literal});
+        auto constant_node = getTracedModule()->create<ConstantDef>(
+            TensorType::create(int_literal->getType(), {}), container);
+        auto jit_tracer = JITTracer::create(array_tracer, constant_node);
         return py::cast(jit_tracer);
       } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
         auto array_tracer = std::make_shared<Array>(value);
@@ -581,9 +582,10 @@ void init_ailang_core(py::module &m) {
       if (getCurrentTrace()->mode == BaseTrace::TraceMode::jit) {
         auto array_tracer = std::make_shared<Array>(value);
         auto float_literal = Literal::create(value);
-        auto ConstantNode = getTracedModule()->create<ConstantDef>(
-            TensorType::create(float_literal->getType(), {}), float_literal);
-        auto jit_tracer = JITTracer::create(array_tracer, ConstantNode);
+        auto container = TupleContainer::create({float_literal});
+        auto constant_node = getTracedModule()->create<ConstantDef>(
+            TensorType::create(float_literal->getType(), {}), container);
+        auto jit_tracer = JITTracer::create(array_tracer, constant_node);
         return py::cast(jit_tracer);
       } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
         auto array_tracer = std::make_shared<Array>(value);

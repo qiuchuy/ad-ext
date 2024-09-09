@@ -193,7 +193,7 @@ class MatMulPrimitive : public UnaryPrimitive {
 public:
   MatMulPrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &output) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
@@ -266,7 +266,7 @@ class MultiplyPrimitive : public UnaryPrimitive {
 public:
   MultiplyPrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
