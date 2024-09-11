@@ -1,9 +1,19 @@
 from .._C.libailang import (
+    add,
+    batchnorm2d,
+    broadcast_to,
+    cat,
+    conv2d,
+    div,
+    exp,
+    matmul,
     mean,
+    mul,
+    neg,
+    relu,
+    tanh,
     transpose,
     relu,
     var,
-    batchnorm2d,
-    maxpool2d,
-    conv2d
+    maxpool2d
 )

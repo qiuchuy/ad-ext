@@ -41,6 +41,14 @@ public:
   void visit(AddPtr node) override;
   void visit(Maxpool2dPtr node) override;
   void visit(CompareOpPtr node) override;
+  void visit(ConcatPtr node) override;
+  void visit(ExpPtr node) override;
+  void visit(TanhPtr node) override;
+  void visit(NegPtr node) override;
+  void visit(DivPtr node) override;
+  void visit(BroadcastPtr node) override;
+  void visit(MulPtr node) override;
+  void visit(ConstantDefPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

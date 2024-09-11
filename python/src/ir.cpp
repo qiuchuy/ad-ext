@@ -33,5 +33,6 @@ void init_ailang_ir(py::module_ &m) {
   py::class_<ALModule, std::shared_ptr<ALModule>>(m, "ALModule")
       .def(py::init<>())
       .def("__str__", &ALModule::str)
-      .def("to_mlir", [](ModulePtr module) { return StableHLOLowering(module);});
+      .def("to_mlir",
+           [](ModulePtr module) { return StableHLOLowering(module); });
 }

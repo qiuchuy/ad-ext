@@ -40,7 +40,7 @@ void Node::addBlock() {
   this->block->endBlock->insertBefore(block);
 }
 
-std::vector<ValuePtr> Node::getOperands() {
+std::vector<ValuePtr> Node::getOperands() const {
   std::vector<ValuePtr> Operands;
   for (auto &Use : useList) {
     Operands.push_back(Use->used);
@@ -48,7 +48,7 @@ std::vector<ValuePtr> Node::getOperands() {
   return Operands;
 }
 
-ValuePtr Node::getOperand(size_t index) {
+ValuePtr Node::getOperand(size_t index) const {
   if (index >= useList.size()) {
     throw std::runtime_error(
         "Index out of range when getting IR Node operand.");
@@ -101,6 +101,21 @@ ReturnOp::ReturnOp(const ValuePtr &value) : Node(value->getType()) {
 
 void ReturnOp::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+Mul::Mul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+  this->lhs = lhs;
+  this->rhs = rhs;
+}
+
+Mul::operator std::string() const {
+  return getName() + " = ailang::mul(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + "): " + std::string(*getType());
+}
+
+void Mul::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Matmul
 Matmul::Matmul(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
@@ -130,16 +145,28 @@ Add::operator std::string() const {
 
 void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
 
-// Broadcast
-// Broadcast::Broadcast(const TypePtr &opType, const ValuePtr &inValue,
-//                      std::vector<ir::ValuePtr>)
-//     : Node(opType) {
-//     this->inValue = inValue;
-// }
-// Broadcast::operator std::string() const {
-//     return getName() + " = ailang::broadcast(" + getValue()->getName() +
-//            "):" + std::string(*getType()) + getArgs()->getName();
-// }
+Broadcast::Broadcast(const TypePtr &opType, const ValuePtr &inValue,
+                     std::vector<int> shape)
+    : Node(opType), inValue(inValue), shape(shape) {
+  setUse(inValue, 0);
+}
+
+Broadcast::operator std::string() const {
+  std::string prefix = getName() + " = ailang::broadcast(" +
+                       getOperand(0)->getName() +
+                       "):" + std::string(*getType());
+  std::string postfix = "<shape=[";
+  for (size_t i = 0; i < shape.size(); i++) {
+    if (i == shape.size() - 1) {
+      postfix += std::to_string(shape[i]) + "]>";
+    } else {
+      postfix += std::to_string(shape[i]) + ",";
+    }
+  }
+  return prefix + postfix;
+}
+
+void Broadcast::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Relu
 Relu::Relu(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
@@ -235,8 +262,15 @@ std::vector<int> Transpose::getShape() {
 }
 
 // Maxpool2d
-Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)
-    : Node(opType) {
+Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue,
+                     const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+    : Node(opType), window_dimensions(window_dimensions),
+      window_strides(window_strides), base_dilations(base_dilations),
+      window_dilations(window_dilations), padding(padding) {
   this->inValue = inValue;
 }
 Maxpool2d::operator std::string() const {
@@ -248,11 +282,11 @@ void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 // Convolution
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
                          const ValuePtr &weightValue,
-                         std::vector<int64_t> &window_strides,
-                         std::vector<int64_t> &lhsDilation,
-                         std::vector<int64_t> &rhsDilation,
-                         std::vector<int64_t> &padding_args,
-                         std::vector<int64_t> &window_reversal)
+                         const std::vector<int64_t> &window_strides,
+                         const std::vector<int64_t> &lhsDilation,
+                         const std::vector<int64_t> &rhsDilation,
+                         const std::vector<int64_t> &padding_args,
+                         const std::vector<int64_t> &window_reversal)
     : Node(opType), window_strides(window_strides), lhsDilation(lhsDilation),
       rhsDilation(rhsDilation), padding_args(padding_args),
       window_reversal(window_reversal) {
@@ -350,6 +384,94 @@ CompareOp::operator std::string() const {
 }
 
 void CompareOp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Concat::Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs,
+               int dim)
+    : Node(nodeType), inputs(inputs), dim(dim) {
+  for (size_t i = 0; i < inputs.size(); i++) {
+    setUse(inputs[i], i);
+  }
+}
+
+Concat::operator std::string() const {
+  std::string result;
+  std::string lhs;
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (i == inputs.size() - 1) {
+      lhs += inputs[i]->getName();
+    } else {
+      lhs += inputs[i]->getName() + ", ";
+    }
+  }
+  result += getName() + " = ailang::concat(" + lhs + ", " +
+            std::to_string(dim) + "): " + std::string(*getType());
+  return result;
+}
+
+void Concat::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+ConstantDef::ConstantDef(const TypePtr &nodeType, const ValuePtr &value)
+    : Node(nodeType), value(value) {
+  setUse(value, 0);
+}
+
+ConstantDef::operator std::string() const {
+  return getName() + " = ailang::constant(" + value->getName() +
+         "): " + std::string(*getType());
+}
+
+void ConstantDef::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Exp::Exp(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Exp::operator std::string() const {
+  return getName() + " = ailang::exp(" + inValue->getName() +
+         "): " + std::string(*getType());
+}
+
+void Exp::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Tanh::Tanh(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Tanh::operator std::string() const {
+  return getName() + " = ailang::tanh(" + inValue->getName() +
+         "): " + std::string(*getType());
+}
+
+void Tanh::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Neg::Neg(const TypePtr &nodeType, const ValuePtr &inValue)
+    : Node(nodeType), inValue(inValue) {
+  setUse(inValue, 0);
+}
+
+Neg::operator std::string() const {
+  return getName() + " = ailang::neg(" + inValue->getName() +
+         "): " + std::string(*getType());
+}
+
+void Neg::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+Div::Div(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+  this->lhs = lhs;
+  this->rhs = rhs;
+}
+
+Div::operator std::string() const {
+  return getName() + " = ailang::matmul(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + "): " + std::string(*getType());
+}
+
+void Div::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 IfOp::IfOp(const TypePtr &nodeType, const ModulePtr &trueBranch,
            const ModulePtr &falseBranch, const ValuePtr &cond)

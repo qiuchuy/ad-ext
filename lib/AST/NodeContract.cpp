@@ -43,7 +43,7 @@ ValuePtr maxpool2dNodeContract(const ModulePtr &module, const TypePtr &nodeType,
   if (!inValue->getType()->isTensorType()) {
     throw ainl::core::AINLError("maxpool2d operator only applies to tensors.");
   }
-  return module->getGraph()->create<Maxpool2d>(nodeType, inValue);
+  // return module->getGraph()->create<Maxpool2d>(nodeType, inValue);
 }
 ValuePtr convolutionNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,

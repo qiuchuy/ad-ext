@@ -1,7 +1,11 @@
 #include "ailang/Core/Ops.h"
 #include "ailang/Core/Primitive.h"
 #include "ailang/Core/Trace.h"
+#include "ailang/Utils/Logger.h"
 
+#include <initializer_list>
+#include <pybind11/chrono.h>
+#include <pybind11/complex.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -37,7 +41,7 @@ template <typename PrimTy, typename... Args>
 py::object pyop(const std::vector<std::shared_ptr<Tracer>> &inputs,
                 unsigned output_num, Args &&...args) {
   auto &builder = PyTracerBuilder::getInstance();
-  return builder.build<PrimTy>(inputs, ouAtput_num, std::forward<Args>(args)...);
+  return builder.build<PrimTy>(inputs, output_num, std::forward<Args>(args)...);
 }
 
 template <typename PrimTy, typename... Args>
@@ -84,21 +88,20 @@ void init_ailang_op(py::module_ &m) {
   m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
     return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
+    return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
   });
   m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
                      const std::shared_ptr<ainl::core::Tracer> &weightValue,
-                     std::vector<int64_t> window_stride = {4, 4},
-                     std::vector<int64_t> lhs_dilation = {2, 2},
-                     std::vector<int64_t> rhs_dilation = {1, 1},
-                     std::vector<int64_t> padding_args = {1, 1},
-                     std::vector<int64_t> window_reversal = {0, 0}) {
+                     const std::vector<int64_t> &window_stride,
+                     const std::vector<int64_t> &lhs_dilation,
+                     const std::vector<int64_t> &rhs_dilation,
+                     const std::vector<int64_t> &padding_args,
+                     const std::vector<int64_t> &window_reversal) {
     return pyunary<ainl::core::ConvolutionPrimitive>(
         {inputValue, weightValue}, window_stride, lhs_dilation, rhs_dilation,
         padding_args, window_reversal);
   });
-  m.def("maxpool2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue) {
-    return pyunary<ainl::core::MaxPool2dPrimitive>({inputValue});
-  });
+
   m.def("relu", [](const std::shared_ptr<ainl::core::Tracer> &input) {
     return pyunary<ainl::core::ReluPrimitive>({input});
   });
@@ -114,6 +117,42 @@ void init_ailang_op(py::module_ &m) {
   m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input,
                    const std::vector<int64_t> &dim) {
     return pyunary<ainl::core::MeanPrimitive>({input}, dim);
+  });
+  m.def("cat",
+        [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
+           int dim) {
+          return pyunary<ainl::core::ConcatPrimitive>(inputs, dim);
+        });
+  m.def("exp", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    return pyunary<ainl::core::ExpPrimitive>({input});
+  });
+  m.def("tanh", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    return pyunary<ainl::core::TanhPrimitive>({input});
+  });
+  m.def("neg", [](const std::shared_ptr<ainl::core::Tracer> &input) {
+    return pyunary<ainl::core::NegPrimitive>({input});
+  });
+  m.def("div", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return pyunary<ainl::core::DivPrimitive>({lhs, rhs});
+  });
+  m.def("mul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return pyunary<ainl::core::MultiplyPrimitive>({lhs, rhs});
+  });
+  m.def("broadcast_to", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                           const std::vector<int> &shape) {
+    return pyunary<ainl::core::BroadcastPrimitive>({input}, shape);
+  });
+  m.def("maxpool2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
+                        const std::vector<int64_t> &window_dimensions,
+                        const std::vector<int64_t> &window_strides,
+                        const std::vector<int64_t> &base_dilations,
+                        const std::vector<int64_t> &window_dilations,
+                        const std::vector<int64_t> &padding) {
+    return pyunary<ainl::core::MaxPool2dPrimitive>(
+        {inputValue}, window_dimensions, window_strides, base_dilations,
+        window_dilations, padding);
   });
   m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input,
                   const std::vector<int64_t> &dim) {

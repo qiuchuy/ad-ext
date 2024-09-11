@@ -95,7 +95,7 @@ class AddPrimitive : public UnaryPrimitive {
 public:
   AddPrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &output) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
 
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
@@ -226,16 +226,16 @@ public:
   BroadcastPrimitive() = default;
   explicit BroadcastPrimitive(const std::vector<int> &shape) : shape_(shape) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 
 private:
   std::vector<int> shape_;
+  std::vector<int> broadcastShapes(const std::vector<int> &shape1,
+                                   const std::vector<int> &shape2);
 };
 
 class MaximumPrimitive : public UnaryPrimitive {
@@ -270,11 +270,10 @@ public:
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 };
+
 class SubtractPrimitive : public UnaryPrimitive {
 public:
   SubtractPrimitive() = default;
@@ -373,27 +372,27 @@ public:
 
 class ConvolutionPrimitive : public UnaryPrimitive {
 public:
-  explicit ConvolutionPrimitive( std::vector<int64_t> window_strides,
-                                 std::vector<int64_t> lhsDilation,
-                                 std::vector<int64_t> rhsDilation,
-                                 std::vector<int64_t> padding_args,
-                                 std::vector<int64_t> window_reversal)
+  explicit ConvolutionPrimitive(const std::vector<int64_t> &window_strides,
+                                const std::vector<int64_t> &lhsDilation,
+                                const std::vector<int64_t> &rhsDilation,
+                                const std::vector<int64_t> &padding_args,
+                                const std::vector<int64_t> &window_reversal)
       : window_strides(window_strides), lhsDilation(lhsDilation),
         rhsDilation(rhsDilation), padding_args(padding_args),
         window_reversal(window_reversal) {};
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
-  void jit(const std::vector<JITTracer> &inputs , JITTracer &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 
 private:
-   std::vector<int64_t> window_strides;
-   std::vector<int64_t> lhsDilation;
-   std::vector<int64_t> rhsDilation;
-   std::vector<int64_t> padding_args;
-   std::vector<int64_t> window_reversal;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> lhsDilation;
+  std::vector<int64_t> rhsDilation;
+  std::vector<int64_t> padding_args;
+  std::vector<int64_t> window_reversal;
 };
 
 class ReluPrimitive : public UnaryPrimitive {
@@ -446,7 +445,14 @@ public:
 };
 class MaxPool2dPrimitive : public UnaryPrimitive {
 public:
-  MaxPool2dPrimitive() = default;
+  MaxPool2dPrimitive(const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+      : window_dimensions(window_dimensions), window_strides(window_strides),
+        base_dilations(base_dilations), window_dilations(window_dilations),
+        padding(padding) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
@@ -455,7 +461,11 @@ public:
   std::string toString() const override;
 
 private:
-  std::vector<int> kernel_size;
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
 };
 
 class ComparePrimitive : public UnaryPrimitive {
@@ -500,6 +510,74 @@ private:
     }
     output = Array(result);
   }
+};
+
+class ConcatPrimitive : public UnaryPrimitive {
+public:
+  explicit ConcatPrimitive(int dim) : dim(dim) {}
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {
+    throw std::runtime_error("Not implemented");
+  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+
+private:
+  int dim;
+};
+
+class ExpPrimitive : public UnaryPrimitive {
+public:
+  ExpPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {
+    throw std::runtime_error("Not implemented");
+  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+};
+
+class TanhPrimitive : public UnaryPrimitive {
+public:
+  TanhPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {
+    throw std::runtime_error("Not implemented");
+  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+};
+
+class DivPrimitive : public UnaryPrimitive {
+public:
+  DivPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {
+    throw std::runtime_error("Not implemented");
+  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+};
+
+class NegPrimitive : public UnaryPrimitive {
+public:
+  NegPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override {
+    throw std::runtime_error("Not implemented");
+  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
 };
 
 } // namespace ainl::core

@@ -20,6 +20,8 @@
 #include "ailang/IR/TypeContract.h"
 #include "ailang/IR/Value.h"
 
+#include <pybind11/stl.h>
+
 namespace ainl::core {
 
 void UnaryPrimitive::eval(const std::vector<Array> &inputs,
@@ -65,6 +67,16 @@ std::string IdentityPrimitive::toString() const { return "Identity"; }
 
 void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
+}
+
+void AddPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[AddPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["add"](input0, input1));
 }
 
 void AddPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -368,42 +380,82 @@ void AsTypePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                           JVPTracer &output) {}
 
 std::string AsTypePrimitive::toString() const { return "AsType"; }
+
 // broadcast
 void BroadcastPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
+void BroadcastPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[BroadcastPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  auto b = eval_callback["broadcast_to"](input, shape_);
+  output = pybind11::cast<Array>(eval_callback["broadcast_to"](input, shape_));
+}
+
+TypePtr BroadcastPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 1) {
+    throw std::runtime_error(
+        "[BroadcastPrimitive::inferType] expects exactly one input type.");
+  }
+  auto InputType = inputTypes[0];
+  auto TensorType = asType<ir::TensorType>(InputType);
+  auto ResultShape = broadcastShapes(TensorType->getConcreteShape(), shape_);
+  std::vector<ValuePtr> ResultShapeValue;
+  for (auto Dim : ResultShape) {
+    ResultShapeValue.push_back(ir::Literal::create(Dim));
+  }
+  return TensorType::create(TensorType->getElementType(), ResultShapeValue);
+}
+
 void BroadcastPrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
-  // if (inputs.size() != 2) {
-  //     throw std::invalid_argument(
-  //         "[BroadcastPrimitive::jit] expects exactly one input tracers.");
-  // }
-  // auto input = inputs[0];
-  // // literal or attribute
-  // // std::vector<ir::ValuePtr> outputShape_;
-  // // to be confirmed. literal value has no Array's achivement.so put all
-  // // dims into inputValues.
-  // std::vector<ir::ValuePtr> inputValues = {input.value()};
-
-  // for (const auto &dim : shape_) {
-  //     inputValues.push_back(ir::Literal::create(dim));
-  // }
-
-  // std::vector<ir::TypePtr> inputType = {input.value()->getType()};
-
-  // auto outputType = ir::resolveContract("broadcast", inputType);
-
-  // auto module = getTracedModule();
-
-  // output.setValue(
-  //     ir::resolveContract("broadcast", module, outputType, inputValues));
-  // output.setTracer(
-  //     unary<BroadcastPrimitive>({input.tracer()}, shape_)); // Args...args
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[BroadcastPrimitive::jit] expects exactly one input tracers.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::ValuePtr> inputValues = {input.value()};
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(
+      getTracedModule()->create<Broadcast>(outputType, input.value(), shape_));
+  output.setTracer(single<BroadcastPrimitive>({input.tracer()}, shape_));
 }
+
 void BroadcastPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                              JVPTracer &output) {}
 std::string BroadcastPrimitive::toString() const { return "Broadcast"; }
+
+std::vector<int>
+BroadcastPrimitive::broadcastShapes(const std::vector<int> &shape1,
+                                    const std::vector<int> &shape2) {
+  std::vector<int> resultShape;
+  auto it1 = shape1.rbegin();
+  auto it2 = shape2.rbegin();
+
+  while (it1 != shape1.rend() || it2 != shape2.rend()) {
+    int dim1 = (it1 != shape1.rend()) ? *it1 : 1;
+    int dim2 = (it2 != shape2.rend()) ? *it2 : 1;
+
+    if (dim1 != dim2 && dim1 != 1 && dim2 != 1) {
+      throw std::runtime_error("Shapes are not compatible for broadcasting.");
+    }
+
+    resultShape.push_back(std::max(dim1, dim2));
+
+    if (it1 != shape1.rend())
+      ++it1;
+    if (it2 != shape2.rend())
+      ++it2;
+  }
+  std::reverse(resultShape.begin(), resultShape.end());
+  return resultShape;
+}
 
 // max
 void MaximumPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
@@ -431,8 +483,38 @@ std::string MinimumPrimitive::toString() const { return "Min"; }
 void MultiplyPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
   evalCPU(inputs, out);
 }
+
+TypePtr MultiplyPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
+  auto inType0 = inputTypes[0];
+  auto inType1 = inputTypes[1];
+  assert(inType0->isTensorType() && "Div operator only applies to tensors.");
+  assert(inType1->isTensorType() && "Div operator only applies to tensors.");
+  auto inTensorType0 = SAFE_TYPE_DOWNCAST(inType0, TensorType);
+  auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
+  assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
+         "Div operator only applies to tensors with the same element type.");
+  return inTensorType0;
+}
+
 void MultiplyPrimitive::jit(const std::vector<JITTracer> &inputs,
-                            JITTracer &output) {}
+                            JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MultiplyPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Mul>(outputType, input0.value(),
+                                                 input1.value()));
+  output.setTracer(
+      single<MultiplyPrimitive>({input0.tracer(), input1.tracer()}));
+}
+
 void MultiplyPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                             JVPTracer &output) {}
 
@@ -560,32 +642,38 @@ to the output. Default: True
         "expected input 4d (N,H,W,C) and weight(H,W,C,O), input or weight "
         "dim is not matched.");
   }
-  /*
-   in stablehlo the lhs(input img) corresppponds to the NHWC layout.
-   And the weights corresponds to HWIO.
-   output corresponds to NHWC layout*/
-  int padding_h = padding_args[0];
-  int lhs_dilation_h = lhsDilation[0];
-  int stride_h = window_strides[0];
-
-  int padding_w = padding_args[2];
-  int lhs_dilation_w = lhsDilation[1];
-  int stride_w = window_strides[1];
-
   int N = inputConcreateShape[0];
   int H = inputConcreateShape[1];
   int W = inputConcreateShape[2];
   int C = inputConcreateShape[3];
+  /*
+   in stablehlo the lhs(input img) corresppponds to the NHWC layout.
+   And the weights corresponds to HWIO.
+   output corresponds to NHWC layout*/
+  int padding_h = *padding_args.begin();
+  int padding_w = *padding_args.rbegin();
+
+  int lhs_dilation_h = lhsDilation[0];
+  int lhs_dilation_w = lhsDilation[1];
+  int DilationedInputH = (H - 1) * lhs_dilation_h + 1;
+  int DilationedInputW = (W - 1) * lhs_dilation_w + 1;
+
+  int stride_h = window_strides[0];
+  int stride_w = window_strides[1];
 
   int kernel_size_h = weightConcreateShape[0];
   int kernel_size_w = weightConcreateShape[1];
+  int rhs_dilation_h = rhsDilation[0];
+  int rhs_dilation_w = rhsDilation[1];
+  int DilationedWeightH = (kernel_size_h - 1) * rhs_dilation_h + 1;
+  int DilationedWeightW = (kernel_size_w - 1) * rhs_dilation_w + 1;
   int I = weightConcreateShape[2];
   int O = weightConcreateShape[3];
   assert(C == I);
   int H_out =
-      (H + 2 * padding_h - lhs_dilation_h * (kernel_size_h - 1)) / stride_h + 1;
+      (DilationedInputH + 2 * padding_h - DilationedWeightH) / stride_h + 1;
   int W_out =
-      (W + 2 * padding_w - lhs_dilation_w * (kernel_size_w - 1)) / stride_w + 1;
+      (DilationedInputW + 2 * padding_w - DilationedWeightW) / stride_w + 1;
   std::vector<ValuePtr> outTensorShape = {
       Literal::create(N),
       Literal::create(H_out),
@@ -790,7 +878,9 @@ void MaxPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
     throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
                                 "expects exactly one input ");
   auto input = inputs[0];
-  output = pybind11::cast<Array>(eval_callback["maxpool2d"](input));
+  output = pybind11::cast<Array>(
+      eval_callback["maxpool2d"](input, window_dimensions, window_strides,
+                                 base_dilations, window_dilations, padding));
 }
 
 void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -800,12 +890,13 @@ void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
                                 "expects exactly one input tracer.");
   }
   auto input = inputs[0];
-  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {input.value()};
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Maxpool2d>(
-      outputType, input.value()));
-  output.setTracer(single<MaxPool2dPrimitive>({input.tracer()}));
+      outputType, input.value(), window_dimensions, window_strides,
+      base_dilations, window_dilations, padding));
+  output.setTracer(single<MaxPool2dPrimitive>(
+      {input.tracer()}, window_dimensions, window_strides, base_dilations,
+      window_dilations, padding));
 }
 TypePtr MaxPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   auto inType = inputTypes[0];
@@ -817,11 +908,42 @@ TypePtr MaxPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
 
   std::vector<ValuePtr> outTensorShape;
+  int BaseDilationH = base_dilations[2];
+  int BaseDilationW = base_dilations[3];
+  int WindowDilationH = window_dilations[2];
+  int WindowDilationW = window_dilations[3];
+  int KernelSizeH = window_dimensions[2];
+  int KernelSizeW = window_dimensions[3];
+  int WindowStrideH = window_strides[2];
+  int WindowStrideW = window_strides[3];
+  int ChannelStride = window_strides[1];
+  int WindowPaddingH = padding[6];
+  int WindowPaddingW = padding[7];
+  int InputBatchSize = inConcreateShape[0];
+  int InputChannel = inConcreateShape[1];
+  int InputH = inConcreateShape[2];
+  int InputW = inConcreateShape[3];
+
+  int DilationedWeightH = (KernelSizeH - 1) * WindowDilationH + 1;
+  int DilationedWeightW = (KernelSizeW - 1) * WindowDilationW + 1;
+  int DilationedInputH = (InputH - 1) * BaseDilationH + 1;
+  int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
+  int OutBatchSize = window_strides[0];
+  int OutChannelSize = InputChannel / ChannelStride;
+  int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
+                 WindowStrideH +
+             1;
+  int OutW = (DilationedInputW + 2 * WindowPaddingW - DilationedWeightW) /
+                 WindowStrideW +
+             1;
+
   // for (const auto &dim : inConcreateShape) {
   //   outTensorShape.push_back(Literal::create(dim));
   // }
-  outTensorShape.push_back(Literal::create(2));
-  outTensorShape.push_back(Literal::create(2));
+  outTensorShape.push_back(Literal::create(OutBatchSize));
+  outTensorShape.push_back(Literal::create(OutChannelSize));
+  outTensorShape.push_back(Literal::create(OutH));
+  outTensorShape.push_back(Literal::create(OutW));
   TypePtr elementType = inTensorType->getElementType();
   return TensorType::create(elementType, outTensorShape);
 }
@@ -931,5 +1053,213 @@ void ComparePrimitive::jvp(const std::vector<JVPTracer> &inputs,
                            JVPTracer &output) {}
 
 std::string ComparePrimitive::toString() const { return "Compare"; }
+
+void ConcatPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void ConcatPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+
+}
+
+void ConcatPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {
+  std::vector<ir::TypePtr> input_types;
+  std::vector<ir::ValuePtr> input_values;
+  std::vector<std::shared_ptr<Tracer>> tracers;
+  for (const auto &input : inputs) {
+    input_types.push_back(input.value()->getType());
+    input_values.push_back(input.value());
+    tracers.push_back(input.tracer());
+  }
+  auto output_type = inferType(input_types);
+  output.setValue(getTracedModule()->getGraph()->create<Concat>(
+      output_type, input_values, dim));
+  output.setTracer(single<ConcatPrimitive>(tracers, dim));
+}
+
+TypePtr ConcatPrimitive::inferType(const std::vector<TypePtr> &input_types) {
+  assert(input_types.size() > 0 && "Concat operator requires at least one "
+                                   "input tensor.");
+  std::vector<ValuePtr> out_tensor_shape;
+  auto tensor_type = SAFE_TYPE_DOWNCAST(input_types[0], TensorType);
+  auto element_type = tensor_type->getElementType();
+  for (size_t Idx = 0; Idx < tensor_type->getShape().size(); ++Idx) {
+    if (Idx == dim) {
+      int concated_dim = 0;
+      for (const auto &input_type : input_types) {
+        auto tensor_type = SAFE_TYPE_DOWNCAST(input_type, TensorType);
+        auto tensor_shape = tensor_type->getConcreteShape();
+        concated_dim += tensor_shape[Idx];
+      }
+      out_tensor_shape.push_back(ir::Literal::create(concated_dim));
+    } else {
+      out_tensor_shape.push_back(tensor_type->getShape()[Idx]);
+    }
+  }
+  // TypePtr element_type;
+
+  // for (const auto &input_type : input_types) {
+  //   TensorTypePtr tensor_type = SAFE_TYPE_DOWNCAST(input_type, TensorType);
+  //   element_type = tensor_type->getElementType();
+  //   std::vector<ValuePtr> tensor_shape = tensor_type->getShape();
+  //   for (size_t i = 0; i < tensor_shape.size(); ++i) {
+  //     if (i == dim) {
+  //       uint concated_dim = 0;
+  //       for ()
+  //     }
+  //     out_tensor_shape.push_back(tensor_shape[i]);
+  //   }
+  // }
+  return TensorType::create(element_type, out_tensor_shape);
+}
+
+std::string ConcatPrimitive::toString() const { return "Concat"; }
+
+void ExpPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void ExpPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ExpPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["exp"](input));
+}
+
+TypePtr ExpPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Exp operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Exp operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+void ExpPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ExpPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Exp>(outputType, input.value()));
+  output.setTracer(single<ExpPrimitive>({input.tracer()}));
+}
+
+std::string ExpPrimitive::toString() const { return "Exp"; }
+
+void TanhPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void TanhPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TanhPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["tanh"](input));
+}
+
+void TanhPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[TanhPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Tanh>(outputType, input.value()));
+  output.setTracer(single<TanhPrimitive>({input.tracer()}));
+}
+
+TypePtr TanhPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Tanh operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Tanh operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+std::string TanhPrimitive::toString() const { return "Tanh"; }
+
+void DivPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+
+TypePtr DivPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
+  auto inType0 = inputTypes[0];
+  auto inType1 = inputTypes[1];
+  assert(inType0->isTensorType() && "Div operator only applies to tensors.");
+  assert(inType1->isTensorType() && "Div operator only applies to tensors.");
+  auto inTensorType0 = SAFE_TYPE_DOWNCAST(inType0, TensorType);
+  auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
+  assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
+         "Div operator only applies to tensors with the same element type.");
+  return inTensorType0;
+}
+
+void DivPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[DivPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Div>(outputType, input0.value(),
+                                                 input1.value()));
+  output.setTracer(single<DivPrimitive>({input0.tracer(), input1.tracer()}));
+}
+
+std::string DivPrimitive::toString() const { return "Div"; }
+
+void NegPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void NegPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[NegPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["neg"](input));
+}
+
+TypePtr NegPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inputTypes.size() == 1 && "Neg operator only applies to one tensor.");
+  auto inType = inputTypes[0];
+  assert(inType->isTensorType() && "Neg operator only applies to tensors.");
+  auto inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  return inTensorType;
+}
+
+void NegPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[NegPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Neg>(outputType, input.value()));
+  output.setTracer(single<NegPrimitive>({input.tracer()}));
+}
+
+std::string NegPrimitive::toString() const { return "Neg"; }
 
 } // namespace ainl::core

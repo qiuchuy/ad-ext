@@ -50,7 +50,7 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
       shape_(std::make_shared<std::vector<int>>(shape)),
       stride_(std::make_shared<std::vector<int>>(stride)) {
   ptr_ = buffer.ptr();
-  trace_ = getCurrentTrace();
+  trace_ = getStandardEvalTrace();
   size_ =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>()) *
       dtypeSize(dtype);
@@ -58,11 +58,11 @@ Array::Array(const allocator::Buffer &buffer, Dtype dtype,
 
 Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
                const std::shared_ptr<Primitive> &prim)
-    : inputs_(inputs), prim_(prim), trace_(findTopTrace(inputs)), idx_(0) {}
+    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(0) {}
 
 Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
                const std::shared_ptr<Primitive> &prim, uint64_t idx)
-    : inputs_(inputs), prim_(prim), trace_(findTopTrace(inputs)), idx_(idx) {}
+    : inputs_(inputs), prim_(prim), trace_(getCurrentTrace()), idx_(idx) {}
 
 void Tracer::eval() {
   LOG_DEBUG("%s", "Starting evaluating tracers as a subgraph.");
@@ -213,11 +213,11 @@ ir::TypePtr Array::getJITType() {
     // tensor which has empty shape_ will be jitted into literals
     switch (dtype_.type) {
     case Dtype::DataType::BoolType:
-      return ir::BoolTypePtr::get();
+      return ir::TensorType::create(ir::BoolTypePtr::get(), {});
     case Dtype::DataType::Int32Type:
-      return ir::IntTypePtr::get();
+      return ir::TensorType::create(ir::IntTypePtr::get(), {});
     case Dtype::DataType::Float32Type:
-      return ir::FloatTypePtr::get();
+      return ir::TensorType::create(ir::FloatTypePtr::get(), {});
     default:
       throw std::invalid_argument("Unsupported jit dtype");
     }

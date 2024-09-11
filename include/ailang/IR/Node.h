@@ -40,8 +40,11 @@ public:
     BROADCAST,
     CALL,
     COMPARE,
+    CONCAT,
+    CONSTANT,
     CONVOLUTION,
     DIV,
+    EXP,
     FLOORDIV,
     GETELEMENTPTR,
     IF,
@@ -53,6 +56,7 @@ public:
     MEAN,
     MOD,
     MUL,
+    NEG,
     PARAM,
     POW,
     RELU,
@@ -60,6 +64,7 @@ public:
     RSHIFT,
     STORE,
     SUB,
+    TANH,
     TRANSPOSE,
     UNZIPPING,
     UNKNOWN,
@@ -89,8 +94,8 @@ public:
     return Node;
   }
 
-  std::vector<ValuePtr> getOperands();
-  ValuePtr getOperand(size_t index);
+  std::vector<ValuePtr> getOperands() const;
+  ValuePtr getOperand(size_t index) const;
 
   virtual NodeKind kind() { return Node::NodeKind::UNKNOWN; }
   virtual void accept(IRVisitor *visitor);
@@ -177,6 +182,19 @@ private:
   ValuePtr rhs;
 };
 
+NODE_PTR_TYPE_DECL(Mul)
+class Mul : public Node {
+public:
+  Mul(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::MUL; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+};
+
 NODE_PTR_TYPE_DECL(Matmul)
 class Matmul : public Node {
 public:
@@ -192,21 +210,20 @@ private:
   ValuePtr rhs;
 };
 
-// NODE_PTR_TYPE_DECL(Broadcast)
-// class Broadcast : public Node {
-//   public:
-//     Broadcast(const TypePtr &nodeType, const ValuePtr &inValue,
-//               std::vector<ValuePtr> args);
-//     NodeKind kind() override { return Node::NodeKind::BROADCAST; }
-//     explicit operator std::string() const override;
-//     // 在需要将 Broadcast 类的对象转换为字符串类型时使用。
-//     ValuePtr getValue() const { return inValue; }
-//     ValuePtr getArgs() const { return shape[0]; }
+NODE_PTR_TYPE_DECL(Broadcast)
+class Broadcast : public Node {
+public:
+  Broadcast(const TypePtr &nodeType, const ValuePtr &inValue,
+            std::vector<int> shape);
+  NodeKind kind() override { return Node::NodeKind::BROADCAST; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<int> getBroadCastShape() const { return shape; }
 
-//   private:
-//     ValuePtr inValue;
-//     std::vector<ValuePtr> shape;
-// };
+private:
+  ValuePtr inValue;
+  std::vector<int> shape;
+};
 
 NODE_PTR_TYPE_DECL(Relu)
 class Relu : public Node {
@@ -214,7 +231,6 @@ public:
   Relu(const TypePtr &nodeType, const ValuePtr &inValue);
   NodeKind kind() override { return Node::NodeKind::RELU; }
   explicit operator std::string() const override;
-  // 在需要将 Relu 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
   std::vector<int> getShape();
@@ -273,25 +289,40 @@ private:
 NODE_PTR_TYPE_DECL(Maxpool2d)
 class Maxpool2d : public Node {
 public:
-  Maxpool2d(const TypePtr &nodeType, const ValuePtr &inValue);
+  Maxpool2d(const TypePtr &nodeType, const ValuePtr &inValue,
+            const std::vector<int64_t> &window_dimensions,
+            const std::vector<int64_t> &window_strides,
+            const std::vector<int64_t> &base_dilations,
+            const std::vector<int64_t> &window_dilations,
+            const std::vector<int64_t> &padding);
   NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
   explicit operator std::string() const override;
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_dimensions, window_strides, base_dilations, window_dilations,
+            padding};
+  }
 
 private:
   ValuePtr inValue;
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
 };
 
 NODE_PTR_TYPE_DECL(Convolution)
 class Convolution : public Node {
 public:
   Convolution(const TypePtr &nodeType, const ValuePtr &inputValue,
-              const ValuePtr &weightValue, std::vector<int64_t> &window_strides,
-              std::vector<int64_t> &lhsDilation,
-              std::vector<int64_t> &rhsDilation,
-              std::vector<int64_t> &padding_args,
-              std::vector<int64_t> &window_reversal);
+              const ValuePtr &weightValue,
+              const std::vector<int64_t> &window_strides,
+              const std::vector<int64_t> &lhsDilation,
+              const std::vector<int64_t> &rhsDilation,
+              const std::vector<int64_t> &padding_args,
+              const std::vector<int64_t> &window_reversal);
   NodeKind kind() override { return Node::NodeKind::CONVOLUTION; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
@@ -305,11 +336,11 @@ public:
 private:
   ValuePtr inputValue;
   ValuePtr weightValue;
-  std::vector<int64_t> &window_strides;
-  std::vector<int64_t> &lhsDilation;
-  std::vector<int64_t> &rhsDilation;
-  std::vector<int64_t> &padding_args;
-  std::vector<int64_t> &window_reversal;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> lhsDilation;
+  std::vector<int64_t> rhsDilation;
+  std::vector<int64_t> padding_args;
+  std::vector<int64_t> window_reversal;
 };
 
 NODE_PTR_TYPE_DECL(BatchNorm2d)
@@ -401,5 +432,81 @@ private:
 const std::array<std::string,
                  static_cast<size_t>(CompareOp::CompareType::COMPARETYPE)>
     compareOpString = {"eq", "ne", "ge", "gt", "le", "lt"};
+
+NODE_PTR_TYPE_DECL(Concat)
+class Concat : public Node {
+public:
+  Concat(const TypePtr &nodeType, const std::vector<ValuePtr> &inputs, int dim);
+  NodeKind kind() override { return Node::NodeKind::CONCAT; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<ValuePtr> getInputs() { return inputs; }
+  int getDim() { return dim; }
+
+private:
+  std::vector<ValuePtr> inputs;
+  int dim;
+};
+
+NODE_PTR_TYPE_DECL(ConstantDef)
+class ConstantDef : public Node {
+public:
+  ConstantDef(const TypePtr &nodeType, const ValuePtr &value);
+  NodeKind kind() override { return Node::NodeKind::CONSTANT; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr value;
+};
+
+NODE_PTR_TYPE_DECL(Exp)
+class Exp : public Node {
+public:
+  Exp(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::EXP; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Tanh)
+class Tanh : public Node {
+public:
+  Tanh(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::TANH; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Div)
+class Div : public Node {
+public:
+  Div(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::DIV; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr lhs;
+  ValuePtr rhs;
+};
+
+NODE_PTR_TYPE_DECL(Neg)
+class Neg : public Node {
+public:
+  Neg(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::NEG; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+
+private:
+  ValuePtr inValue;
+};
 
 } // namespace ainl::ir

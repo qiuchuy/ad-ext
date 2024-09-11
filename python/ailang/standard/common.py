@@ -44,32 +44,123 @@ def _tensor_member_fn(fn):
     return fn
 
 
-@_tensor_member_fn
-@al.jit
-def batchnorm2d(input:al.array,scale:al.array,offset:al.array,mean:al.array,variance:al.array)->al.array:
-    "Compute the batchnrom of the input with mean,variance"
+def flatten_pytree(pytree):
+    """Flatten a pytree into a list."""
+    leaves = []
+
+    def _flatten_pytree(pytree):
+        if isinstance(pytree, (tuple, list)):
+            for x in pytree:
+                _flatten_pytree(x)
+        else:
+            leaves.append(pytree)
+
+    _flatten_pytree(pytree)
+    return leaves
+
+
+def element_wise(f):
+    r"""
+    Decorator for element-wise binary operations on tensors.
+
+    This decorator automates the process of applying element-wise binary operations
+    to tensors, handling shape broadcasting automatically. It ensures that the
+    decorated function receives tensors of compatible shapes for element-wise
+    operations.
+
+    Parameters:
+    f : callable
+        The binary function to be decorated. It should take two tensors as input
+        and return a single tensor.
+
+    Returns:
+    callable
+        A wrapped function that handles tensor broadcasting before applying the
+        original function.
+
+    Behavior:
+    1. Checks if exactly two tensor arguments are provided.
+    2. Determines the broadcasted shape based on the input tensors' shapes.
+    3. Expands both input tensors to the broadcasted shape.
+    4. Applies the original function to the expanded tensors.
+
+    Notes:
+    ------
+    - The decorated function should expect two tensor arguments.
+    - Broadcasting follows NumPy-style rules: dimensions are aligned from
+      right to left, and dimensions of size 1 are stretched to match the
+      other tensor's size in that dimension.
+    - Additional keyword arguments are passed through to the original function.
+
+    Raises:
+    -------
+    ValueError
+        If the number of positional arguments is not exactly two.
+
+    Example:
+    --------
+    @element_wise_binary
+    def add_tensors(t1, t2):
+        return t1 + t2
+
+    # Now add_tensors can handle tensors of different shapes, e.g.:
+    # result = add_tensors(tensor([1, 2, 3]), tensor([[1], [2]]))
     """
-    :params: input
-    :params: scale
-    :params: offset
-    :params: mean
-    :params: variance
-    """
-    return al.prim.batchnorm2d(input,scale,offset,mean,variance)
 
-@_tensor_member_fn
-@al.jit
-def maxpool2d(input)->al.array:
-    "Compute the maxpool2d of the input "
-    return al.prim.maxpool2d(input)
+    def broadcast_info(shape1, shape2):
+        # Reverse shapes for easy handling
+        shape1 = shape1[::-1]
+        shape2 = shape2[::-1]
 
-@_tensor_member_fn
-@al.jit
-def conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
-        padding_args, window_reversal)->al.array:
-    "Compute the maxpool2d of the input "
-    return al.prim.conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
-        padding_args, window_reversal)
+        # Determine the maximum length of the shapes
+        max_len = max(len(shape1), len(shape2))
 
+        # Pad the shorter shape with ones
+        shape1.extend([1] * (max_len - len(shape1)))
+        shape2.extend([1] * (max_len - len(shape2)))
 
-    
+        # Calculate the broadcasted shape
+        broadcasted_shape = []
+        for dim1, dim2 in zip(shape1, shape2):
+            if dim1 == dim2 or dim1 == 1:
+                broadcasted_shape.append(dim2)
+            elif dim2 == 1:
+                broadcasted_shape.append(dim1)
+            else:
+                raise ValueError("Incompatible shapes for broadcasting.")
+
+        # Reverse the broadcasted shape to the correct order
+        broadcasted_shape.reverse()
+
+        # Determine which array needs broadcasting
+        array1_needs_broadcasting = (shape1[::-1]) != broadcasted_shape
+        array2_needs_broadcasting = (shape2[::-1]) != broadcasted_shape
+        return broadcasted_shape, array1_needs_broadcasting, array2_needs_broadcasting
+
+    def wrapper(*args, **kwargs):
+        # Ensure we have exactly two tensors
+        if len(args) != 2:
+            raise ValueError(
+                "element_wise_binary decorator expects exactly two tensor arguments."
+            )
+        array1, array2 = args
+        if not isinstance(array1, al.tracer):
+            array1 = al.create_tracer(array1)
+        if not isinstance(array2, al.tracer):
+            array2 = al.create_tracer(array2)
+        shape1 = list(array1.shape)
+        shape2 = list(array2.shape)
+        broadcasted_shape, array1_need_broadcast, array2_need_broadcast = (
+            broadcast_info(shape1, shape2)
+        )
+        expanded_array1 = array1
+        expanded_array2 = array2
+        if array1_need_broadcast:
+            expanded_array1 = al.prim.broadcast_to(array1, broadcasted_shape)
+        if array2_need_broadcast:
+            expanded_array2 = al.prim.broadcast_to(array2, broadcasted_shape)
+        result = f(expanded_array1, expanded_array2, **kwargs)
+        return result
+
+    return wrapper
+
