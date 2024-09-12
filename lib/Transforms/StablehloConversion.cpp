@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "ailang/IR/Container.h"
 #include "ailang/IR/Tensor.h"
 #include "ailang/IR/Type.h"
 #include "ailang/IR/Value.h"
@@ -93,7 +94,6 @@ StableHLOLoweringPass::createFunctionOpFromModule(ModulePtr module) {
 void StableHLOLoweringPass::run(ModulePtr module) {
   auto graph = module->getGraph();
   auto function = createFunctionOpFromModule(module);
-
   bool entry = true;
   for (auto block : *graph) {
     if (entry) {
@@ -108,7 +108,6 @@ void StableHLOLoweringPass::run(ModulePtr module) {
       node->accept(this);
     }
   }
-
   if (failed(theModule.verify())) {
     theModule.emitError("module verification error");
     return;
@@ -129,8 +128,17 @@ void StableHLOLoweringPass::visit(ParamPtr node) {
 }
 
 void StableHLOLoweringPass::visit(ReturnOpPtr node) {
-  auto value = valueMap[node->getReturnValue()];
-  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(), value);
+  auto Value = valueMap[node->getReturnValue()];
+  if (asValueType<TupleContainer>(node->getReturnValue())) {
+    auto Tuple = asValueType<TupleContainer>(node->getReturnValue());
+    llvm::SmallVector<mlir::Value, 4> Values;
+    for (auto &Value : Tuple->getValues()) {
+      Values.push_back(valueMap[Value]);
+    }
+    builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(), Values);
+  } else {
+    builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(), Value);
+  }
 }
 
 void StableHLOLoweringPass::visit(TransposePtr node) {
@@ -157,26 +165,32 @@ void StableHLOLoweringPass::visit(ConstantDefPtr Node) {
   auto ResultTensorType = asType<TensorType>(Node->getType());
   auto ElementType = ResultTensorType->getElementType();
   if (ElementType->isFloatType()) {
-    auto *LiteralValue = asValueType<Literal>(Node->getOperand(0));
-    auto FloatValue = LiteralValue->getFloatConcreteValue();
+    auto *FloatContainer = asValueType<TupleContainer>(Node->getOperand(0));
+    std::vector<float> FloatValues;
+    for (auto &Value : FloatContainer->getValues()) {
+      auto *LiteralValue = asValueType<Literal>(Value);
+      FloatValues.push_back(LiteralValue->getFloatConcreteValue());
+    }
     auto ResultType = createRankedTensorTypeFromTensorType(
         ResultTensorType, *theModule.getContext());
-    auto Attr = mlir::DenseElementsAttr::get(
-        ResultType,
-        builder.getFloatAttr(ResultType.getElementType(), FloatValue));
+    mlir::DenseElementsAttr ConstantAttr =
+        mlir::DenseElementsAttr::get(ResultType, ArrayRef<float>(FloatValues));
     auto Op = builder.create<mlir::stablehlo::ConstantOp>(
-        builder.getUnknownLoc(), ResultType, Attr);
+        builder.getUnknownLoc(), ResultType, ConstantAttr);
     insertValueMapping(Node, Op);
   } else if (ElementType->isIntType()) {
-    auto *LiteralValue = asValueType<Literal>(Node->getOperand(0));
-    auto IntValue = LiteralValue->getIntConcreteValue();
+    auto *IntContainer = asValueType<TupleContainer>(Node->getOperand(0));
+    std::vector<int> IntValues;
+    for (auto &Value : IntContainer->getValues()) {
+      auto *LiteralValue = asValueType<Literal>(Value);
+      IntValues.push_back(LiteralValue->getIntConcreteValue());
+    }
     auto ResultType = createRankedTensorTypeFromTensorType(
         ResultTensorType, *theModule.getContext());
-    auto Attr = mlir::DenseElementsAttr::get(
-        ResultType,
-        builder.getIntegerAttr(ResultType.getElementType(), IntValue));
+    mlir::DenseElementsAttr ConstantAttr =
+        mlir::DenseElementsAttr::get(ResultType, ArrayRef<int>(IntValues));
     auto Op = builder.create<mlir::stablehlo::ConstantOp>(
-        builder.getUnknownLoc(), ResultType, Attr);
+        builder.getUnknownLoc(), ResultType, ConstantAttr);
     insertValueMapping(Node, Op);
   } else {
     throw std::runtime_error(

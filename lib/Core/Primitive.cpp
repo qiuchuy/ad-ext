@@ -342,6 +342,16 @@ void MatMulPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
+void MatMulPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MatMulPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["matmul"](input0, input1));
+}
+
 void MatMulPrimitive::jit(const std::vector<JITTracer> &inputs,
                           JITTracer &output) {
   if (inputs.size() != 2) {
@@ -482,6 +492,17 @@ std::string MinimumPrimitive::toString() const { return "Min"; }
 // Multiply
 void MultiplyPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
   evalCPU(inputs, out);
+}
+
+void MultiplyPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[MultiplyPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["mul"](input0, input1));
 }
 
 TypePtr MultiplyPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
@@ -1059,7 +1080,13 @@ void ConcatPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
 }
 
 void ConcatPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
-
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    if (inputs[i].dtype().type != inputs[0].dtype().type) {
+      throw std::invalid_argument("[ConcatPrimitive::evalCPU] input arrays "
+                                  "must have the same dtype.");
+    }
+  }
+  output = pybind11::cast<Array>(eval_callback["cat"](inputs, dim));
 }
 
 void ConcatPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -1192,7 +1219,15 @@ void DivPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
 
-void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {}
+void DivPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[DivPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["div"](input0, input1));
+}
 
 TypePtr DivPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");

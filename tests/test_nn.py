@@ -1,111 +1,222 @@
-import ailang as al
-import ailang.nn as nn
 import numpy as np
 
-input_size = 4
-hidden_size = 3
-wf = np.random.randn(hidden_size, input_size + hidden_size).astype(np.float32)
-bf = np.random.randn(hidden_size, 1).astype(np.float32)
-wi = np.random.randn(hidden_size, input_size + hidden_size).astype(np.float32)
-bi = np.random.randn(hidden_size, 1).astype(np.float32)
-wc = np.random.randn(hidden_size, input_size + hidden_size).astype(np.float32)
-bc = np.random.randn(hidden_size, 1).astype(np.float32)
-wo = np.random.randn(hidden_size, input_size + hidden_size).astype(np.float32)
-bo = np.random.randn(hidden_size, 1).astype(np.float32)
-x_t = np.random.rand(input_size, 1).astype(np.float32)
-h_prev = np.random.rand(hidden_size, 1).astype(np.float32)
-c_prev = np.random.rand(hidden_size, 1).astype(np.float32)
+np.random.seed(42)
 
-class LSTMCell(nn.Module):
+class LSTMCell:
+    def __init__(self, input_size, hidden_size):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        # Initialize combined weights and biases
+        self.weight_ih = np.random.randn(4 * hidden_size, input_size).astype(np.float32)
+        self.weight_hh = np.random.randn(4 * hidden_size, hidden_size).astype(
+            np.float32
+        )
+
+        self.bias_ih = np.zeros((4 * hidden_size, 1)).astype(np.float32)
+        self.bias_hh = np.zeros((4 * hidden_size, 1)).astype(np.float32)
+
+        # Split weights and biases into four parts
+        self.weight_ii, self.weight_if, self.weight_ig, self.weight_io = np.split(
+            self.weight_ih, 4, axis=0
+        )
+        self.weight_hi, self.weight_hf, self.weight_hg, self.weight_ho = np.split(
+            self.weight_hh, 4, axis=0
+        )
+
+        self.bias_ii, self.bias_if, self.bias_ig, self.bias_io = np.split(
+            self.bias_ih, 4, axis=0
+        )
+        self.bias_hi, self.bias_hf, self.bias_hg, self.bias_ho = np.split(
+            self.bias_hh, 4, axis=0
+        )
+
+    def forward(self, x, hidden):
+        h_prev, c_prev = hidden
+
+        # Compute gates
+        i = self.sigmoid(
+            np.dot(self.weight_ii, x)
+            + self.bias_ii
+            + np.dot(self.weight_hi, h_prev)
+            + self.bias_hi
+        )
+        f = self.sigmoid(
+            np.dot(self.weight_if, x)
+            + self.bias_if
+            + np.dot(self.weight_hf, h_prev)
+            + self.bias_hf
+        )
+        g = np.tanh(
+            np.dot(self.weight_ig, x)
+            + self.bias_ig
+            + np.dot(self.weight_hg, h_prev)
+            + self.bias_hg
+        )
+        o = self.sigmoid(
+            np.dot(self.weight_io, x)
+            + self.bias_io
+            + np.dot(self.weight_ho, h_prev)
+            + self.bias_ho
+        )
+
+        # Compute new cell and hidden states
+        c_next = f * c_prev + i * g
+        h_next = o * np.tanh(c_next)
+
+        return h_next, c_next
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+
+# Example usage
+input_size = 3
+hidden_size = 2
+
+lstm_cell = LSTMCell(input_size, hidden_size)
+
+
+import torch
+import torch.nn as nn
+
+# Initialize PyTorch LSTM cell
+input_size = 3
+hidden_size = 2
+lstm_cell_torch = nn.LSTMCell(input_size, hidden_size)
+
+# Set weights and biases to match NumPy LSTM cell
+with torch.no_grad():
+    lstm_cell_torch.weight_ih.data = torch.tensor(
+        lstm_cell.weight_ih, dtype=torch.float32
+    )
+    lstm_cell_torch.weight_hh.data = torch.tensor(
+        lstm_cell.weight_hh, dtype=torch.float32
+    )
+    lstm_cell_torch.bias_ih.data = torch.tensor(
+        lstm_cell.bias_ih.flatten(), dtype=torch.float32
+    )
+    lstm_cell_torch.bias_hh.data = torch.tensor(
+        lstm_cell.bias_hh.flatten(), dtype=torch.float32
+    )
+
+# Create input and initial states for comparison
+x = np.random.randn(input_size, 1).astype(np.float32)
+h_prev = np.zeros((hidden_size, 1)).astype(np.float32)
+c_prev = np.zeros((hidden_size, 1)).astype(np.float32)
+
+# Convert NumPy inputs to PyTorch tensors
+x_torch = torch.tensor(x.flatten(), dtype=torch.float32).unsqueeze(0)
+h_prev_torch = torch.tensor(h_prev.flatten(), dtype=torch.float32).unsqueeze(0)
+c_prev_torch = torch.tensor(c_prev.flatten(), dtype=torch.float32).unsqueeze(0)
+
+# Forward pass through PyTorch LSTM cell
+h_next_torch, c_next_torch = lstm_cell_torch(x_torch, (h_prev_torch, c_prev_torch))
+
+w_ih = lstm_cell.weight_ih
+w_hh = lstm_cell.weight_hh
+b_ih = lstm_cell.bias_ih
+b_hh = lstm_cell.bias_hh
+w_ii = w_ih[:hidden_size]
+w_if = w_ih[hidden_size : 2 * hidden_size]
+w_ig = w_ih[2 * hidden_size : 3 * hidden_size]
+w_io = w_ih[3 * hidden_size :]
+w_hi = w_hh[:hidden_size]
+w_hf = w_hh[hidden_size : 2 * hidden_size]
+w_hg = w_hh[2 * hidden_size : 3 * hidden_size]
+w_ho = w_hh[3 * hidden_size :]
+b_ii = b_ih[:hidden_size]
+b_if = b_ih[hidden_size : 2 * hidden_size]
+b_ig = b_ih[2 * hidden_size : 3 * hidden_size]
+b_io = b_ih[3 * hidden_size :]
+b_hi = b_hh[:hidden_size]
+b_hf = b_hh[hidden_size : 2 * hidden_size]
+b_hg = b_hh[2 * hidden_size : 3 * hidden_size]
+b_ho = b_hh[3 * hidden_size :]
+
+import ailang as al
+
+class ALLSTMCell(nn.Module):
     def __init__(self, input_size: int, hidden_size: int) -> None:
         super().__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.wf = al.from_numpy(wf)
-        self.bf = al.from_numpy(bf)
-        self.wi = al.from_numpy(wi)
-        self.bi = al.from_numpy(bi)
-        self.wc = al.from_numpy(wc)
-        self.bc = al.from_numpy(bc)
-        self.wo = al.from_numpy(wo)
-        self.bo = al.from_numpy(bo)
+        self.weight_ii = al.from_numpy(w_ii)
+        self.weight_if = al.from_numpy(w_if)
+        self.weight_ig = al.from_numpy(w_ig)
+        self.weight_io = al.from_numpy(w_io)
+        self.weight_hi = al.from_numpy(w_hi)
+        self.weight_hf = al.from_numpy(w_hf)
+        self.weight_hg = al.from_numpy(w_hg)
+        self.weight_ho = al.from_numpy(w_ho)
+        self.bias_ii = al.from_numpy(b_ii)
+        self.bias_if = al.from_numpy(b_if)
+        self.bias_ig = al.from_numpy(b_ig)
+        self.bias_io = al.from_numpy(b_io)
+        self.bias_hi = al.from_numpy(b_hi)
+        self.bias_hf = al.from_numpy(b_hf)
+        self.bias_hg = al.from_numpy(b_hg)
+        self.bias_ho = al.from_numpy(b_ho)
 
     def sigmoid(self, x):
-        return al.standard.div(
-            1.0, al.standard.add(1.0, al.standard.exp(al.standard.neg(x)))
-        )
+        return al.div(1.0, al.add(1.0, al.exp(al.neg(x))))
 
+    @al.jit
     def forward(self, x_t, h_prev, c_prev):
-        x = al.standard.cat([h_prev, x_t], 0)
-        f = self.sigmoid(al.standard.add(al.standard.matmul(self.wf, x), self.bf))
-        i = self.sigmoid(al.standard.add(al.standard.matmul(self.wi, x), self.bi))
-        c_hat = al.standard.tanh(al.standard.add(al.standard.matmul(self.wc, x), self.bc))
-        c = al.standard.add(al.standard.mul(f, c_prev), al.standard.mul(i, c_hat))
-        o = self.sigmoid(al.standard.add(al.standard.matmul(self.wo, x), self.bo))
-        h = al.standard.mul(o, al.standard.tanh(c))
-        return h, c
+        i = self.sigmoid(
+            al.add(
+                al.add(al.matmul(self.weight_ii, x_t), self.bias_ii),
+                al.add(al.matmul(self.weight_hi, h_prev), self.bias_hi),
+            )
+        )
+        f = self.sigmoid(
+            al.add(
+                al.add(al.matmul(self.weight_if, x_t), self.bias_if),
+                al.add(al.matmul(self.weight_hf, h_prev), self.bias_hf),
+            )
+        )
+        g = al.tanh(
+            al.add(
+                al.add(al.matmul(self.weight_ig, x_t), self.bias_ig),
+                al.add(al.matmul(self.weight_hg, h_prev), self.bias_hg),
+            )
+        )
+        o = self.sigmoid(
+            al.add(
+                al.add(al.matmul(self.weight_io, x_t), self.bias_io),
+                al.add(al.matmul(self.weight_ho, h_prev), self.bias_ho),
+            )
+        )
+        c_next = al.add(al.mul(f, c_prev), al.mul(i, g))
+        h_next = al.mul(o, al.tanh(c_next))
+        return h_next, c_next
 
-lstm_cell = LSTMCell(input_size, hidden_size)
 
-al_x_t = al.from_numpy(x_t)
+al_lstm_cell = ALLSTMCell(input_size, hidden_size)
+
+al_x_t = al.from_numpy(x)
 al_h_prev = al.from_numpy(h_prev)
 al_c_prev = al.from_numpy(c_prev)
 
-al_h_t, al_c_t = lstm_cell.forward(al_x_t, al_h_prev, al_c_prev)
-print("Next hidden state (h_t):", al_h_t)
-print("Next cell state (c_t):", al_c_t)
+al_h_t, al_c_t = al_lstm_cell.forward(al_x_t, al_h_prev, al_c_prev)
 
-class NumpyLSTMCell:
-    def __init__(self, input_size, hidden_size):
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        
-        # Initialize weights and biases
-        self.Wf = wf
-        self.bf = bf
-        self.Wi = wi
-        self.bi = bi
-        self.Wc = wc
-        self.bc = bc
-        self.Wo = wo
-        self.bo = bo
+h_next_torch_numpy = h_next_torch.detach().numpy()
+c_next_torch_numpy = c_next_torch.detach().numpy()
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-    
-    def tanh(self, x):
-        return np.tanh(x)
-    
-    def forward(self, x_t, h_prev, c_prev):
-        # Concatenate input and previous hidden state
-        combined = np.vstack((h_prev, x_t))
-        
-        # Forget gate
-        f_t = self.sigmoid(self.Wf @ combined + self.bf)
-        
-        # Input gate
-        i_t = self.sigmoid(self.Wi @ combined + self.bi)
-        c_tilde_t = self.tanh(self.Wc @ combined + self.bc)
-        
-        # New cell state
-        c_t = f_t * c_prev + i_t * c_tilde_t
-        
-        # Output gate
-        o_t = self.sigmoid(self.Wo @ combined + self.bo)
-        
-        # New hidden state
-        h_t = o_t * self.tanh(c_t)
-        
-        return h_t, c_t
+assert np.allclose(
+    h_next_torch_numpy.flatten(),
+    np.array(al_h_t.tolist()).flatten(),
+    rtol=1e-4,
+    atol=1e-6,
+)
+assert np.allclose(
+    c_next_torch_numpy.flatten(),
+    np.array(al_c_t.tolist()).flatten(),
+    rtol=1e-4,
+    atol=1e-6,
+)
 
-lstm_cell = NumpyLSTMCell(input_size, hidden_size)
-h_t, c_t = lstm_cell.forward(x_t, h_prev, c_prev)
-print("Next hidden state (h_t):", h_t)
-print("Next cell state (c_t):", c_t)
-
-assert np.allclose(al_h_t.tolist(), h_t.tolist())
-assert np.allclose(al_c_t.tolist(), c_t.tolist())
 
 
 

@@ -137,7 +137,37 @@ void JITTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
           throw std::runtime_error("Unsupported data type in JIT trace");
         }
       } else {
-        value = ir::Node::create(type);
+        auto ArrayTracer = asTracer<Array>(input->aval());
+        auto JITTensorType = asType<TensorType>(type);
+        auto ElementType = JITTensorType->getElementType();
+        if (ElementType->isIntType()) {
+          std::vector<ValuePtr> IntValues;
+          for (size_t Offset = 0;
+               Offset < ArrayTracer->size() / ArrayTracer->itemsize();
+               ++Offset) {
+            auto Literal = ir::Literal::create(ArrayTracer->at<int>(Offset));
+            IntValues.push_back(Literal);
+          }
+          auto Container = TupleContainer::create(IntValues);
+          value = getTracedModule()->create<ir::ConstantDef>(
+              TensorType::create(ElementType, JITTensorType->getShape()),
+              Container);
+        } else if (ElementType->isFloatType()) {
+          std::vector<ValuePtr> FloatValues;
+          LOG_DEBUG("%s", ArrayTracer->toString().c_str());
+          for (size_t Offset = 0;
+               Offset < ArrayTracer->size() / ArrayTracer->itemsize();
+               ++Offset) {
+            auto Literal = ir::Literal::create(ArrayTracer->at<float>(Offset));
+            FloatValues.push_back(Literal);
+          }
+          auto Container = TupleContainer::create(FloatValues);
+          value = getTracedModule()->create<ir::ConstantDef>(
+              TensorType::create(ElementType, JITTensorType->getShape()),
+              Container);
+        } else {
+          throw std::runtime_error("Unsupported data type in JIT trace");
+        }
       }
       auto tracer = input->clone();
       input = JITTracer::create(tracer, value);
@@ -156,7 +186,9 @@ void JITTrace::unpack(std::vector<std::shared_ptr<Tracer>> &inputs) {
 void JITTrace::process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &inputs,
                        const std::vector<std::shared_ptr<Tracer>> &outputs) {
-  auto arrays = convertTracerVector<JITTracer>(inputs);
+  auto PackedInputs = inputs;
+  pack(PackedInputs);
+  auto arrays = convertTracerVector<JITTracer>(PackedInputs);
   auto outputTracers = convertTracerVector<JITTracer>(outputs);
   prim->jit(arrays, outputTracers);
   update(outputs, outputTracers);
