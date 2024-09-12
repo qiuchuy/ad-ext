@@ -14,6 +14,10 @@ def _make_activation_module(f):
     return decorator
 
 
+def relu(x):
+    return al.standard.relu(x)
+
+
 def sigmoid(x):
     r"""Applies the element-wise function:
 

@@ -664,9 +664,10 @@ to the output. Default: True
         "dim is not matched.");
   }
   int N = inputConcreateShape[0];
-  int H = inputConcreateShape[1];
-  int W = inputConcreateShape[2];
-  int C = inputConcreateShape[3];
+  int C = inputConcreateShape[1];
+  int H = inputConcreateShape[2];
+  int W = inputConcreateShape[3];
+
   /*
    in stablehlo the lhs(input img) corresppponds to the NHWC layout.
    And the weights corresponds to HWIO.
@@ -682,13 +683,13 @@ to the output. Default: True
   int stride_h = window_strides[0];
   int stride_w = window_strides[1];
 
-  int kernel_size_h = weightConcreateShape[0];
-  int kernel_size_w = weightConcreateShape[1];
+  int kernel_size_h = weightConcreateShape[1];
+  int kernel_size_w = weightConcreateShape[2];
   int rhs_dilation_h = rhsDilation[0];
   int rhs_dilation_w = rhsDilation[1];
   int DilationedWeightH = (kernel_size_h - 1) * rhs_dilation_h + 1;
   int DilationedWeightW = (kernel_size_w - 1) * rhs_dilation_w + 1;
-  int I = weightConcreateShape[2];
+  int I = weightConcreateShape[0];
   int O = weightConcreateShape[3];
   assert(C == I);
   int H_out =
@@ -697,9 +698,9 @@ to the output. Default: True
       (DilationedInputW + 2 * padding_w - DilationedWeightW) / stride_w + 1;
   std::vector<ValuePtr> outTensorShape = {
       Literal::create(N),
+      Literal::create(O),
       Literal::create(H_out),
       Literal::create(W_out),
-      Literal::create(O),
   };
   TypePtr elementType = inputTensorType->getElementType();
   return TensorType::create(elementType, outTensorShape);

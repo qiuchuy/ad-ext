@@ -249,16 +249,16 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
       builder.getDenseBoolArrayAttr({0, 0}); // window_reversal
 
   int64_t inputBatchDimension = 0;
-  int64_t inputFeatureDimension = 3;
-  llvm::SmallVector<int64_t, 2> inputSpatialDimensions = {1, 2};
+  int64_t inputFeatureDimension = 1;
+  llvm::SmallVector<int64_t, 2> inputSpatialDimensions = {2, 3};
 
-  int64_t kernelInputFeatureDimension = 2;
+  int64_t kernelInputFeatureDimension = 0;
   int64_t kernelOutputFeatureDimension = 3;
-  llvm::SmallVector<int64_t, 2> kernelSpatialDimensions = {0, 1};
+  llvm::SmallVector<int64_t, 2> kernelSpatialDimensions = {1, 2};
 
   int64_t outputBatchDimension = 0;
-  int64_t outputFeatureDimension = 3;
-  llvm::SmallVector<int64_t, 2> outputSpatialDimensions = {1, 2};
+  int64_t outputFeatureDimension = 1;
+  llvm::SmallVector<int64_t, 2> outputSpatialDimensions = {2, 3};
 
   //  ConvDimensionNumbersAttr
   auto conv_dimension_numbers_attr =
@@ -362,23 +362,27 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
                                             AddResult.getResult());
   builder.setInsertionPointToEnd(CurrentBlock);
   std::vector<int> inShape = node->getShape();
+  auto outShape =
+      SAFE_TYPE_DOWNCAST(node->getType(), TensorType)->getConcreteShape();
+  std::vector<int64_t> outInt64Shape(outShape.size());
+  std::transform(outShape.begin(), outShape.end(), outInt64Shape.begin(),
+                 [](int val) { return static_cast<int64_t>(val); });
 
-  mlir::RankedTensorType tensorType =
-      mlir::RankedTensorType::get({}, ElementType);
+  mlir::RankedTensorType tensorType = mlir::RankedTensorType::get(
+      mlir::ArrayRef<int64_t>(outInt64Shape), ElementType);
   mlir::DenseElementsAttr attr;
   if (ElementType.isa<mlir::FloatType>()) {
     float dimSizeValue = 1;
-    for (auto dim : inShape) {
-      dimSizeValue *= dim;
+    for (auto dim_x : node->getDim()) {
+      dimSizeValue *= inShape[dim_x];
     }
-
     // Create a DenseElementsAttr with the dimSize value
     attr = mlir::DenseElementsAttr::get(tensorType,
                                         llvm::ArrayRef<float>{dimSizeValue});
   } else if (ElementType.isa<mlir::IntegerType>()) {
     int64_t dimSizeValue = 1;
-    for (auto dim : inShape) {
-      dimSizeValue *= dim;
+    for (auto dim_x : node->getDim()) {
+      dimSizeValue *= inShape[dim_x];
     }
 
     // Create a DenseElementsAttr with the dimSize value
@@ -391,10 +395,12 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
   // Create a ConstantOp with the tensor type and attribute
   auto dimSizeValue = builder.create<mlir::stablehlo::ConstantOp>(
       builder.getUnknownLoc(), tensorType, attr);
+  // Broadcast in dim to match ranks
   auto meanValue = builder.create<mlir::stablehlo::DivOp>(
       builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
   insertValueMapping(node, meanValue);
 }
+
 void StableHLOLoweringPass::visit(VariancePtr node) {
   auto CurrentBlock = builder.getInsertionBlock();
   auto ResultType = createRankedTensorTypeFromTensorType(
@@ -491,8 +497,8 @@ void StableHLOLoweringPass::visit(BatchNorm2dPtr node) {
   // // same shape
   auto resultType = value.getType();
   llvm::SmallVector<mlir::Type, 1> resultTypes = {resultType};
-  mlir::FloatAttr epsilon = builder.getF32FloatAttr(0.0);
-  mlir::IntegerAttr feature_index = builder.getI64IntegerAttr(2);
+  mlir::FloatAttr epsilon = builder.getF32FloatAttr(0.0000001);
+  mlir::IntegerAttr feature_index = builder.getI64IntegerAttr(1);
 
   auto op = builder.create<mlir::stablehlo::BatchNormInferenceOp>(
       builder.getUnknownLoc(), resultTypes, value, scale, offset, mean,
