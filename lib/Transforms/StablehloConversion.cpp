@@ -430,23 +430,34 @@ void StableHLOLoweringPass::visit(VariancePtr node) {
                                             AddResult.getResult());
   builder.setInsertionPointToEnd(CurrentBlock);
   std::vector<int> inShape = node->getShape();
+  auto outShape =
+      SAFE_TYPE_DOWNCAST(node->getType(), TensorType)->getConcreteShape();
+  std::vector<int64_t> outInt64Shape(outShape.size());
+  std::transform(outShape.begin(), outShape.end(), outInt64Shape.begin(),
+                 [](int val) { return static_cast<int64_t>(val); });
 
-  mlir::RankedTensorType tensorType =
-      mlir::RankedTensorType::get({}, ElementType);
+  mlir::RankedTensorType tensorType = mlir::RankedTensorType::get(
+      mlir::ArrayRef<int64_t>(outInt64Shape), ElementType);
   mlir::DenseElementsAttr attr;
-  mlir::DenseElementsAttr correction_attr;
+  float correction;
   if (ElementType.isa<mlir::FloatType>()) {
     float dimSizeValue = 1;
-
-    for (auto dim : inShape) {
-      dimSizeValue *= dim;
+    for (auto dim_x : node->getDim()) {
+      dimSizeValue *= inShape[dim_x];
     }
-    float correction = dimSizeValue - 1;
+    correction = dimSizeValue - 1;
     // Create a DenseElementsAttr with the dimSize value
     attr = mlir::DenseElementsAttr::get(tensorType,
                                         llvm::ArrayRef<float>{dimSizeValue});
-    correction_attr = mlir::DenseElementsAttr::get(
-        tensorType, llvm::ArrayRef<float>{correction});
+  } else if (ElementType.isa<mlir::IntegerType>()) {
+    int64_t dimSizeValue = 1;
+    for (auto dim_x : node->getDim()) {
+      dimSizeValue *= inShape[dim_x];
+    }
+    correction = dimSizeValue - 1;
+    // Create a DenseElementsAttr with the dimSize value
+    attr = mlir::DenseElementsAttr::get(tensorType,
+                                        llvm::ArrayRef<int64_t>{dimSizeValue});
   } else {
     throw std::runtime_error("Unsupported data type lowering VarianceOp.");
   }
@@ -454,9 +465,9 @@ void StableHLOLoweringPass::visit(VariancePtr node) {
   // Create a ConstantOp with the tensor type and attribute
   auto dimSizeValue = builder.create<mlir::stablehlo::ConstantOp>(
       builder.getUnknownLoc(), tensorType, attr);
+  // Broadcast in dim to match ranks
   auto meanValue = builder.create<mlir::stablehlo::DivOp>(
       builder.getUnknownLoc(), reduceOp.getResult(0), dimSizeValue);
-
   // Broadcast in dim to match ranks
   std::vector<int64_t> int64Shape(inShape.size());
   std::transform(inShape.begin(), inShape.end(), int64Shape.begin(),
@@ -466,8 +477,23 @@ void StableHLOLoweringPass::visit(VariancePtr node) {
       mlir::FloatType::getF32(builder.getContext()));
   std::vector<int64_t> axes(inShape.size());
   std::iota(axes.begin(), axes.end(), 0);
-  mlir::DenseI64ArrayAttr axes_attr = builder.getDenseI64ArrayAttr({});
+  mlir::DenseElementsAttr correction_attr;
+  mlir::RankedTensorType ScalarFloatType =
+      mlir::RankedTensorType::get(mlir::ArrayRef<int64_t>({}), ElementType);
 
+  correction_attr = mlir::DenseElementsAttr::get(
+      tensorType, llvm::ArrayRef<float>{correction});
+
+  std::vector<int64_t> broad_dims;
+  auto feature_dims = node->getDim();
+  for (size_t i = 0; i < inShape.size(); ++i) {
+    if (std::find(feature_dims.begin(), feature_dims.end(), i) ==
+        feature_dims.end()) {
+      broad_dims.push_back(i);
+    }
+  }
+
+  mlir::DenseI64ArrayAttr axes_attr = builder.getDenseI64ArrayAttr(broad_dims);
   auto broadcastOP = builder.create<mlir::stablehlo::BroadcastInDimOp>(
       builder.getUnknownLoc(), BroadcastType, meanValue, axes_attr);
   // Compute substract

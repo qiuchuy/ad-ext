@@ -801,7 +801,7 @@ void VariancePrimitive::evalCPU(const std::vector<Array> &inputs,
   output = pybind11::cast<Array>(eval_callback["var"](input));
 }
 TypePtr VariancePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  assert(inType->isTensorType() && "var operator only applies to tensors.");
   auto inType = inputTypes[0];
   TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
   std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
