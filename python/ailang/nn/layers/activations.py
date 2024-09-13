@@ -14,8 +14,12 @@ def _make_activation_module(f):
     return decorator
 
 
-def relu(x):
-    return al.standard.relu(x)
+class Relu(Module):
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, x: al.array):
+        return al.standard.relu(x)
 
 
 def sigmoid(x):

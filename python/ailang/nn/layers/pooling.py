@@ -20,7 +20,7 @@ class Maxpool2d(Module):
             (kernel_size, stride, base_dilations, window_dilations),
         )
         (padding,) = map(
-            lambda x: (x, x, x, x, x, x, x, x) if isinstance(x, int) else x, (padding,)
+            lambda x: (0, 0, 0, 0, 0, 0, x, x) if isinstance(x, int) else x, (padding,)
         )
         self.kernel_size = kernel_size
         self.padding = padding
@@ -33,7 +33,9 @@ class Maxpool2d(Module):
         return al.from_numpy(np_array)
 
     def __call__(self, input):
-        assert len(input.shape) == 4,"[nn.Maxpool2d] input's dims expected to be (N,C,H,W)"
+        assert (
+            len(input.shape) == 4
+        ), "[nn.Maxpool2d] input's dims expected to be (N,C,H,W)"
         y = al.standard.maxpool2d(
             input,
             self.kernel_size,
