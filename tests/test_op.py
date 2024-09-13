@@ -1,6 +1,8 @@
 import ailang as al
 import typing
 import numpy as np
+import torch
+
 
 class TestOp:
     @staticmethod
@@ -49,8 +51,8 @@ class TestOp:
     def test_standard_mean(self):
         a = self.gen_random_nparray((3, 2), np.float32)
         b = al.from_numpy(a)
-        c = al.standard.mean(b)
-        assert TestOp.numeric_check(c, np.mean(a))
+        c = al.standard.mean(b, [1])
+        assert TestOp.numeric_check(c, np.mean(a, 1))
 
     def test_standard_transpose(self):
         a = self.gen_random_nparray((2, 3), np.float32)
@@ -74,7 +76,7 @@ class TestOp:
         k = al.standard.add(m, n)
         assert TestOp.numeric_check(k, x + y)
 
-        i = 1.
+        i = 1.0
         j = self.gen_random_nparray((2, 3), np.float32)
         al_j = al.from_numpy(j)
         r = al.standard.add(i, al_j)
@@ -102,16 +104,22 @@ class TestOp:
         assert TestOp.numeric_check(c, np.maximum(a, 0))
 
     def test_standard_conv2d(self):
-        a = self.gen_random_nparray((1, 4, 4, 1), np.float32)
-        b = self.gen_random_nparray((3, 3, 1, 1), np.float32)
+        a = self.gen_random_nparray((1, 3, 224, 224), np.float32)
+        b = self.gen_random_nparray((5, 3, 3, 3), np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
-        e = al.standard.conv2d(c, d, (2, 2), (0, 0), (1, 1))
-        assert e.shape == (1, 2, 2, 1)
+        e = al.standard.conv2d(c, d, (2, 2), (1, 1), (1, 1), (0, 0, 0, 0), (0, 0))
+        torch_conv = torch.nn.Conv2d(3, 5, kernel_size=3, stride=2, padding=0)
+        print(torch_conv.weight.data.shape)
+        torch_conv.weight.data = torch.from_numpy(b)
+        print(torch_conv.weight.data.shape)
+        assert e.shape == (1, 5, 111, 111)
 
     def test_standard_var(self):
-        # [TODO]
-        raise NotImplementedError
+        a = self.gen_random_nparray((3, 2), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.var(b, [1])
+        assert TestOp.numeric_check(c, torch.var(torch.from_numpy(a), 1).numpy())
 
     def test_standard_batchnorm2d(self):
         operand = al.from_numpy(
@@ -206,4 +214,3 @@ class TestOp:
         d = al.from_numpy(b)
         e = al.standard.matmul(c, d)
         assert TestOp.numeric_check(e, np.matmul(a, b))
-

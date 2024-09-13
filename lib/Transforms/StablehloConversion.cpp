@@ -252,8 +252,8 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
   int64_t inputFeatureDimension = 1;
   llvm::SmallVector<int64_t, 2> inputSpatialDimensions = {2, 3};
 
-  int64_t kernelInputFeatureDimension = 0;
-  int64_t kernelOutputFeatureDimension = 3;
+  int64_t kernelInputFeatureDimension = 3;
+  int64_t kernelOutputFeatureDimension = 0;
   llvm::SmallVector<int64_t, 2> kernelSpatialDimensions = {1, 2};
 
   int64_t outputBatchDimension = 0;

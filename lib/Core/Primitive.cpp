@@ -689,8 +689,8 @@ to the output. Default: True
   int rhs_dilation_w = rhsDilation[1];
   int DilationedWeightH = (kernel_size_h - 1) * rhs_dilation_h + 1;
   int DilationedWeightW = (kernel_size_w - 1) * rhs_dilation_w + 1;
-  int I = weightConcreateShape[0];
-  int O = weightConcreateShape[3];
+  int I = weightConcreateShape[3];
+  int O = weightConcreateShape[0];
   assert(C == I);
   int H_out =
       (DilationedInputH + 2 * padding_h - DilationedWeightH) / stride_h + 1;
