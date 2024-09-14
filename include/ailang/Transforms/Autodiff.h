@@ -20,9 +20,11 @@ public:
   void visit(BatchNorm2dPtr Node) override{};
   void visit(ReluPtr Node) override{};
   void visit(MeanPtr Node) override{};
-  void visit(MatmulPtr Node) override{};
+  void visit(VariancePtr Node) override {};
+  void visit(MatmulPtr Node) override {};
   void visit(AddPtr Node) override{};
   void visit(Maxpool2dPtr Node) override{};
+  void visit(Avgpool2dPtr Node) override {};
   void visit(CompareOpPtr Node) override{};
   void visit(ConcatPtr Node) override{};
   void visit(ExpPtr Node) override{};

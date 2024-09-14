@@ -13,4 +13,8 @@ from .._C.libailang import (
     relu,
     tanh,
     transpose,
+    relu,
+    var,
+    maxpool2d,
+    avgpool2d,
 )

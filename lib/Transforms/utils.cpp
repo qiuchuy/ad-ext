@@ -22,6 +22,7 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "mlir/Support/LLVM.h"
 #include "stablehlo/dialect/StablehloOps.h"
@@ -33,4 +34,10 @@
 
 namespace ainl::ir {
 mlir::Value compute_mean() {}
+mlir::DenseI64ArrayAttr
+convertI64VectorToDenseI64ArrayAttr(mlir::OpBuilder &builder,
+                                    const std::vector<int64_t> &vec) {
+  llvm::ArrayRef<int64_t> values(vec);
+  return builder.getDenseI64ArrayAttr(values);
+}
 } // namespace ainl::ir

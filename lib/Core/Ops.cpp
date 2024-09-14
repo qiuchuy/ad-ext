@@ -274,32 +274,32 @@ Array broadcast_to(const Array &input, const std::vector<int> &shape) {
                getStridesFromShape(outputShape, input.itemsize()));
 }
 
-Array conv2d(const Array &input, const Array &weight,
-             const std::pair<int, int> &stride /* {2, 2}*/,
-             const std::pair<int, int> &padding /* {0, 0}*/,
-             const std::pair<int, int> &dilation /*{1, 1}*/) {
-  int spatial_dims = input.ndim() - 2;
-  if (spatial_dims < 1 || spatial_dims > 2) {
-    throw std::invalid_argument(
-        "[ops.h Conv2d cannot handle spatialdim !=1or2 yet.]");
-  }
-  // TODO more type and check
-  auto output_type = isFloat(input.dtype());
+// Array conv2d(const Array &input, const Array &weight,
+//              const std::pair<int, int> &stride /* {2, 2}*/,
+//              const std::pair<int, int> &padding /* {0, 0}*/,
+//              const std::pair<int, int> &dilation /*{1, 1}*/) {
+//   int spatial_dims = input.ndim() - 2;
+//   if (spatial_dims < 1 || spatial_dims > 2) {
+//     throw std::invalid_argument(
+//         "[ops.h Conv2d cannot handle spatialdim !=1or2 yet.]");
+//   }
+//   // TODO more type and check
+//   auto output_type = isFloat(input.dtype());
 
-  /* input = astype(input,out_type);
-  weight = astype(weight,out_type);*/
+//   /* input = astype(input,out_type);
+//   weight = astype(weight,out_type);*/
 
-  std::vector<int> output_shape = get_conv2d_output_shape(
-      input.shape(), weight.shape(), stride, padding, dilation);
+//   std::vector<int> output_shape = get_conv2d_output_shape(
+//       input.shape(), weight.shape(), stride, padding, dilation);
 
-  const std::vector<int> stride_vec = {stride.first, stride.second};
-  const std::vector<int> padding_vec = {padding.first, padding.second};
-  const std::vector<int> dilation_vec = {dilation.first, dilation.second};
+//   const std::vector<int> stride_vec = {stride.first, stride.second};
+//   const std::vector<int> padding_vec = {padding.first, padding.second};
+//   const std::vector<int> dilation_vec = {dilation.first, dilation.second};
 
-  return Array(output_type, std::make_shared<ConvolutionPrimitive>(),
-               {input, weight}, output_shape,
-               getStridesFromShape(output_shape, dtypeSize(output_type)));
-}
+//   return Array(output_type, std::make_shared<ConvolutionPrimitive>(),
+//                {input, weight}, output_shape,
+//                getStridesFromShape(output_shape, dtypeSize(output_type)));
+// }
 // Activations
 
 // ReLU

@@ -43,7 +43,7 @@ ValuePtr maxpool2dNodeContract(const ModulePtr &module, const TypePtr &nodeType,
   if (!inValue->getType()->isTensorType()) {
     throw ainl::core::AINLError("maxpool2d operator only applies to tensors.");
   }
-  return module->getGraph()->create<Maxpool2d>(nodeType, inValue);
+  // return module->getGraph()->create<Maxpool2d>(nodeType, inValue);
 }
 ValuePtr convolutionNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
@@ -54,8 +54,9 @@ ValuePtr convolutionNodeContract(const ModulePtr &module,
     throw ainl::core::AINLError(
         "convolution operator only applies to tensors.");
   }
-  return module->getGraph()->create<Convolution>(nodeType, inputValue,
-                                                 weightValue);
+  // return module->getGraph()->create<Convolution>(
+  //     nodeType, inputValue, weightValue, window_strides, lhsDilation,
+  //     rhsDilation, padding_args, window_reversal);
 }
 ValuePtr batchnorm2dNodeContract(const ModulePtr &module,
                                  const TypePtr &nodeType,
@@ -137,9 +138,9 @@ NodeContract::NodeContract() {
                      return maxpool2dNodeContract(module, nodeType, (args[0]));
                    });
 
-  registerContract("convolution", [](const ModulePtr &module,
-                                     const TypePtr &nodeType,
-                                     std::vector<ValuePtr> args) {
+  registerContract("conv2d", [](const ModulePtr &module,
+                                const TypePtr &nodeType,
+                                std::vector<ValuePtr> args) {
     if (args.size() != 2) {
       throw ainl::core::AINLError(
           "Invalid argument number for operator convolution");

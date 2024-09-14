@@ -14,6 +14,7 @@
 #include "ailang/IR/Function.h"
 #include "ailang/IR/Graph.h"
 #include "ailang/IR/Literal.h"
+#include "ailang/IR/Node.h"
 #include "ailang/IR/NodeContract.h"
 #include "ailang/IR/Type.h"
 #include "ailang/IR/TypeContract.h"
@@ -599,6 +600,17 @@ std::string ReducePrimitive::toString() const {}
 void ConvolutionPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
   evalCPU(inputs, out);
 }
+void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                   Array &output) {
+
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[ConvolutionPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  auto weight = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["conv2d"](input, weight));
+}
 
 void ConvolutionPrimitive::jit(const std::vector<JITTracer> &inputs,
                                JITTracer &output) {
@@ -609,28 +621,106 @@ void ConvolutionPrimitive::jit(const std::vector<JITTracer> &inputs,
   }
   auto input = inputs[0];
   auto weight = inputs[1];
-  std::vector<ir::TypePtr> inputType = {input.value()->getType(),
-                                        weight.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {input.value(), weight.value()};
-
-  // type inference
-  auto outputType = ir::resolveContract("convolution", inputType);
-
-  auto module = getTracedModule();
-
-  // ir generation
-  output.setValue(
-      ir::resolveContract("convolution", module, outputType, inputValues));
-  output.setTracer(
-      single<ConvolutionPrimitive>({input.tracer(), weight.tracer()}));
+  auto outputType =
+      inferType({input.value()->getType(), weight.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Convolution>(
+      outputType, input.value(), weight.value(), window_strides, lhsDilation,
+      rhsDilation, padding_args, window_reversal));
+  output.setTracer(single<ConvolutionPrimitive>(
+      {input.tracer(), weight.tracer()}, window_strides, lhsDilation,
+      rhsDilation, padding_args, window_reversal));
 }
+TypePtr
+ConvolutionPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  /*
+in_channels (int) – Number of channels in the input image
+out_channels (int) – Number of channels produced by the convolution
+kernel_size (int or tuple) – Size of the convolving kernel
+stride (int or tuple, optional) – Stride of the convolution. Default: 1
+padding (int, tuple or str, optional) – Padding added to all four sides of
+the input. Default: 0 padding_mode (str, optional) – 'zeros', 'reflect',
+'replicate' or 'circular'. Default: 'zeros' dilation (int or tuple,
+optional) – Spacing between kernel elements. Default: 1 groups (int,
+optional) – Number of blocked connections from input channels to output
+channels. Default: 1 bias (bool, optional) – If True, adds a learnable bias
+to the output. Default: True
+*/
+  auto inputType = inputTypes[0];
+  auto weightType = inputTypes[1];
+  if (!inputType->isTensorType() || !weightType->isTensorType()) {
+    throw ainl::core::AINLError(
+        "convolution operator only applies to tensors.");
+  }
+  TensorTypePtr inputTensorType = SAFE_TYPE_DOWNCAST(inputType, TensorType);
+  TensorTypePtr weightTensorType = SAFE_TYPE_DOWNCAST(weightType, TensorType);
+  std::vector<ValuePtr> inputTensorShape = inputTensorType->getShape();
+  std::vector<ValuePtr> weightTensorShape = weightTensorType->getShape();
+  std::vector<int> inputConcreateShape = inputTensorType->getConcreteShape();
+  std::vector<int> weightConcreateShape = weightTensorType->getConcreteShape();
+
+  if (inputConcreateShape.size() != 4 && weightConcreateShape.size() != 3) {
+    throw ainl::core::AINLError(
+        "expected input 4d (N,H,W,C) and weight(H,W,C,O), input or weight "
+        "dim is not matched.");
+  }
+  int N = inputConcreateShape[0];
+  int C = inputConcreateShape[1];
+  int H = inputConcreateShape[2];
+  int W = inputConcreateShape[3];
+
+  /*
+   in stablehlo the lhs(input img) corresppponds to the NHWC layout.
+   And the weights corresponds to HWIO.
+   output corresponds to NHWC layout*/
+  int padding_h = *padding_args.begin();
+  int padding_w = *padding_args.rbegin();
+
+  int lhs_dilation_h = lhsDilation[0];
+  int lhs_dilation_w = lhsDilation[1];
+  int DilationedInputH = (H - 1) * lhs_dilation_h + 1;
+  int DilationedInputW = (W - 1) * lhs_dilation_w + 1;
+
+  int stride_h = window_strides[0];
+  int stride_w = window_strides[1];
+
+  int kernel_size_h = weightConcreateShape[2];
+  int kernel_size_w = weightConcreateShape[3];
+  int rhs_dilation_h = rhsDilation[0];
+  int rhs_dilation_w = rhsDilation[1];
+  int DilationedWeightH = (kernel_size_h - 1) * rhs_dilation_h + 1;
+  int DilationedWeightW = (kernel_size_w - 1) * rhs_dilation_w + 1;
+  int I = weightConcreateShape[1];
+  int O = weightConcreateShape[0];
+  assert(C == I);
+  int H_out =
+      (DilationedInputH + 2 * padding_h - DilationedWeightH) / stride_h + 1;
+  int W_out =
+      (DilationedInputW + 2 * padding_w - DilationedWeightW) / stride_w + 1;
+  std::vector<ValuePtr> outTensorShape = {
+      Literal::create(N),
+      Literal::create(O),
+      Literal::create(H_out),
+      Literal::create(W_out),
+  };
+  TypePtr elementType = inputTensorType->getElementType();
+  return TensorType::create(elementType, outTensorShape);
+}
+
 void ConvolutionPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                                JVPTracer &output) {}
-std::string ConvolutionPrimitive::toString() const { return "Conv"; }
+std::string ConvolutionPrimitive::toString() const { return "Conv2d"; }
 // Relu
 
 void ReluPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
+}
+void ReluPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[ReluPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["relu"](input));
 }
 
 void ReluPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -654,11 +744,17 @@ void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string ReluPrimitive::toString() const { return "relu"; }
 // Mean
-
 void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
-
+void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[MeanPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["mean"](input));
+}
 TypePtr MeanPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inType->isTensorType() && "mean operator only applies to tensors.");
   auto inType = inputTypes[0];
@@ -691,11 +787,70 @@ void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string MeanPrimitive::toString() const { return "mean"; }
+// VariancePrimitive
+void VariancePrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+void VariancePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[VariancePrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["var"](input));
+}
+TypePtr VariancePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() && "var operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<ValuePtr> outTensorshape;
+  for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
+    if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
+      outTensorshape.push_back(inTensorShape[Idx]);
+    }
+  }
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorshape);
+}
 
+void VariancePrimitive::jit(const std::vector<JITTracer> &inputs,
+                            JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[VariancePrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Variance>(
+      outputType, input.value(), dim));
+  output.setTracer(single<VariancePrimitive>({input.tracer()}, dim));
+}
+
+void VariancePrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                            JVPTracer &output) {}
+
+std::string VariancePrimitive::toString() const { return "var"; }
 // BatchnormInferencePrimitive
 void BatchnormInferencePrimitive::eval(const std::vector<Array> &inputs,
                                        Array &output) {
   evalCPU(inputs, output);
+}
+void BatchnormInferencePrimitive::evalCPU(const std::vector<Array> &inputs,
+                                          Array &output) {
+  if (inputs.size() != 5)
+    throw std::invalid_argument("[BatchnormInferencePrimitive::jit] "
+                                "expects exactly five input "
+                                "tracer.(i,s,o,m,v)");
+  auto input = inputs[0];
+  auto scale = inputs[1];
+  auto offset = inputs[2];
+  auto mean = inputs[3];
+  auto variance = inputs[4];
+
+  output = pybind11::cast<Array>(
+      eval_callback["batchnorm2d"](input, scale, offset, mean, variance));
 }
 
 void BatchnormInferencePrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -709,18 +864,24 @@ void BatchnormInferencePrimitive::jit(const std::vector<JITTracer> &inputs,
   auto offset = inputs[2];
   auto mean = inputs[3];
   auto variance = inputs[4];
-  std::vector<ir::TypePtr> inputType = {
-      input.value()->getType(), scale.value()->getType(),
-      offset.value()->getType(), mean.value()->getType(),
-      variance.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {input.value(), scale.value(),
-                                           offset.value(), mean.value(),
-                                           variance.value()};
-  auto outputType = ir::resolveContract("batchnorm2d", inputType);
-  auto module = getTracedModule();
-  output.setValue(
-      ir::resolveContract("batchnorm2d", module, outputType, inputValues));
-  output.setTracer(single<BatchnormInferencePrimitive>({input.tracer()}));
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<BatchNorm2d>(
+      outputType, input.value(), scale.value(), offset.value(), mean.value(),
+      variance.value()));
+  output.setTracer(single<BatchnormInferencePrimitive>(
+      {input.tracer(), scale.tracer(), offset.tracer(), mean.tracer(),
+       variance.tracer()}));
+}
+TypePtr
+BatchnormInferencePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() &&
+         "batchnorm operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, inTensorShape);
+  // copy-construct
 }
 
 void BatchnormInferencePrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -733,6 +894,16 @@ std::string BatchnormInferencePrimitive::toString() const {
 void MaxPool2dPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
+void MaxPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1)
+    throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
+                                "expects exactly one input ");
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(
+      eval_callback["maxpool2d"](input, window_dimensions, window_strides,
+                                 base_dilations, window_dilations, padding));
+}
 
 void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
@@ -741,13 +912,62 @@ void MaxPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
                                 "expects exactly one input tracer.");
   }
   auto input = inputs[0];
-  std::vector<ir::TypePtr> inputType = {input.value()->getType()};
-  std::vector<ir::ValuePtr> inputValues = {input.value()};
-  auto outputType = ir::resolveContract("maxpool2d", inputType);
-  auto module = getTracedModule();
-  output.setValue(
-      ir::resolveContract("maxpool2d", module, outputType, inputValues));
-  output.setTracer(single<MaxPool2dPrimitive>({input.tracer()}, kernel_size));
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Maxpool2d>(
+      outputType, input.value(), window_dimensions, window_strides,
+      base_dilations, window_dilations, padding));
+  output.setTracer(single<MaxPool2dPrimitive>(
+      {input.tracer()}, window_dimensions, window_strides, base_dilations,
+      window_dilations, padding));
+}
+TypePtr MaxPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  auto inType = inputTypes[0];
+  if (!inType->isTensorType()) {
+    throw ainl::core::AINLError("maxpool2d operator only applies to tensors.");
+  }
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+
+  std::vector<ValuePtr> outTensorShape;
+  int BaseDilationH = base_dilations[2];
+  int BaseDilationW = base_dilations[3];
+  int WindowDilationH = window_dilations[2];
+  int WindowDilationW = window_dilations[3];
+  int KernelSizeH = window_dimensions[2];
+  int KernelSizeW = window_dimensions[3];
+  int WindowStrideH = window_strides[2];
+  int WindowStrideW = window_strides[3];
+  int ChannelStride = window_strides[1];
+  int WindowPaddingH = padding[6];
+  int WindowPaddingW = padding[7];
+  int InputBatchSize = inConcreateShape[0];
+  int InputChannel = inConcreateShape[1];
+  int InputH = inConcreateShape[2];
+  int InputW = inConcreateShape[3];
+
+  int DilationedWeightH = (KernelSizeH - 1) * WindowDilationH + 1;
+  int DilationedWeightW = (KernelSizeW - 1) * WindowDilationW + 1;
+  int DilationedInputH = (InputH - 1) * BaseDilationH + 1;
+  int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
+  int OutBatchSize = window_strides[0];
+  int OutChannelSize = InputChannel / ChannelStride;
+  int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
+                 WindowStrideH +
+             1;
+  int OutW = (DilationedInputW + 2 * WindowPaddingW - DilationedWeightW) /
+                 WindowStrideW +
+             1;
+
+  // for (const auto &dim : inConcreateShape) {
+  //   outTensorShape.push_back(Literal::create(dim));
+  // }
+  outTensorShape.push_back(Literal::create(OutBatchSize));
+  outTensorShape.push_back(Literal::create(OutChannelSize));
+  outTensorShape.push_back(Literal::create(OutH));
+  outTensorShape.push_back(Literal::create(OutW));
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorShape);
 }
 
 void MaxPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -755,6 +975,93 @@ void MaxPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string MaxPool2dPrimitive::toString() const {
   return "MaxPool2dPrimitive";
+}
+// AvgPool2dPrimitive inference
+void AvgPool2dPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+void AvgPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1)
+    throw std::invalid_argument("[AvgPool2dPrimitive::jit] "
+                                "expects exactly one input ");
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(
+      eval_callback["avgpool2d"](input, window_dimensions, window_strides,
+                                 base_dilations, window_dilations, padding));
+}
+
+void AvgPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
+                                "expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Avgpool2d>(
+      outputType, input.value(), window_dimensions, window_strides,
+      base_dilations, window_dilations, padding));
+  output.setTracer(single<MaxPool2dPrimitive>(
+      {input.tracer()}, window_dimensions, window_strides, base_dilations,
+      window_dilations, padding));
+}
+TypePtr AvgPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  auto inType = inputTypes[0];
+  if (!inType->isTensorType()) {
+    throw ainl::core::AINLError(
+        "AvgPool2dPrimitive operator only applies to tensors.");
+  }
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+
+  std::vector<ValuePtr> outTensorShape;
+  int BaseDilationH = base_dilations[2];
+  int BaseDilationW = base_dilations[3];
+  int WindowDilationH = window_dilations[2];
+  int WindowDilationW = window_dilations[3];
+  int KernelSizeH = window_dimensions[2];
+  int KernelSizeW = window_dimensions[3];
+  int WindowStrideH = window_strides[2];
+  int WindowStrideW = window_strides[3];
+  int ChannelStride = window_strides[1];
+  int WindowPaddingH = padding[6];
+  int WindowPaddingW = padding[7];
+  int InputBatchSize = inConcreateShape[0];
+  int InputChannel = inConcreateShape[1];
+  int InputH = inConcreateShape[2];
+  int InputW = inConcreateShape[3];
+
+  int DilationedWeightH = (KernelSizeH - 1) * WindowDilationH + 1;
+  int DilationedWeightW = (KernelSizeW - 1) * WindowDilationW + 1;
+  int DilationedInputH = (InputH - 1) * BaseDilationH + 1;
+  int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
+  int OutBatchSize = window_strides[0];
+  int OutChannelSize = InputChannel / ChannelStride;
+  int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
+                 WindowStrideH +
+             1;
+  int OutW = (DilationedInputW + 2 * WindowPaddingW - DilationedWeightW) /
+                 WindowStrideW +
+             1;
+
+  // for (const auto &dim : inConcreateShape) {
+  //   outTensorShape.push_back(Literal::create(dim));
+  // }
+  outTensorShape.push_back(Literal::create(OutBatchSize));
+  outTensorShape.push_back(Literal::create(OutChannelSize));
+  outTensorShape.push_back(Literal::create(OutH));
+  outTensorShape.push_back(Literal::create(OutW));
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorShape);
+}
+
+void AvgPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                             JVPTracer &output) {}
+
+std::string AvgPool2dPrimitive::toString() const {
+  return "AvgPool2dPrimitive";
 }
 // GetElementsNumberPrimitive
 void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,
