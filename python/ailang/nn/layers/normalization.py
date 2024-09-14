@@ -26,6 +26,8 @@ class Batchnorm2d(Module):
         np_offset = np.zeros((num_features), dtype=np.float32)
         self.offset = al.from_numpy(np_offset)
         self.scale = al.from_numpy(np_scale)
+        self.running_mean = None
+        self.running_var = None
 
     def compute_mean(self, x: al.array):
         return al.standard.mean(x, [0, 2, 3])
@@ -33,7 +35,17 @@ class Batchnorm2d(Module):
     def compute_var(self, x: al.array):
         return al.standard.var(x, [0, 2, 3])
 
+    def get_running_mean(self):
+        assert self.running_mean is not None, "you can get running_mean after inference"
+        return self.running_mean
+
+    def get_running_var(self):
+        assert self.running_var is not None, "you can get running_var after inference"
+        return self.running_var
+
     def __call__(self, x: al.array):
+        self.running_mean = self.compute_mean(x)
+        self.running_var = self.compute_var(x)
         return al.standard.batchnorm2d(
-            x, self.scale, self.offset, self.compute_mean(x), self.compute_var(x)
+            x, self.scale, self.offset, self.running_mean, self.running_var
         )

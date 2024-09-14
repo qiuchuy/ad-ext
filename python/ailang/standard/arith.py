@@ -71,6 +71,22 @@ def maxpool2d(x: al.array, window_dimensions,window_strides,base_dilations,windo
     """
     return al.prim.maxpool2d(x,window_dimensions,window_strides,base_dilations,window_dilations,padding)
 
+
+@_tensor_member_fn
+@al.jit
+def avgpool2d(
+    x: al.array,
+    window_dimensions,
+    window_strides,
+    base_dilations,
+    window_dilations,
+    padding,
+) -> al.array:
+    return al.prim.avgpool2d(
+        x, window_dimensions, window_strides, base_dilations, window_dilations, padding
+    )
+
+
 @_tensor_member_fn
 @al.jit
 def exp(x: al.array) -> al.array:

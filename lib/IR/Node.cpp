@@ -279,6 +279,24 @@ Maxpool2d::operator std::string() const {
 }
 void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// Avgpool2d
+Avgpool2d::Avgpool2d(const TypePtr &opType, const ValuePtr &inValue,
+                     const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+    : Node(opType), window_dimensions(window_dimensions),
+      window_strides(window_strides), base_dilations(base_dilations),
+      window_dilations(window_dilations), padding(padding) {
+  this->inValue = inValue;
+}
+Avgpool2d::operator std::string() const {
+  return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
+         "):" + std::string(*getType());
+}
+void Avgpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Convolution
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
                          const ValuePtr &weightValue,

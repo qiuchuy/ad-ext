@@ -467,6 +467,30 @@ private:
   std::vector<int64_t> window_dilations;
   std::vector<int64_t> padding;
 };
+class AvgPool2dPrimitive : public UnaryPrimitive {
+public:
+  AvgPool2dPrimitive(const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+      : window_dimensions(window_dimensions), window_strides(window_strides),
+        base_dilations(base_dilations), window_dilations(window_dilations),
+        padding(padding) {}
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
+  std::string toString() const override;
+
+private:
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
+};
 
 class ComparePrimitive : public UnaryPrimitive {
 

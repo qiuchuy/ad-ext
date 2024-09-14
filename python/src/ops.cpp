@@ -154,6 +154,16 @@ void init_ailang_op(py::module_ &m) {
         {inputValue}, window_dimensions, window_strides, base_dilations,
         window_dilations, padding);
   });
+  m.def("avgpool2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
+                        const std::vector<int64_t> &window_dimensions,
+                        const std::vector<int64_t> &window_strides,
+                        const std::vector<int64_t> &base_dilations,
+                        const std::vector<int64_t> &window_dilations,
+                        const std::vector<int64_t> &padding) {
+    return pyunary<ainl::core::AvgPool2dPrimitive>(
+        {inputValue}, window_dimensions, window_strides, base_dilations,
+        window_dilations, padding);
+  });
   m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input,
                   const std::vector<int64_t> &dim) {
     return pyunary<ainl::core::VariancePrimitive>({input}, dim);

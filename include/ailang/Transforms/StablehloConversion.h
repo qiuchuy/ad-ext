@@ -40,6 +40,7 @@ public:
   void visit(MatmulPtr node) override;
   void visit(AddPtr node) override;
   void visit(Maxpool2dPtr node) override;
+  void visit(Avgpool2dPtr node) override;
   void visit(CompareOpPtr node) override;
   void visit(ConcatPtr node) override;
   void visit(ExpPtr node) override;

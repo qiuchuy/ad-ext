@@ -21,7 +21,9 @@
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
 #include <bits/stdint-intn.h>
+#include <functional>
 #include <initializer_list>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -252,9 +254,9 @@ void StableHLOLoweringPass::visit(ConvolutionPtr node) {
   int64_t inputFeatureDimension = 1;
   llvm::SmallVector<int64_t, 2> inputSpatialDimensions = {2, 3};
 
-  int64_t kernelInputFeatureDimension = 3;
+  int64_t kernelInputFeatureDimension = 1;
   int64_t kernelOutputFeatureDimension = 0;
-  llvm::SmallVector<int64_t, 2> kernelSpatialDimensions = {1, 2};
+  llvm::SmallVector<int64_t, 2> kernelSpatialDimensions = {2, 3};
 
   int64_t outputBatchDimension = 0;
   int64_t outputFeatureDimension = 1;
@@ -573,6 +575,69 @@ void StableHLOLoweringPass::visit(Maxpool2dPtr node) {
                                             AddResult.getResult());
   builder.setInsertionPointToEnd(CurrentBlock);
   insertValueMapping(node, ReduceWindowOp->getResult(0));
+}
+
+void StableHLOLoweringPass::visit(Avgpool2dPtr node) {
+  auto CurrentBlock = builder.getInsertionBlock();
+  mlir::Value value = valueMap[node->getValue()];
+  auto AvgpoolArgs = node->getArgs();
+  auto window_dimensions =
+      convertI64VectorToDenseI64ArrayAttr(builder, AvgpoolArgs[0]);
+  auto window_strides =
+      convertI64VectorToDenseI64ArrayAttr(builder, AvgpoolArgs[1]);
+
+  auto base_dilations =
+      convertI64VectorToDenseI64ArrayAttr(builder, AvgpoolArgs[2]);
+  auto window_dilations =
+      convertI64VectorToDenseI64ArrayAttr(builder, AvgpoolArgs[3]);
+  auto padding_args = AvgpoolArgs[4];
+  auto paddingTensorType =
+      mlir::RankedTensorType::get({4, 2}, builder.getIntegerType(64));
+  mlir::DenseIntElementsAttr padding =
+      mlir::DenseIntElementsAttr::get(paddingTensorType, padding_args);
+  auto ResultType = createRankedTensorTypeFromTensorType(
+      node->getType(), *theModule.getContext());
+  mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(), builder.getZeroAttr(builder.getF32Type()));
+  auto ReduceWindowOp = builder.create<mlir::stablehlo::ReduceWindowOp>(
+      builder.getUnknownLoc(), ResultType, value, initValue, window_dimensions,
+      window_strides, base_dilations, window_dilations, padding);
+  auto *Body = builder.createBlock(&ReduceWindowOp.getBodyRegion());
+
+  mlir::Type ElementType =
+      value.getType().cast<mlir::TensorType>().getElementType();
+  mlir::Value Element = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  mlir::Value Accumulator = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  builder.setInsertionPointToEnd(Body);
+  std::vector<mlir::Value> AddArgs = {Element, Accumulator};
+  auto AddResult =
+      builder.create<mlir::stablehlo::AddOp>(builder.getUnknownLoc(), AddArgs);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddResult.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+
+  auto kernel_dim = AvgpoolArgs[0];
+  auto kernel_accum = static_cast<float>(std::accumulate(
+      kernel_dim.begin(), kernel_dim.end(), 1, std::multiplies<int64_t>()));
+  auto outShape =
+      SAFE_TYPE_DOWNCAST(node->getType(), TensorType)->getConcreteShape();
+  std::vector<int64_t> outInt64Shape(outShape.size());
+  std::transform(outShape.begin(), outShape.end(), outInt64Shape.begin(),
+                 [](int val) { return static_cast<int64_t>(val); });
+
+  mlir::RankedTensorType tensorType = mlir::RankedTensorType::get(
+      mlir::ArrayRef<int64_t>(outInt64Shape), ElementType);
+  mlir::DenseElementsAttr attr;
+  attr = mlir::DenseElementsAttr::get(tensorType,
+                                      llvm::ArrayRef<float>{kernel_accum});
+  auto kernel_size_size_value = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(), tensorType, attr);
+  auto res = builder.create<mlir::stablehlo::DivOp>(
+      builder.getUnknownLoc(), ReduceWindowOp->getResult(0),
+      kernel_size_size_value);
+  insertValueMapping(node, res);
 }
 void StableHLOLoweringPass::visit(BroadcastPtr Node) {
   mlir::Value Value = valueMap[Node->getOperand(0)];

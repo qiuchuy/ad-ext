@@ -683,13 +683,13 @@ to the output. Default: True
   int stride_h = window_strides[0];
   int stride_w = window_strides[1];
 
-  int kernel_size_h = weightConcreateShape[1];
-  int kernel_size_w = weightConcreateShape[2];
+  int kernel_size_h = weightConcreateShape[2];
+  int kernel_size_w = weightConcreateShape[3];
   int rhs_dilation_h = rhsDilation[0];
   int rhs_dilation_w = rhsDilation[1];
   int DilationedWeightH = (kernel_size_h - 1) * rhs_dilation_h + 1;
   int DilationedWeightW = (kernel_size_w - 1) * rhs_dilation_w + 1;
-  int I = weightConcreateShape[3];
+  int I = weightConcreateShape[1];
   int O = weightConcreateShape[0];
   assert(C == I);
   int H_out =
@@ -975,6 +975,93 @@ void MaxPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string MaxPool2dPrimitive::toString() const {
   return "MaxPool2dPrimitive";
+}
+// AvgPool2dPrimitive inference
+void AvgPool2dPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+void AvgPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
+                                 Array &output) {
+  if (inputs.size() != 1)
+    throw std::invalid_argument("[AvgPool2dPrimitive::jit] "
+                                "expects exactly one input ");
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(
+      eval_callback["avgpool2d"](input, window_dimensions, window_strides,
+                                 base_dilations, window_dilations, padding));
+}
+
+void AvgPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
+                             JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
+                                "expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Avgpool2d>(
+      outputType, input.value(), window_dimensions, window_strides,
+      base_dilations, window_dilations, padding));
+  output.setTracer(single<MaxPool2dPrimitive>(
+      {input.tracer()}, window_dimensions, window_strides, base_dilations,
+      window_dilations, padding));
+}
+TypePtr AvgPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  auto inType = inputTypes[0];
+  if (!inType->isTensorType()) {
+    throw ainl::core::AINLError(
+        "AvgPool2dPrimitive operator only applies to tensors.");
+  }
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<int> inConcreateShape = inTensorType->getConcreteShape();
+
+  std::vector<ValuePtr> outTensorShape;
+  int BaseDilationH = base_dilations[2];
+  int BaseDilationW = base_dilations[3];
+  int WindowDilationH = window_dilations[2];
+  int WindowDilationW = window_dilations[3];
+  int KernelSizeH = window_dimensions[2];
+  int KernelSizeW = window_dimensions[3];
+  int WindowStrideH = window_strides[2];
+  int WindowStrideW = window_strides[3];
+  int ChannelStride = window_strides[1];
+  int WindowPaddingH = padding[6];
+  int WindowPaddingW = padding[7];
+  int InputBatchSize = inConcreateShape[0];
+  int InputChannel = inConcreateShape[1];
+  int InputH = inConcreateShape[2];
+  int InputW = inConcreateShape[3];
+
+  int DilationedWeightH = (KernelSizeH - 1) * WindowDilationH + 1;
+  int DilationedWeightW = (KernelSizeW - 1) * WindowDilationW + 1;
+  int DilationedInputH = (InputH - 1) * BaseDilationH + 1;
+  int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
+  int OutBatchSize = window_strides[0];
+  int OutChannelSize = InputChannel / ChannelStride;
+  int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
+                 WindowStrideH +
+             1;
+  int OutW = (DilationedInputW + 2 * WindowPaddingW - DilationedWeightW) /
+                 WindowStrideW +
+             1;
+
+  // for (const auto &dim : inConcreateShape) {
+  //   outTensorShape.push_back(Literal::create(dim));
+  // }
+  outTensorShape.push_back(Literal::create(OutBatchSize));
+  outTensorShape.push_back(Literal::create(OutChannelSize));
+  outTensorShape.push_back(Literal::create(OutH));
+  outTensorShape.push_back(Literal::create(OutW));
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorShape);
+}
+
+void AvgPool2dPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                             JVPTracer &output) {}
+
+std::string AvgPool2dPrimitive::toString() const {
+  return "AvgPool2dPrimitive";
 }
 // GetElementsNumberPrimitive
 void GetElementsNumberPrimitive::eval(const std::vector<Array> &inputs,

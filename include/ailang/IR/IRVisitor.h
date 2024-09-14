@@ -20,6 +20,7 @@ public:
   virtual void visit(BatchNorm2dPtr node) = 0;
   virtual void visit(BroadcastPtr node) = 0;
   virtual void visit(Maxpool2dPtr node) = 0;
+  virtual void visit(Avgpool2dPtr node) = 0;
   virtual void visit(CompareOpPtr node) = 0;
   virtual void visit(ConcatPtr node) = 0;
   virtual void visit(ExpPtr node) = 0;

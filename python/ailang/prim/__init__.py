@@ -15,5 +15,6 @@ from .._C.libailang import (
     transpose,
     relu,
     var,
-    maxpool2d
+    maxpool2d,
+    avgpool2d,
 )

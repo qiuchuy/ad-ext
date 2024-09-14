@@ -53,6 +53,7 @@ public:
     MAKETUPLE,
     MATMUL,
     MAXPOOL2D,
+    AVGPOOL2D,
     MEAN,
     MOD,
     MUL,
@@ -296,6 +297,32 @@ public:
             const std::vector<int64_t> &window_dilations,
             const std::vector<int64_t> &padding);
   NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_dimensions, window_strides, base_dilations, window_dilations,
+            padding};
+  }
+
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
+};
+NODE_PTR_TYPE_DECL(Avgpool2d)
+class Avgpool2d : public Node {
+public:
+  Avgpool2d(const TypePtr &nodeType, const ValuePtr &inValue,
+            const std::vector<int64_t> &window_dimensions,
+            const std::vector<int64_t> &window_strides,
+            const std::vector<int64_t> &base_dilations,
+            const std::vector<int64_t> &window_dilations,
+            const std::vector<int64_t> &padding);
+  NodeKind kind() override { return Node::NodeKind::AVGPOOL2D; }
   explicit operator std::string() const override;
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
