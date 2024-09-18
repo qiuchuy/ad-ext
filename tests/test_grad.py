@@ -57,6 +57,20 @@ class TestJVP:
         TestJVP.numeric_check(gradx, np.ones_like(a))
         TestJVP.numeric_check(grady, np.ones_like(b))
 
+    def test_div(self):
+        @al.jvp
+        def g(x, y):
+            return al.div(x, y)
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = np.array([[5, 6], [7, 8]], dtype=np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        value, gradx, grady = g(c, d)
+        TestJVP.numeric_check(value, a / b)
+        TestJVP.numeric_check(gradx, 1 / b)
+        TestJVP.numeric_check(grady, -a / b**2)
+
     def test_neg(self):
         @al.jvp
         def g(x):

@@ -99,10 +99,19 @@ void ForwardDiff::visit(DivPtr Node) {
   auto *Right = Node->getOperand(1);
   auto *LeftTangent = getTangent(Left);
   auto *RightTangent = getTangent(Right);
-  // auto *UpperTangentNode = Module->createAfter<Div>(Node, Node->getType(),
-  // LeftTangent, Right); auto *LowerTangentNode =
-  // Module->createAfter<Div>(UpperTangentNode, Node->getType(), RightTangent,
-  // );
+  auto *UpperTangentNode =
+      Module->createAfter<Div>(Node, Left->getType(), LeftTangent, Right);
+  auto *SquareNode = Module->createAfter<Mul>(UpperTangentNode,
+                                              Right->getType(), Right, Right);
+  auto *DivNode = Module->createAfter<Div>(SquareNode, SquareNode->getType(),
+                                           Left, SquareNode);
+  auto *DivTangentNode = Module->createAfter<Mul>(
+      DivNode, DivNode->getType(), RightTangent, DivNode);
+  auto *LowerTangentNode =
+      Module->createAfter<Neg>(DivTangentNode, DivNode->getType(), DivTangentNode);
+  auto *TangentNode = Module->createAfter<Add>(
+      LowerTangentNode, Node->getType(), UpperTangentNode, LowerTangentNode);
+  setTangent(Node, TangentNode);
 }
 
 void ForwardDiff::visit(BroadcastPtr Node) {
@@ -120,10 +129,13 @@ void ForwardDiff::visit(BroadcastPtr Node) {
     BroadcastSize *= Dim;
   }
   float ScalingFactor = BroadcastSize / InputSize;
+  std::vector<ValuePtr> ScalingFactors;
+  for (size_t Idx = 0; Idx < InputShape.size(); ++Idx) {
+    ScalingFactors.push_back(Literal::create(ScalingFactor));
+  }
   auto *ConstantTensor = Module->createAfter<ConstantDef>(
-      Node, Tangent->getType(),
-      TupleContainer::create({Literal::create(ScalingFactor)}));
-  auto *TangentNode = Module->createAfter<Mul>(ConstantTensor, Tangent->getType(),
-                                               ConstantTensor, Tangent);
+      Node, Tangent->getType(), TupleContainer::create(ScalingFactors));
+  auto *TangentNode = Module->createAfter<Mul>(
+      ConstantTensor, Tangent->getType(), ConstantTensor, Tangent);
   setTangent(Node, TangentNode);
 }
