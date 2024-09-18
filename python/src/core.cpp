@@ -529,31 +529,10 @@ void init_ailang_core(py::module &m) {
       py::arg());
 
   m.def("grad_impl",
-        [](py::function &f, std::vector<std::shared_ptr<Tracer>> inputs) {
-          auto func = [&f](std::vector<std::shared_ptr<Tracer>> inputs)
-              -> std::vector<std::shared_ptr<Tracer>> {
-            py::tuple posArgs = py::tuple(inputs.size());
-            for (size_t i = 0; i < inputs.size(); i++) {
-              posArgs[i] = inputs[i];
-            }
-            auto result = f(*posArgs);
-            if (py::isinstance<py::tuple>(result) ||
-                py::isinstance<py::list>(result)) {
-              std::vector<std::shared_ptr<Tracer>> resultVec;
-              for (auto &item : result.cast<py::tuple>()) {
-                resultVec.push_back(item.cast<std::shared_ptr<Tracer>>());
-              }
-              return resultVec;
-            } else {
-              auto containedResult = std::vector<std::shared_ptr<Tracer>>();
-              containedResult.push_back(result.cast<std::shared_ptr<Tracer>>());
-              return containedResult;
-            }
-          };
-          auto module = grad(func, py::str(getattr(f, "__name__")), inputs);
-          return module;
+        [](ModulePtr Module) {
+          autodiffOnModule(Module);
         });
-
+  
   m.def("_register_eval_callback",
         [](const std::string &name, py::function &f) {
           eval_callback[name] = f;

@@ -54,19 +54,20 @@ def check_device(*tracers):
         raise ValueError("All tracers must be on the same known device.")
 
 
+def flatten(*args):
+    flattened_arg = []
+    for arg in args:
+        if isinstance(arg, (list, tuple)):
+            flattened_arg.extend(arg)
+        else:
+            flattened_arg.append(arg)
+    return flattened_arg
+
+
 def jit(f: Union[Callable]):
     """
     Decorator that performs just-in-time (JIT) compilation of a function.
     """
-
-    def flatten(*args):
-        flattened_arg = []
-        for arg in args:
-            if isinstance(arg, (list, tuple)):
-                flattened_arg.extend(arg)
-            else:
-                flattened_arg.append(arg)
-        return flattened_arg
 
     def jitted_f(*args, **kwargs):
         flattened_args = flatten(*args)
@@ -96,32 +97,30 @@ def jit(f: Union[Callable]):
 
         _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
         result = _jitted_f(*numpy_args)
-        if isinstance(result, tuple): 
+        if isinstance(result, tuple):
             al_arrays = []
             for res in result:
                 al_arrays.append(al.from_numpy(res.to_host(), device=device))
         else:
             al_arrays = al.from_numpy(result.to_host(), device=device)
         return al_arrays
+
     return jitted_f
 
 
-def grad(f: Union[Callable]):
-    """
-    Decorator that performs automatic differentiation of a function.
-    """
-
+def jvp(f: Union[Callable]):
     def grad_f(*args, **kwargs):
-        tracer_args = [arg for arg in args if isinstance(arg, tracer)]
-        tracer_kwargs = [arg for arg in kwargs.values() if isinstance(arg, tracer)]
-        tracer_args.extend(tracer_kwargs)
-        module = al.grad_impl(f, tracer_args)
+        flattened_args = flatten(*args)
+        tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
+        module = al.trace_impl(f, args)
+        print(module)
+        al.grad_impl(module)
         print(module)
         mlir_str = module.to_mlir()
         print(mlir_str)
         target_backend, ireert_config, device = check_device(*tracer_args)
         compiled_flatbuffer = ireec.tools.compile_str(
-            module.to_mlir(),
+            mlir_str,
             input_type="stablehlo",
             target_backends=[target_backend],
             # extra_args=["--mlir-print-ir-before-all"],
@@ -133,14 +132,34 @@ def grad(f: Union[Callable]):
         ctx.add_vm_module(vm_module)
 
         numpy_args = [
-            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype]) for arg in args
+            np.array(arg.tolist(), dtype=dtype_mapping[arg.dtype])
+            for arg in flattened_args
+            if isinstance(arg, tracer)
         ]
-        numpy_arg_tangents = [np.ones_like(arg) for arg in numpy_args]
 
-        numpy_args.extend(numpy_arg_tangents)
-
-        _jitted_f = getattr(ctx.modules, f"d{f.__name__}")[f"d{f.__name__}"]
-        results = _jitted_f(*numpy_args).to_host()
-        return al.from_numpy(results, device=device)
+        al_arrays = []
+        for turn in range(len(numpy_args)):
+            turn_args = []
+            numpy_arg_tangents = [
+                np.ones_like(arg) if idx == turn else np.zeros_like(arg)
+                for idx, arg in enumerate(numpy_args)
+            ]
+            turn_args.extend(numpy_args)
+            turn_args.extend(numpy_arg_tangents)
+            _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
+            result = _jitted_f(*turn_args)
+            assert isinstance(result, tuple)
+            
+        """
+        turn_al_arrays = []
+        for res in result:
+            turn_al_arrays.append(al.from_numpy(res.to_host(), device=device))
+        for idx in range(len(turn_al_arrays) // 2):
+            al_arrays.insert(idx, turn_al_arrays[turn])
+            al_arrays.insert(
+                idx + len(turn_al_arrays) // 2, turn_al_arrays[idx + len(turn_al_arrays) // 2]
+            )
+        """
+        return al_arrays
 
     return grad_f
