@@ -138,6 +138,8 @@ def jvp(f: Union[Callable]):
         ]
 
         al_arrays = []
+        func_result = None
+        tangent_result = []
         for turn in range(len(numpy_args)):
             turn_args = []
             numpy_arg_tangents = [
@@ -149,17 +151,11 @@ def jvp(f: Union[Callable]):
             _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
             result = _jitted_f(*turn_args)
             assert isinstance(result, tuple)
-            
-        """
-        turn_al_arrays = []
-        for res in result:
-            turn_al_arrays.append(al.from_numpy(res.to_host(), device=device))
-        for idx in range(len(turn_al_arrays) // 2):
-            al_arrays.insert(idx, turn_al_arrays[turn])
-            al_arrays.insert(
-                idx + len(turn_al_arrays) // 2, turn_al_arrays[idx + len(turn_al_arrays) // 2]
-            )
-        """
+            assert len(result) == 2 
+            func_result = al.from_numpy(result[0].to_host(), device=device)
+            tangent_result.append(al.from_numpy(result[1].to_host(), device=device))
+        al_arrays.append(func_result)
+        al_arrays.extend(tangent_result)
         return al_arrays
 
     return grad_f

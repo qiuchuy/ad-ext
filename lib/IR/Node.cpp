@@ -134,6 +134,8 @@ void Matmul::accept(IRVisitor *visitor) { visitor->visit(this); }
 // Add
 Add::Add(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
     : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
   this->lhs = lhs;
   this->rhs = rhs;
 }

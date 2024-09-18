@@ -2,6 +2,8 @@
 #include "ailang/AST/ASTNode.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
+#include "ailang/IR/Literal.h"
+#include "ailang/IR/Node.h"
 
 using namespace ainl::ir;
 
@@ -16,7 +18,13 @@ void ForwardDiff::run(ModulePtr M) {
   auto Graph = M->getGraph();
   for (auto *Block : *Graph) {
     for (auto *Node : *Block) {
-      Node->accept(this);
+      setTangent(Node, nullptr);
+    }
+  }
+  for (auto *Block : *Graph) {
+    for (auto *Node : *Block) {
+      if (isNonLinearNode(Node))
+        Node->accept(this);
     }
   }
 }
@@ -27,7 +35,7 @@ void ForwardDiff::visit(ParamPtr Node) {
   for (size_t Idx = 0; Idx < NumParams; ++Idx) {
     auto Type = Params[Idx]->getType();
     auto *Tangent = Graph::GraphParam::create(Type, Idx + NumParams);
-    TangentMap[Params[Idx]] = Tangent;
+    setTangent(Params[Idx], Tangent);
     Node->addParam(Tangent, Type, Idx + NumParams);
   }
 }
@@ -40,8 +48,7 @@ void ForwardDiff::visit(ReturnOpPtr Node) {
     std::vector<ValuePtr> Tangents;
     for (auto *Item : Tuple->getValues()) {
       Items.push_back(Item);
-      auto *Tangent = TangentMap[Item];
-      assert(Tangent && "[autodiff] Tangent not found when visiting ReturnOp");
+      auto *Tangent = getTangent(Item);
       Tangents.push_back(Tangent);
     }
     std::vector<ValuePtr> Values;
@@ -55,10 +62,68 @@ void ForwardDiff::visit(ReturnOpPtr Node) {
     Node->setReturnValue(Container);
     Module->setReturnType(Container->getType());
   } else {
-    auto *Tangent = TangentMap[Value];
-    assert(Tangent && "[autodiff] Tangent not found when visiting ReturnOp");
+    auto *Tangent = getTangent(Value);
     auto *Container = TupleContainer::create({Value, Tangent});
     Node->setReturnValue(Container);
     Module->setReturnType(Container->getType());
   }
+}
+
+void ForwardDiff::visit(ExpPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Tangent = getTangent(Value);
+  auto *TangentNode =
+      Module->createAfter<Mul>(Node, Node->getType(), Value, Tangent);
+  setTangent(Node, TangentNode);
+}
+
+void ForwardDiff::visit(AddPtr Node) {
+  auto *Left = Node->getOperand(0);
+  auto *Right = Node->getOperand(1);
+  auto *LeftTangent = getTangent(Left);
+  auto *RightTangent = getTangent(Right);
+  auto *TangentNode = Module->createAfter<Add>(Node, Node->getType(),
+                                               LeftTangent, RightTangent);
+  setTangent(Node, TangentNode);
+}
+
+void ForwardDiff::visit(NegPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Tangent = getTangent(Value);
+  auto *TangentNode = Module->createAfter<Neg>(Node, Node->getType(), Tangent);
+  setTangent(Node, TangentNode);
+}
+
+void ForwardDiff::visit(DivPtr Node) {
+  auto *Left = Node->getOperand(0);
+  auto *Right = Node->getOperand(1);
+  auto *LeftTangent = getTangent(Left);
+  auto *RightTangent = getTangent(Right);
+  // auto *UpperTangentNode = Module->createAfter<Div>(Node, Node->getType(),
+  // LeftTangent, Right); auto *LowerTangentNode =
+  // Module->createAfter<Div>(UpperTangentNode, Node->getType(), RightTangent,
+  // );
+}
+
+void ForwardDiff::visit(BroadcastPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Tangent = getTangent(Value);
+  auto InputTensorType = asType<TensorType>(Value->getType());
+  auto InputShape = InputTensorType->getConcreteShape();
+  auto BroadCastShape = Node->getBroadCastShape();
+  int InputSize = 1;
+  for (auto Dim : InputShape) {
+    InputSize *= Dim;
+  }
+  float BroadcastSize = 1;
+  for (auto Dim : BroadCastShape) {
+    BroadcastSize *= Dim;
+  }
+  float ScalingFactor = BroadcastSize / InputSize;
+  auto *ConstantTensor = Module->createAfter<ConstantDef>(
+      Node, Tangent->getType(),
+      TupleContainer::create({Literal::create(ScalingFactor)}));
+  auto *TangentNode = Module->createAfter<Mul>(ConstantTensor, Tangent->getType(),
+                                               ConstantTensor, Tangent);
+  setTangent(Node, TangentNode);
 }
