@@ -609,7 +609,9 @@ void ConvolutionPrimitive::evalCPU(const std::vector<Array> &inputs,
   }
   auto input = inputs[0];
   auto weight = inputs[1];
-  output = pybind11::cast<Array>(eval_callback["conv2d"](input, weight));
+  output = pybind11::cast<Array>(
+      eval_callback["conv2d"](input, weight, window_strides, lhsDilation,
+                              rhsDilation, padding_args, window_reversal));
 }
 
 void ConvolutionPrimitive::jit(const std::vector<JITTracer> &inputs,
@@ -753,7 +755,7 @@ void MeanPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
         "[MeanPrimitive::evalCPU] expects exactly one input array.");
   }
   auto input = inputs[0];
-  output = pybind11::cast<Array>(eval_callback["mean"](input));
+  output = pybind11::cast<Array>(eval_callback["mean"](input, dim));
 }
 TypePtr MeanPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inType->isTensorType() && "mean operator only applies to tensors.");
@@ -798,7 +800,7 @@ void VariancePrimitive::evalCPU(const std::vector<Array> &inputs,
         "[VariancePrimitive::evalCPU] expects exactly one input array.");
   }
   auto input = inputs[0];
-  output = pybind11::cast<Array>(eval_callback["var"](input));
+  output = pybind11::cast<Array>(eval_callback["var"](input, dim, ddof));
 }
 TypePtr VariancePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   assert(inType->isTensorType() && "var operator only applies to tensors.");
@@ -824,8 +826,8 @@ void VariancePrimitive::jit(const std::vector<JITTracer> &inputs,
   auto input = inputs[0];
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Variance>(
-      outputType, input.value(), dim));
-  output.setTracer(single<VariancePrimitive>({input.tracer()}, dim));
+      outputType, input.value(), dim, ddof));
+  output.setTracer(single<VariancePrimitive>({input.tracer()}, dim, ddof));
 }
 
 void VariancePrimitive::jvp(const std::vector<JVPTracer> &inputs,

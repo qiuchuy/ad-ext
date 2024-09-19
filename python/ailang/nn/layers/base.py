@@ -13,7 +13,7 @@ class Module:
 
     __call__: Callable
     _version: int = 1
-    training: bool
+    _training: bool
     # _parameters: Dict[str, Optional[Parameter]]
     """[TODO]"""
     _buffers: Dict[str, Optional[al.array]]
@@ -25,8 +25,18 @@ class Module:
         self._training = True
 
     @property
-    def training(self):
+    def training(self): 
         return self._training
+
+    @training.setter
+    def training(self, mode: bool):
+        self._training = mode
+
+    def eval(self):
+        self.training = False  # 调用 setter，将 _training 设为 False
+
+    def train(self):
+        self.training = True  # 调用 setter，将 _training 设为 True
 
     # def _extra_repr(self):
     #     return

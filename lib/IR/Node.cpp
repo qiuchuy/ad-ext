@@ -215,8 +215,8 @@ std::vector<int> Mean::getShape() {
 // Variance
 
 Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,
-                   const std::vector<int64_t> &dim)
-    : Node(opType), inValue(inValue), dim(dim) {}
+                   const std::vector<int64_t> &dim, const int ddof)
+    : Node(opType), inValue(inValue), dim(dim),ddof(ddof) {}
 Variance::operator std::string() const {
   auto prefix =
       getName() + " = ailang::variance(" + getValue()->getName() + ")";

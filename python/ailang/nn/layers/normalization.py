@@ -6,7 +6,9 @@ from typing import Union, Tuple, Optional
 
 
 class Batchnorm2d(Module):
-    """ """
+    """
+    in the forward pass, the standard-deviation is calculated via the biased estimator, equivalent to ~torch.var(input, unbiased=False)
+    """
 
     def __init__(
         self,
@@ -33,7 +35,8 @@ class Batchnorm2d(Module):
         return al.standard.mean(x, [0, 2, 3])
 
     def compute_var(self, x: al.array):
-        return al.standard.var(x, [0, 2, 3])
+        # biased
+        return al.standard.var(x, [0, 2, 3], 0)
 
     def get_running_mean(self):
         assert self.running_mean is not None, "you can get running_mean after inference"
@@ -44,8 +47,17 @@ class Batchnorm2d(Module):
         return self.running_var
 
     def __call__(self, x: al.array):
-        self.running_mean = self.compute_mean(x)
-        self.running_var = self.compute_var(x)
+        if self.training:
+            self.running_mean = self.compute_mean(x)
+            self.running_var = self.compute_var(x)
+        else:
+            self.running_mean = al.from_numpy(
+                np.zeros((self.num_features), dtype=np.float32)
+            )
+            self.running_var = al.from_numpy(
+                np.ones((self.num_features), dtype=np.float32)
+            )
+        print(self.running_mean)
         return al.standard.batchnorm2d(
             x, self.scale, self.offset, self.running_mean, self.running_var
         )
