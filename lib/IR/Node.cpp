@@ -292,7 +292,7 @@ Avgpool2d::Avgpool2d(const TypePtr &opType, const ValuePtr &inValue,
   this->inValue = inValue;
 }
 Avgpool2d::operator std::string() const {
-  return getName() + " = ailang::maxpool2d(" + getValue()->getName() +
+  return getName() + " = ailang::avgpool2d(" + getValue()->getName() +
          "):" + std::string(*getType());
 }
 void Avgpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }

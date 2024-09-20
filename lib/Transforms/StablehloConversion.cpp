@@ -105,8 +105,8 @@ void StableHLOLoweringPass::run(ModulePtr module) {
       builder.setInsertionPointToEnd(function.addBlock());
     }
     for (auto node : *block) {
-      LOG_DEBUG("[pass] Lowering [%s] down to stablehlo",
-                std::string(*node).c_str());
+      // LOG_DEBUG("[pass] Lowering [%s] down to stablehlo",
+      //           std::string(*node).c_str());
       node->accept(this);
     }
   }

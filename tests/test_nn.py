@@ -2,6 +2,7 @@ import numpy as np
 
 np.random.seed(42)
 
+
 class LSTMCell:
     def __init__(self, input_size, hidden_size):
         self.input_size = input_size
@@ -136,6 +137,7 @@ b_ho = b_hh[3 * hidden_size :]
 
 import ailang as al
 
+
 class ALLSTMCell(nn.Module):
     def __init__(self, input_size: int, hidden_size: int) -> None:
         super().__init__()
@@ -216,9 +218,3 @@ assert np.allclose(
     rtol=1e-4,
     atol=1e-6,
 )
-
-
-
-
-
-

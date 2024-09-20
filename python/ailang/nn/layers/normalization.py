@@ -28,8 +28,8 @@ class Batchnorm2d(Module):
         np_offset = np.zeros((num_features), dtype=np.float32)
         self.offset = al.from_numpy(np_offset)
         self.scale = al.from_numpy(np_scale)
-        self.running_mean = None
-        self.running_var = None
+        self.running_mean = np.zeros((self.num_features), dtype=np.float32)
+        self.running_var = np.ones((self.num_features), dtype=np.float32)
 
     def compute_mean(self, x: al.array):
         return al.standard.mean(x, [0, 2, 3])
@@ -57,7 +57,6 @@ class Batchnorm2d(Module):
             self.running_var = al.from_numpy(
                 np.ones((self.num_features), dtype=np.float32)
             )
-        print(self.running_mean)
         return al.standard.batchnorm2d(
             x, self.scale, self.offset, self.running_mean, self.running_var
         )

@@ -941,7 +941,7 @@ TypePtr MaxPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   int WindowStrideH = window_strides[2];
   int WindowStrideW = window_strides[3];
   int ChannelStride = window_strides[1];
-  int WindowPaddingH = padding[6];
+  int WindowPaddingH = padding[5];
   int WindowPaddingW = padding[7];
   int InputBatchSize = inConcreateShape[0];
   int InputChannel = inConcreateShape[1];
@@ -954,13 +954,13 @@ TypePtr MaxPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
   int OutBatchSize = window_strides[0];
   int OutChannelSize = InputChannel / ChannelStride;
+
   int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
                  WindowStrideH +
              1;
   int OutW = (DilationedInputW + 2 * WindowPaddingW - DilationedWeightW) /
                  WindowStrideW +
              1;
-
   // for (const auto &dim : inConcreateShape) {
   //   outTensorShape.push_back(Literal::create(dim));
   // }
@@ -996,7 +996,7 @@ void AvgPool2dPrimitive::evalCPU(const std::vector<Array> &inputs,
 void AvgPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
   if (inputs.size() != 1) {
-    throw std::invalid_argument("[MaxPool2dPrimitive::jit] "
+    throw std::invalid_argument("[AvgPool2dPrimitive::jit] "
                                 "expects exactly one input tracer.");
   }
   auto input = inputs[0];
@@ -1004,7 +1004,7 @@ void AvgPool2dPrimitive::jit(const std::vector<JITTracer> &inputs,
   output.setValue(getTracedModule()->getGraph()->create<Avgpool2d>(
       outputType, input.value(), window_dimensions, window_strides,
       base_dilations, window_dilations, padding));
-  output.setTracer(single<MaxPool2dPrimitive>(
+  output.setTracer(single<AvgPool2dPrimitive>(
       {input.tracer()}, window_dimensions, window_strides, base_dilations,
       window_dilations, padding));
 }
@@ -1041,6 +1041,7 @@ TypePtr AvgPool2dPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   int DilationedInputW = (InputW - 1) * BaseDilationW + 1;
   int OutBatchSize = window_strides[0];
   int OutChannelSize = InputChannel / ChannelStride;
+
   int OutH = (DilationedInputH + 2 * WindowPaddingH - DilationedWeightH) /
                  WindowStrideH +
              1;

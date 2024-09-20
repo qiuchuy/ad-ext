@@ -14,7 +14,7 @@ def _make_activation_module(f):
     return decorator
 
 
-class Relu(Module):
+class ReLU(Module):
     def __init__(self):
         super().__init__()
 
