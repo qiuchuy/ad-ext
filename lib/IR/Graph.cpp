@@ -41,6 +41,8 @@ std::string Graph::str() {
   return str;
 }
 
+void Graph::remove(NodePtr Node) { Node->block->remove(Node); }
+
 int Graph::GraphParam::FPARAM_COUNT = 0;
 
 Value::ValueKind Graph::getValueKind() const { return Value::ValueKind::Graph; }

@@ -1,7 +1,7 @@
 from ._C.libailang import *
 from ._C.libailang import _register_eval_callback
 from .random import randn
-from .transform import jit, jvp
+from .transform import jit, grad
 from . import prim
 from . import standard
 
@@ -28,5 +28,6 @@ _register_eval_callback("exp", standard.exp)
 _register_eval_callback("matmul", standard.matmul)
 _register_eval_callback("mul", standard.mul)
 _register_eval_callback("neg", standard.neg)
+_register_eval_callback("sum", standard.sum)
 _register_eval_callback("tanh", standard.tanh)
 _register_eval_callback("transpose", standard.transpose)

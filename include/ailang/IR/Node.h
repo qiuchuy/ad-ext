@@ -64,6 +64,7 @@ public:
     RSHIFT,
     STORE,
     SUB,
+    SUM,
     TANH,
     TRANSPOSE,
     UNZIPPING,
@@ -238,6 +239,7 @@ public:
 private:
   ValuePtr inValue;
 };
+
 NODE_PTR_TYPE_DECL(Mean)
 class Mean : public Node {
 public:
@@ -245,7 +247,6 @@ public:
        const std::vector<int64_t> &dim);
   NodeKind kind() override { return Node::NodeKind::MEAN; }
   explicit operator std::string() const override;
-  // 在需要将 Relu 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
   std::vector<int64_t> getDim() { return dim; };
@@ -255,6 +256,24 @@ private:
   ValuePtr inValue;
   std::vector<int64_t> dim;
 };
+
+NODE_PTR_TYPE_DECL(Sum)
+class Sum : public Node {
+public:
+  Sum(const TypePtr &nodeType, const ValuePtr &inValue,
+      const std::vector<int64_t> &dim);
+  NodeKind kind() override { return Node::NodeKind::MEAN; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<int64_t> getDim() { return dim; };
+  std::vector<int> getShape();
+
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> dim;
+};
+
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
 public:

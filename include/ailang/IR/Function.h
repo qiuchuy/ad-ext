@@ -5,7 +5,9 @@
 #include <sstream>
 #include <utility>
 
+#include "ailang/IR/Container.h"
 #include "ailang/IR/Graph.h"
+#include "ailang/IR/Literal.h"
 #include "ailang/IR/Type.h"
 
 namespace ainl::ir {
@@ -69,6 +71,7 @@ public:
     graph->insertNodeAtEnd(Node);
     return Node;
   }
+
   template <typename NodeType, typename... ARGS>
   NodePtr createAfter(NodePtr after, ARGS &&... args) {
     NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
@@ -77,6 +80,25 @@ public:
     graph->insertNodeAfter(after, Node);
     return Node;
   }
+
+  template <typename ConstantType>
+  ValuePtr createConstantValue(const ConstantType &Constant, TypePtr Type) {
+    auto ValueTensorType = asType<TensorType>(Type);
+    auto Shape = ValueTensorType->getConcreteShape();
+    std::vector<ValuePtr> FloatValues;
+    if (Shape.empty()) {
+      FloatValues.push_back(Literal::create(Constant));
+    } else {
+      for (auto Axis : Shape) {
+        for (size_t Idx = 0; Idx < Axis; Idx++) {
+          FloatValues.push_back(Literal::create(Constant));
+        }
+      }
+    }
+    return create<ConstantDef>(Type, TupleContainer::create(FloatValues));
+  }
+
+  void remove(NodePtr Node) { graph->remove(Node); }
   std::vector<ValuePtr> getParams();
   std::vector<TypePtr> getParamTypes();
   TypePtr getReturnType();

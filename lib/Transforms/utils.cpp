@@ -1,4 +1,5 @@
 #include "ailang/Transforms/utils.h"
+#include "ailang/IR/Container.h"
 #include "ailang/IR/Node.h"
 #include "ailang/IR/Value.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -31,6 +32,5 @@
 #include "ailang/IR/Type.h"
 #include "ailang/Transforms/StablehloConversion.h"
 
-namespace ainl::ir {
-mlir::Value compute_mean() {}
-} // namespace ainl::ir
+using namespace ainl::core;
+using namespace ainl::ir;

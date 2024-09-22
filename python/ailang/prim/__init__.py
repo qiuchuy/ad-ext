@@ -11,6 +11,7 @@ from .._C.libailang import (
     mul,
     neg,
     relu,
+    sum,
     tanh,
     transpose,
 )

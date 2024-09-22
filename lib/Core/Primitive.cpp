@@ -505,11 +505,11 @@ void MultiplyPrimitive::evalCPU(const std::vector<Array> &inputs,
 }
 
 TypePtr MultiplyPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inputTypes.size() == 2 && "Div operator only applies to two tensors.");
+  assert(inputTypes.size() == 2 && "Mul operator only applies to two tensors.");
   auto inType0 = inputTypes[0];
   auto inType1 = inputTypes[1];
-  assert(inType0->isTensorType() && "Div operator only applies to tensors.");
-  assert(inType1->isTensorType() && "Div operator only applies to tensors.");
+  assert(inType0->isTensorType() && "Mul operator only applies to tensors.");
+  assert(inType1->isTensorType() && "Mul operator only applies to tensors.");
   auto inTensorType0 = SAFE_TYPE_DOWNCAST(inType0, TensorType);
   auto inTensorType1 = SAFE_TYPE_DOWNCAST(inType1, TensorType);
   assert(inTensorType0->getElementType() == inTensorType1->getElementType() &&
@@ -691,6 +691,60 @@ void MeanPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string MeanPrimitive::toString() const { return "mean"; }
+
+// Sum
+
+void SumPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void SumPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[SumPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["sum"](input, dim));
+}
+
+TypePtr SumPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  std::vector<ValuePtr> outTensorshape;
+  for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
+    if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
+      outTensorshape.push_back(inTensorShape[Idx]);
+    }
+  }
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, outTensorshape);
+}
+
+void SumPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[MeanPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto InputTensorType = asType<TensorType>(input.value()->getType());
+  if (dim.empty()) {
+    for (size_t i = 0; i < InputTensorType->getShape().size(); i++) {
+      dim.push_back(i);
+    }
+  }
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(getTracedModule()->getGraph()->create<Sum>(
+      outputType, input.value(), dim));
+  output.setTracer(single<MeanPrimitive>({input.tracer()}, dim));
+}
+
+void SumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                       JVPTracer &output) {}
+
+std::string SumPrimitive::toString() const { return "sum"; }
 
 // BatchnormInferencePrimitive
 void BatchnormInferencePrimitive::eval(const std::vector<Array> &inputs,

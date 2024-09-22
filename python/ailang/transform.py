@@ -108,12 +108,14 @@ def jit(f: Union[Callable]):
     return jitted_f
 
 
-def jvp(f: Union[Callable]):
+def grad(f: Union[Callable]):
     def grad_f(*args, **kwargs):
         flattened_args = flatten(*args)
         tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
         module = al.trace_impl(f, args)
+        print("print original traced module")
         print(module)
+        print("print differentiated module")
         al.grad_impl(module)
         print(module)
         mlir_str = module.to_mlir()
@@ -137,25 +139,14 @@ def jvp(f: Union[Callable]):
             if isinstance(arg, tracer)
         ]
 
-        al_arrays = []
-        func_result = None
-        tangent_result = []
-        for turn in range(len(numpy_args)):
-            turn_args = []
-            numpy_arg_tangents = [
-                np.ones_like(arg) if idx == turn else np.zeros_like(arg)
-                for idx, arg in enumerate(numpy_args)
-            ]
-            turn_args.extend(numpy_args)
-            turn_args.extend(numpy_arg_tangents)
-            _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
-            result = _jitted_f(*turn_args)
-            assert isinstance(result, tuple)
-            assert len(result) == 2 
-            func_result = al.from_numpy(result[0].to_host(), device=device)
-            tangent_result.append(al.from_numpy(result[1].to_host(), device=device))
-        al_arrays.append(func_result)
-        al_arrays.extend(tangent_result)
+        _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
+        result = _jitted_f(*numpy_args)
+        if isinstance(result, tuple):
+            al_arrays = []
+            for res in result:
+                al_arrays.append(al.from_numpy(res.to_host(), device=device))
+        else:
+            al_arrays = al.from_numpy(result.to_host(), device=device)
         return al_arrays
 
     return grad_f

@@ -4,94 +4,105 @@ import ailang as al
 
 from ailang import array
 
-class TestJVP:
+class TestGrad:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
         return np.allclose(a.tolist(), b.tolist())
 
     def test_return(self):
-        @al.jvp
+        @al.grad
         def g(x):
-            return x
+            return al.sum(x)
 
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        TestJVP.numeric_check(value, a)
-        TestJVP.numeric_check(grad, np.ones_like(a))
-
-    def test_multiple_input(self):
-        @al.jvp
-        def g(x, y):
-            return x
-
-        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
-        b = al.from_numpy(a)
-        value, gradx, grady = g(b, b)
-        TestJVP.numeric_check(value, a)
-        TestJVP.numeric_check(gradx, np.ones_like(a))
-        TestJVP.numeric_check(grady, np.zeros_like(a))
+        assert TestGrad.numeric_check(value, np.sum(a))
+        assert TestGrad.numeric_check(grad, np.ones_like(a))
 
     def test_exp(self):
-        @al.jvp
+        @al.grad
         def g(x):
-            return al.exp(x)
+            return al.sum(al.exp(x))
 
-        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        a = np.array([[0, 0], [0, 0]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        TestJVP.numeric_check(value, np.exp(a))
-        TestJVP.numeric_check(grad, np.exp(a) * np.ones_like(a))
+        assert TestGrad.numeric_check(value, np.sum(np.exp(a)))
+        assert TestGrad.numeric_check(grad, np.exp(a) * np.ones_like(a))
 
     def test_add(self):
-        @al.jvp
+        @al.grad
         def g(x, y):
-            return al.add(x, y)
+            return al.sum(al.add(x, y))
 
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = np.array([[5, 6], [7, 8]], dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         value, gradx, grady = g(c, d)
-        TestJVP.numeric_check(value, a + b)
-        TestJVP.numeric_check(gradx, np.ones_like(a))
-        TestJVP.numeric_check(grady, np.ones_like(b))
+        assert TestGrad.numeric_check(value, np.sum(a + b))
+        assert TestGrad.numeric_check(gradx, np.ones_like(a))
+        assert TestGrad.numeric_check(grady, np.ones_like(b))
 
     def test_div(self):
-        @al.jvp
+        @al.grad
         def g(x, y):
-            return al.div(x, y)
+            return al.sum(al.div(x, y))
 
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = np.array([[5, 6], [7, 8]], dtype=np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         value, gradx, grady = g(c, d)
-        TestJVP.numeric_check(value, a / b)
-        TestJVP.numeric_check(gradx, 1 / b)
-        TestJVP.numeric_check(grady, -a / b**2)
+        assert TestGrad.numeric_check(value, np.sum(a / b))
+        assert TestGrad.numeric_check(gradx, 1 / b)
+        assert TestGrad.numeric_check(grady, -a / b**2)
 
     def test_neg(self):
-        @al.jvp
+        @al.grad
         def g(x):
-            return al.neg(x)
+            return al.sum(al.neg(x))
         
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        TestJVP.numeric_check(value, -a)
-        TestJVP.numeric_check(grad, -np.ones_like(a))
+        assert TestGrad.numeric_check(value, np.sum(-a))
+        assert TestGrad.numeric_check(grad, -np.ones_like(a))
 
     def test_broadcast(self):
-        @al.jvp
+        @al.grad
         def g(x):
             y = al.broadcast_to(x, (2, 2))
-            return y
+            return al.sum(y)
         a = np.array(1.).astype(np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        TestJVP.numeric_check(value, np.ones((2, 2)))
-        TestJVP.numeric_check(grad, np.array(4.))
+        assert TestGrad.numeric_check(value, np.sum(np.ones((2, 2))))
+        assert TestGrad.numeric_check(grad, np.array(4.))
+
+    def test_transpose(self):
+        @al.grad
+        def g(x):
+            return al.transpose(x)
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        assert TestGrad.numeric_check(value, a.T)
+        assert TestGrad.numeric_check(grad, np.ones_like(a.T))
+
+    def test_matmul(self):
+        @al.grad
+        def g(x, y):
+            return al.matmul(x, y)
+        a = np.array([[1], [2]], dtype=np.float32)
+        b = np.array([[3, 4]], dtype=np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        value, gradx, grady = g(c, d)
+        assert TestGrad.numeric_check(value, np.matmul(a, b))
+        assert TestGrad.numeric_check(gradx, b.T)
+        assert TestGrad.numeric_check(grady, a)
 
     
     

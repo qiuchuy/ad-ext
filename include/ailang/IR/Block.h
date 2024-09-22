@@ -21,6 +21,7 @@ public:
   void insertNodeAtHead(NodePtr Node);
   void insertNodeAtEnd(NodePtr Node);
   void insertNodeAfter(NodePtr After, NodePtr Node);
+  void remove(NodePtr Node);
   friend class Node;
   friend class Graph;
   explicit operator std::string() const override;

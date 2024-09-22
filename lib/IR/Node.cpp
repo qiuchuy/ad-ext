@@ -191,7 +191,9 @@ std::vector<int> Relu::getShape() {
 
 Mean::Mean(const TypePtr &opType, const ValuePtr &inValue,
            const std::vector<int64_t> &dim)
-    : Node(opType), inValue(inValue), dim(dim) {}
+    : Node(opType), inValue(inValue), dim(dim) {
+  setUse(inValue, 0);
+}
 Mean::operator std::string() const {
   auto prefix = getName() + " = ailang::mean(" + getValue()->getName() + ")";
   std::string postfix = "<dim=[";
@@ -214,6 +216,37 @@ std::vector<int> Mean::getShape() {
     throw std::runtime_error("Mean input is not a tensor");
   }
 }
+
+// Mean
+
+Sum::Sum(const TypePtr &opType, const ValuePtr &inValue,
+         const std::vector<int64_t> &dim)
+    : Node(opType), inValue(inValue), dim(dim) {
+  setUse(inValue, 0);
+}
+Sum::operator std::string() const {
+  auto prefix = getName() + " = ailang::sum(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Sum::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Sum::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Mean input is not a tensor");
+  }
+}
+
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
@@ -427,7 +460,7 @@ Div::Div(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
 }
 
 Div::operator std::string() const {
-  return getName() + " = ailang::matmul(" + getOperand(0)->getName() + ", " +
+  return getName() + " = ailang::divide(" + getOperand(0)->getName() + ", " +
          getOperand(1)->getName() + "): " + std::string(*getType());
 }
 

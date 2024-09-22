@@ -2,140 +2,291 @@
 #include "ailang/AST/ASTNode.h"
 #include "ailang/IR/Container.h"
 #include "ailang/IR/Function.h"
+#include "ailang/IR/IRVisitor.h"
 #include "ailang/IR/Literal.h"
 #include "ailang/IR/Node.h"
+#include "ailang/IR/Type.h"
+#include "ailang/IR/Value.h"
+#include "ailang/Transforms/Pass.h"
+#include "stablehlo/dialect/StablehloOps.h"
 
 using namespace ainl::ir;
 
 void ainl::ir::autodiffOnModule(ModulePtr M) {
-  auto Autodiff = std::make_unique<ForwardDiff>(M);
+  auto AD = std::make_unique<AutoDiff>(M);
   LOG_DEBUG("%s", "Running autodiff on module");
-  Autodiff->run(M);
+  AD->run(M);
   LOG_DEBUG("%s", "Autodiff finished");
 }
 
-void ForwardDiff::run(ModulePtr M) {
+void AutoDiff::run(ModulePtr M) {
   auto Graph = M->getGraph();
+  std::vector<NodePtr> Nodes;
   for (auto *Block : *Graph) {
     for (auto *Node : *Block) {
-      setTangent(Node, nullptr);
+      Nodes.push_back(Node);
     }
   }
-  for (auto *Block : *Graph) {
-    for (auto *Node : *Block) {
-      if (isNonLinearNode(Node))
-        Node->accept(this);
-    }
+  std::reverse(Nodes.begin(), Nodes.end());
+  for (auto *Node : Nodes) {
+    LOG_DEBUG("differentiating: %s", std::string(*Node).c_str());
+    Node->accept(this);
   }
 }
 
-void ForwardDiff::visit(ParamPtr Node) {
+void AutoDiff::visit(ParamPtr Node) {
   auto Params = Node->getParams();
   auto NumParams = Params.size();
-  for (size_t Idx = 0; Idx < NumParams; ++Idx) {
-    auto Type = Params[Idx]->getType();
-    auto *Tangent = Graph::GraphParam::create(Type, Idx + NumParams);
-    setTangent(Params[Idx], Tangent);
-    Node->addParam(Tangent, Type, Idx + NumParams);
+  std::vector<ValuePtr> ModuleReturns;
+  if (asValueType<TupleContainer>(ReturnValue)) {
+    throw std::runtime_error(
+        "Return value must be a single value when differentiating a function.");
+  } else {
+    auto ReturnValueType = asType<TensorType>(ReturnValue->getType());
+    if (!ReturnValueType->getConcreteShape().empty()) {
+      throw std::runtime_error(
+          "Return value must be a scalar when differentiating a function.");
+    }
+    ModuleReturns.push_back(ReturnValue);
+  }
+  if (Params.size() > 1) {
+    for (auto *Param : Params) {
+      if (hasAdjoint(Param)) {
+        auto *Adjoint = getAdjoint(Param);
+        ModuleReturns.push_back(Adjoint);
+      } else {
+        auto ParamType = asType<TensorType>(Param->getType());
+        auto ParamShape = ParamType->getConcreteShape();
+        if (ParamShape.empty()) {
+          auto *Adjoint = Module->create<ConstantDef>(
+              ParamType, TupleContainer::create({Literal::create(0.f)}));
+          // [TODO] FIXME
+          // auto *Dummy = Module->create<Exp>(ParamType, Param);
+          setAdjoint(Param, Adjoint);
+          ModuleReturns.push_back(Adjoint);
+        } else {
+          std::vector<ValuePtr> InitGradients;
+          for (auto Axis : ParamShape) {
+            for (size_t Idx = 0; Idx < Axis; Idx++) {
+              InitGradients.push_back(Literal::create(0.f));
+            }
+          }
+          auto *ParamGradient = Module->create<ConstantDef>(
+              ParamType, TupleContainer::create(InitGradients));
+          // [TODO] FIXME
+          // auto *Dummy = Module->create<Exp>(ParamType, Param);
+          setAdjoint(Param, ParamGradient);
+          ModuleReturns.push_back(ParamGradient);
+        }
+      }
+    }
+    auto *Tuple = TupleContainer::create(ModuleReturns);
+    Module->setReturnType(Tuple->getType());
+    Module->create<ReturnOp>(Tuple);
+  } else {
+    assert(Params.size() == 1 && "Params size must at least be 1");
+    if (hasAdjoint(Params[0])) {
+      auto *GradientReturn = getAdjoint(Params[0]);
+      ModuleReturns.push_back(GradientReturn);
+      auto *Tuple = TupleContainer::create(ModuleReturns);
+      Module->setReturnType(Tuple->getType());
+      Module->create<ReturnOp>(Tuple);
+    } else {
+      auto ParamType = asType<TensorType>(Params[0]->getType());
+      auto ParamShape = ParamType->getConcreteShape();
+      if (ParamShape.empty()) {
+        auto *Adjoint = Module->create<ConstantDef>(
+            ParamType, TupleContainer::create({Literal::create(0.f)}));
+        // [TODO] FIXME
+        // auto *Dummy = Module->create<Exp>(ParamType, Params[0]);
+        setAdjoint(Params[0], Adjoint);
+        ModuleReturns.push_back(Adjoint);
+      } else {
+        std::vector<ValuePtr> InitGradients;
+        for (auto Axis : ParamShape) {
+          for (size_t Idx = 0; Idx < Axis; Idx++) {
+            InitGradients.push_back(Literal::create(0.f));
+          }
+        }
+        auto *ParamGradient = Module->create<ConstantDef>(
+            ParamType, TupleContainer::create(InitGradients));
+        // [TODO] FIXME
+        // auto *Dummy = Module->create<Exp>(ParamType, Params[0]);
+        setAdjoint(Params[0], ParamGradient);
+        ModuleReturns.push_back(ParamGradient);
+      }
+    }
   }
 }
 
-void ForwardDiff::visit(ReturnOpPtr Node) {
+void AutoDiff::visit(ReturnOpPtr Node) {
   auto *Value = Node->getReturnValue();
+  ReturnValue = Value;
+  Module->remove(Node);
   if (asValueType<TupleContainer>(Value)) {
     auto *Tuple = asValueType<TupleContainer>(Value);
-    std::vector<ValuePtr> Items;
-    std::vector<ValuePtr> Tangents;
     for (auto *Item : Tuple->getValues()) {
-      Items.push_back(Item);
-      auto *Tangent = getTangent(Item);
-      Tangents.push_back(Tangent);
+      auto ItemType = asType<TensorType>(Item->getType());
+      auto ItemShape = ItemType->getConcreteShape();
+      std::vector<ValuePtr> InitGradients;
+      if (ItemShape.empty()) {
+        InitGradients.push_back(Literal::create(1.f));
+      } else {
+        for (auto Axis : ItemShape) {
+          for (size_t Idx = 0; Idx < Axis; Idx++) {
+            InitGradients.push_back(Literal::create(1.f));
+          }
+        }
+      }
+      auto *ItemGradient = Module->create<ConstantDef>(
+          ItemType, TupleContainer::create(InitGradients));
+      setAdjoint(Item, ItemGradient);
     }
-    std::vector<ValuePtr> Values;
-    for (auto *Item : Items) {
-      Values.push_back(Item);
-    }
-    for (auto *Item : Tangents) {
-      Values.push_back(Item);
-    }
-    auto *Container = TupleContainer::create(Values);
-    Node->setReturnValue(Container);
-    Module->setReturnType(Container->getType());
   } else {
-    auto *Tangent = getTangent(Value);
-    auto *Container = TupleContainer::create({Value, Tangent});
-    Node->setReturnValue(Container);
-    Module->setReturnType(Container->getType());
+    auto ItemType = asType<TensorType>(Value->getType());
+    auto ItemShape = ItemType->getConcreteShape();
+    std::vector<ValuePtr> InitGradients;
+    if (ItemShape.empty()) {
+      InitGradients.push_back(Literal::create(1.f));
+    } else {
+      for (auto Axis : ItemShape) {
+        for (size_t Idx = 0; Idx < Axis; Idx++) {
+          InitGradients.push_back(Literal::create(1.f));
+        }
+      }
+    }
+    auto *ItemGradient = Module->create<ConstantDef>(
+        ItemType, TupleContainer::create(InitGradients));
+    setAdjoint(Value, ItemGradient);
   }
 }
 
-void ForwardDiff::visit(ExpPtr Node) {
+void AutoDiff::visit(SumPtr Node) {
   auto *Value = Node->getOperand(0);
-  auto *Tangent = getTangent(Value);
-  auto *TangentNode =
-      Module->createAfter<Mul>(Node, Node->getType(), Value, Tangent);
-  setTangent(Node, TangentNode);
+  auto Dim = Node->getDim();
+  auto *Adjoint = getAdjoint(Node);
+  auto AdjointType = asType<TensorType>(Adjoint->getType());
+  auto ValueType = asType<TensorType>(Value->getType());
+  auto *BroadcastedAdjointValue = Module->create<Broadcast>(
+      ValueType, Adjoint, ValueType->getConcreteShape());
+  setAdjoint(Value, BroadcastedAdjointValue);
 }
 
-void ForwardDiff::visit(AddPtr Node) {
+void AutoDiff::visit(ExpPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Adjoint = getAdjoint(Node);
+  auto *AdjointNode = Module->create<Mul>(Node->getType(), Node, Adjoint);
+  setAdjoint(Value, AdjointNode);
+}
+
+void AutoDiff::visit(ConstantDefPtr Node) {
+  // auto *Value = Node->getOperand(0);
+  // auto ResultTensorType = asType<TensorType>(Node->getType());
+  // // derivative must be float type
+  // std::vector<ValuePtr> FloatValues;
+  // auto *FloatContainer = asValueType<TupleContainer>(Node->getOperand(0));
+  // for (auto &Value : FloatContainer->getValues()) {
+  //   FloatValues.push_back(Literal::create(0.f));
+  // }
+  // auto *TangentNode = Module->createAfter<ConstantDef>(
+  //     Node, Node->getType(), TupleContainer::create(FloatValues));
+  // setTangent(Node, TangentNode);
+}
+
+void AutoDiff::visit(AddPtr Node) {
   auto *Left = Node->getOperand(0);
   auto *Right = Node->getOperand(1);
-  auto *LeftTangent = getTangent(Left);
-  auto *RightTangent = getTangent(Right);
-  auto *TangentNode = Module->createAfter<Add>(Node, Node->getType(),
-                                               LeftTangent, RightTangent);
-  setTangent(Node, TangentNode);
+  auto *Adjoint = getAdjoint(Node);
+  auto *LeftAdjoint =
+      Module->create<Add>(Node->getType(), Adjoint,
+                          Module->createConstantValue(0.f, Node->getType()));
+  auto *RightAdjoint =
+      Module->create<Add>(Node->getType(), Adjoint,
+                          Module->createConstantValue(0.f, Node->getType()));
+  setAdjoint(Left, LeftAdjoint);
+  setAdjoint(Right, RightAdjoint);
 }
 
-void ForwardDiff::visit(NegPtr Node) {
+void AutoDiff::visit(NegPtr Node) {
   auto *Value = Node->getOperand(0);
-  auto *Tangent = getTangent(Value);
-  auto *TangentNode = Module->createAfter<Neg>(Node, Node->getType(), Tangent);
-  setTangent(Node, TangentNode);
+  auto *Adjoint = getAdjoint(Node);
+  auto *AdjointNode = Module->create<Neg>(Node->getType(), Adjoint);
+  setAdjoint(Value, AdjointNode);
 }
 
-void ForwardDiff::visit(DivPtr Node) {
-  auto *Left = Node->getOperand(0);
-  auto *Right = Node->getOperand(1);
-  auto *LeftTangent = getTangent(Left);
-  auto *RightTangent = getTangent(Right);
-  auto *UpperTangentNode =
-      Module->createAfter<Div>(Node, Left->getType(), LeftTangent, Right);
-  auto *SquareNode = Module->createAfter<Mul>(UpperTangentNode,
-                                              Right->getType(), Right, Right);
-  auto *DivNode = Module->createAfter<Div>(SquareNode, SquareNode->getType(),
-                                           Left, SquareNode);
-  auto *DivTangentNode = Module->createAfter<Mul>(
-      DivNode, DivNode->getType(), RightTangent, DivNode);
-  auto *LowerTangentNode =
-      Module->createAfter<Neg>(DivTangentNode, DivNode->getType(), DivTangentNode);
-  auto *TangentNode = Module->createAfter<Add>(
-      LowerTangentNode, Node->getType(), UpperTangentNode, LowerTangentNode);
-  setTangent(Node, TangentNode);
+void AutoDiff::visit(DivPtr Node) {
+  auto *Upper = Node->getOperand(0);
+  auto *Lower = Node->getOperand(1);
+  auto *Adjoint = getAdjoint(Node);
+  auto *UpperAdjoint = Module->create<Div>(Node->getType(), Adjoint, Lower);
+  auto *Square = Module->create<Mul>(Node->getType(), Lower, Lower);
+  auto *LowerDiv = Module->create<Div>(Node->getType(), Upper, Square);
+  auto *LowerNeg = Module->create<Neg>(Node->getType(), LowerDiv);
+  auto *LowerAdjoint = Module->create<Mul>(Node->getType(), Adjoint, LowerNeg);
+  setAdjoint(Upper, UpperAdjoint);
+  setAdjoint(Lower, LowerAdjoint);
 }
 
-void ForwardDiff::visit(BroadcastPtr Node) {
+void AutoDiff::visit(BroadcastPtr Node) {
   auto *Value = Node->getOperand(0);
-  auto *Tangent = getTangent(Value);
-  auto InputTensorType = asType<TensorType>(Value->getType());
-  auto InputShape = InputTensorType->getConcreteShape();
-  auto BroadCastShape = Node->getBroadCastShape();
-  int InputSize = 1;
-  for (auto Dim : InputShape) {
-    InputSize *= Dim;
+  auto *Adjoint = getAdjoint(Node);
+  auto ValueTensorType = asType<TensorType>(Value->getType());
+  auto BroadcastShape = Node->getBroadCastShape();
+  std::vector<int64_t> ReduceDims;
+  auto Shape = ValueTensorType->getConcreteShape();
+  if (Shape.empty()) {
+    for (size_t Idx = 0; Idx < BroadcastShape.size(); Idx++) {
+      ReduceDims.push_back(Idx);
+    }
+  } else {
+    for (size_t Idx = 0; Idx < Shape.size(); Idx++) {
+      if (Shape[Idx] != BroadcastShape[Idx]) {
+        ReduceDims.push_back(Idx);
+      }
+    }
   }
-  float BroadcastSize = 1;
-  for (auto Dim : BroadCastShape) {
-    BroadcastSize *= Dim;
+  auto *AdjointNode = Module->create<Sum>(
+      Value->getType(), Adjoint, ReduceDims);
+  setAdjoint(Value, AdjointNode);
+}
+
+void AutoDiff::visit(TransposePtr Node) {
+  // auto *Value = Node->getValue();
+  // auto *Tangent = getTangent(Value);
+  // auto *TangentNode = Module->createAfter<Transpose>(
+  //     Node, Node->getType(), Tangent);
+  // setTangent(Node, TangentNode);
+}
+
+void AutoDiff::visit(MatmulPtr Node) {
+  auto *Left = Node->getLHS();
+  auto *Right = Node->getRHS();
+  auto *Adjoint = getAdjoint(Node);
+  auto LeftTensorType = asType<TensorType>(Left->getType());
+  auto LeftTensorShape = LeftTensorType->getShape();
+  std::vector<ValuePtr> LeftTransposeShape;
+  for (size_t Idx = 0; Idx < LeftTensorShape.size(); Idx++) {
+    LeftTransposeShape.push_back(
+        LeftTensorShape[LeftTensorShape.size() - 1 - Idx]);
   }
-  float ScalingFactor = BroadcastSize / InputSize;
-  std::vector<ValuePtr> ScalingFactors;
-  for (size_t Idx = 0; Idx < InputShape.size(); ++Idx) {
-    ScalingFactors.push_back(Literal::create(ScalingFactor));
+  auto *LeftTranspose = Module->create<Transpose>(
+      TensorType::create(LeftTensorType->getElementType(), LeftTransposeShape),
+      Left);
+  auto RightTensorType = asType<TensorType>(Right->getType());
+  auto RightTensorShape = RightTensorType->getShape();
+  std::vector<ValuePtr> RightTransposeShape;
+  for (size_t Idx = 0; Idx < RightTensorShape.size(); Idx++) {
+    RightTransposeShape.push_back(
+        RightTensorShape[RightTensorShape.size() - 1 - Idx]);
   }
-  auto *ConstantTensor = Module->createAfter<ConstantDef>(
-      Node, Tangent->getType(), TupleContainer::create(ScalingFactors));
-  auto *TangentNode = Module->createAfter<Mul>(
-      ConstantTensor, Tangent->getType(), ConstantTensor, Tangent);
-  setTangent(Node, TangentNode);
+  auto *RightTranspose = Module->create<Transpose>(
+      TensorType::create(RightTensorType->getElementType(),
+                         RightTransposeShape),
+      Right);
+  auto *LeftAdjoint =
+      Module->create<Matmul>(Left->getType(), Adjoint, RightTranspose);
+  auto *RightAdjoint =
+      Module->create<Matmul>(Right->getType(), LeftTranspose, Adjoint);
+  setAdjoint(Left, LeftAdjoint);
+  setAdjoint(Right, RightAdjoint);
 }
