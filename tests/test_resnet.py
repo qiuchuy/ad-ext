@@ -157,12 +157,12 @@ def create_numpy_params(model):
 
 
 pd = create_numpy_params(model)
-print(pd.keys())
+# print(pd.keys())
 
 
 class AilangResNet(nn.Module):
     def __init__(self):
-        super(AilangResNet, self).__init__()
+        super().__init__()
         self.in_planes = 64
 
         # 初始的卷积和池化层
@@ -322,3 +322,7 @@ def test_resnet():
     a_out = a_model(a)
     t_out = model(t)
     assert numeric_check(a_out, t_out.detach().numpy())
+
+
+if __name__ == "__main__":
+    test_resnet()
