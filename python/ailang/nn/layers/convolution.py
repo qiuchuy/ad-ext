@@ -57,7 +57,7 @@ class Conv2d(Module):
         if bias:
             raise NotImplementedError()
         self.weight = self.get_random_array(
-            (out_channels, *kernel_size, in_channels), np.float32
+            (out_channels, in_channels, *kernel_size), np.float32
         )
         self.padding = padding
         self.stride = stride

@@ -165,7 +165,7 @@ void init_ailang_op(py::module_ &m) {
         window_dilations, padding);
   });
   m.def("var", [](const std::shared_ptr<ainl::core::Tracer> &input,
-                  const std::vector<int64_t> &dim) {
-    return pyunary<ainl::core::VariancePrimitive>({input}, dim);
+                  const std::vector<int64_t> &dim, const int ddof) {
+    return pyunary<ainl::core::VariancePrimitive>({input}, dim, ddof);
   });
 }

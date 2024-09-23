@@ -259,17 +259,19 @@ NODE_PTR_TYPE_DECL(Variance)
 class Variance : public Node {
 public:
   Variance(const TypePtr &nodeType, const ValuePtr &inValue,
-           const std::vector<int64_t> &dim);
+           const std::vector<int64_t> &dim, const int ddof);
   NodeKind kind() override { return Node::NodeKind::VARIANCE; }
   explicit operator std::string() const override;
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
-  std::vector<int64_t> getDim() { return dim; };
+  std::vector<int64_t> getDim() { return dim; }
   std::vector<int> getShape();
+  int getDdof() { return ddof; }
 
 private:
   ValuePtr inValue;
   std::vector<int64_t> dim;
+  int ddof;
 };
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {

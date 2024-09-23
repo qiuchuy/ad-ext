@@ -3,6 +3,7 @@ import ailang as al
 from typing import List
 from .common import _tensor_member_fn, element_wise
 
+
 @_tensor_member_fn
 @al.jit
 @element_wise
@@ -13,11 +14,25 @@ def add(x: al.array, y: al.array) -> al.array:
 
 @_tensor_member_fn
 @al.jit
-def conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
-        padding_args, window_reversal)->al.array:
-    "Compute the maxpool2d of the input "
-    return al.prim.conv2d(input,weight,window_stride, lhs_dilation, rhs_dilation,
-        padding_args, window_reversal)
+def conv2d(
+    input,
+    weight,
+    window_stride,
+    lhs_dilation,
+    rhs_dilation,
+    padding_args,
+    window_reversal,
+) -> al.array:
+    "Compute the maxpool2d of the input"
+    return al.prim.conv2d(
+        input,
+        weight,
+        window_stride,
+        lhs_dilation,
+        rhs_dilation,
+        padding_args,
+        window_reversal,
+    )
 
 
 @_tensor_member_fn
@@ -26,9 +41,16 @@ def relu(x: al.array) -> al.array:
     """ReLU."""
     return al.prim.relu(x)
 
+
 @_tensor_member_fn
 @al.jit
-def batchnorm2d(input:al.array,scale:al.array,offset:al.array,mean:al.array,variance:al.array)->al.array:
+def batchnorm2d(
+    input: al.array,
+    scale: al.array,
+    offset: al.array,
+    mean: al.array,
+    variance: al.array,
+) -> al.array:
     "Compute the batchnrom of the input with mean,variance"
     """
     :params: input
@@ -37,11 +59,19 @@ def batchnorm2d(input:al.array,scale:al.array,offset:al.array,mean:al.array,vari
     :params: mean
     :params: variance
     """
-    return al.prim.batchnorm2d(input,scale,offset,mean,variance)
+    return al.prim.batchnorm2d(input, scale, offset, mean, variance)
+
 
 @_tensor_member_fn
 @al.jit
-def maxpool2d(x: al.array, window_dimensions,window_strides,base_dilations,window_dilations, padding) -> al.array:
+def maxpool2d(
+    x: al.array,
+    window_dimensions,
+    window_strides,
+    base_dilations,
+    window_dilations,
+    padding,
+) -> al.array:
     """
     Maxpool2d.
     params.
@@ -69,7 +99,9 @@ def maxpool2d(x: al.array, window_dimensions,window_strides,base_dilations,windo
     padding_args.(4,2) with initializer{0,0,0,0,0,0,0,0}. which's dim should be (rank(input),2).In every dim,
         will have h,w direction's padding.
     """
-    return al.prim.maxpool2d(x,window_dimensions,window_strides,base_dilations,window_dilations,padding)
+    return al.prim.maxpool2d(
+        x, window_dimensions, window_strides, base_dilations, window_dilations, padding
+    )
 
 
 @_tensor_member_fn
@@ -93,17 +125,20 @@ def exp(x: al.array) -> al.array:
     """Exponential."""
     return al.prim.exp(x)
 
+
 @_tensor_member_fn
 @al.jit
 def tanh(x: al.array) -> al.array:
     """Tanh."""
     return al.prim.tanh(x)
 
+
 @_tensor_member_fn
 @al.jit
 def neg(x: al.array) -> al.array:
     """Negation."""
     return al.prim.neg(x)
+
 
 @_tensor_member_fn
 @al.jit
@@ -112,6 +147,7 @@ def div(x: al.array, y: al.array) -> al.array:
     """Division."""
     return al.prim.div(x, y)
 
+
 @_tensor_member_fn
 @al.jit
 @element_wise
@@ -119,12 +155,14 @@ def sub(x: al.array, y: al.array) -> al.array:
     """Subtraction."""
     return al.prim.add(x, al.prim.neg(y))
 
+
 @_tensor_member_fn
 @al.jit
 @element_wise
 def mul(x: al.array, y: al.array) -> al.array:
     """Multiplication."""
     return al.prim.mul(x, y)
+
 
 @_tensor_member_fn
 @al.jit

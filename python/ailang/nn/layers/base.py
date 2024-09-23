@@ -13,7 +13,10 @@ class Module:
 
     __call__: Callable
     _version: int = 1
-    training: bool
+    _training: bool
+    "u just need to define magic func __setattr__"
+    _modules: Dict[str, Optional["Module"]]
+
     # _parameters: Dict[str, Optional[Parameter]]
     """[TODO]"""
     _buffers: Dict[str, Optional[al.array]]
@@ -22,76 +25,88 @@ class Module:
 
     def __init__(self):
         self._no_grad = set()
-        self._training = True
+        super().__setattr__("_training", False)
+        # 避免调用 子类的__setattr__
+        super().__setattr__("_modules", {})
+
+    def __setattr__(self, key, value):
+        modules = self.__dict__.get("_modules")
+        if isinstance(value, al.nn.layers.base.Module):
+            modules[type(self).__name__ + "." + key] = value
+            super().__setattr__(key, value)
+
+        else:
+            super().__setattr__(key, value)
 
     @property
     def training(self):
         return self._training
 
-    # def _extra_repr(self):
-    #     return
-    # def __repr__(self):
-    #     print("[TODO]")
-    #     return
+    @training.setter
+    def training(self, mode: bool):
+        self._training = mode
 
-    # ====params 部分实现===
+    def eval(self):
+        return self.train(False)
 
-    @staticmethod
-    def valid_parameter_filter(module, key, value):
-        # 这里的类别有点奇怪
-        return isinstance(value, (Module, list, al.ffi.libailang.Tensor))
+    def train(self, mode: bool = True):
+        if not isinstance(mode, bool):
+            raise ValueError("training mode is expected to be boolean")
+        self.training = mode
+        for module in self.children():
+            module.train(mode)
+        return self
 
-    @staticmethod
-    def valid_module_filter(module, key, value):
-        return isinstance(value, (dict, list))
+    def children(self) -> Iterator["Module"]:
+        r"""Return an iterator over immediate children modules.
 
-    def parameters(self, recurse: bool = True):
-        return self.module_filter(self.valid_parameter_filter)
+        Yields:
+            Module: a child module
+        """
+        for name, module in self.named_children():
+            yield module
 
-    def module_filter(
-        self,
-        filter_fn: Callable[["Module", str, Any], bool],
-        map_fn: Optional[Callable] = None,
-        isleaf_fn: Optional[Callable] = None,
-    ):
-        map_fn = map_fn or (lambda x: x)
-        isleaf_fn = isleaf_fn or (
-            lambda m, k, v: not isinstance(v, (Module, dict, list))
-        )
+    def named_children(self) -> Iterator[Tuple[str, "Module"]]:
+        r"""Return an iterator over immediate children modules, yielding both the name of the module as well as the module itself.
 
-        def _unpack_params(vk, v):
-            if isleaf_fn(self, vk, v):
-                return map_fn(v)
+        Yields:
+            (str, Module): Tuple containing a name and child module
 
-            if isinstance(v, Module):
-                next_dict = {}
-                for k, v in v.__dict__.items():
-                    prefix = f"{vk}.{k}"
-                    if filter_fn(self, prefix, v):
-                        next_dict[prefix] = _unpack_params(prefix, v)
-                return next_dict
-            if isinstance(v, list):
-                next_list = []
-                for i, vi in enumerate(v):
-                    prefix = f"{vk}.{i}"
-                    next_list.append(
-                        _unpack_params(prefix, vi)
-                        if filter_fn(self, prefix, vi)
-                        else {}
-                    )
-                return next_list
+        """
+        memo = set()
+        for name, module in self._modules.items():
+            if module is not None and module not in memo:
+                memo.add(module)
+                yield name, module
 
-            raise RuntimeError("Unexpected leaf found while traversing the module")
 
-        return {
-            k: _unpack_params(k, v)
-            for k, v in self.__dict__.items()
-            if filter_fn(self, k, v)
-        }
+# def _extra_repr(self):
+#     return
+# def __repr__(self):
+#     print("[TODO]")
+#     return
 
-    def _child_modules(self, value):
-        return self.module_filter(
-            self.valid_module_filter, isleaf_fn=lambda m, k, v: isinstance(v, (Module))
-        )
+# ====params 部分实现===
 
-    # weights 部分实现
+
+# if __name__ == "__main__":
+#     import ailang as al
+#     import inspect
+
+#     class X(Module):
+#         def __init__(self):
+#             super().__init__()
+#             self.bn = al.nn.Batchnorm2d(3)
+#             self.cov = al.nn.Conv2d(1, 2)
+
+#     class Y(Module):
+#         def __init__(self):
+#             super().__init__()
+#             self.bn = al.nn.Batchnorm2d(3)
+#             self.cov = al.nn.Conv2d(1, 2)
+
+#     x = X()
+#     x.eval()
+#     for n, m in x.named_children():
+#         print("???", n, m)
+#     print(x.training)

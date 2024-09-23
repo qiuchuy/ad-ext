@@ -422,7 +422,8 @@ private:
 };
 class VariancePrimitive : public UnaryPrimitive {
 public:
-  VariancePrimitive(const std::vector<int64_t> &dim) : dim(dim) {}
+  VariancePrimitive(const std::vector<int64_t> &dim, const int ddof)
+      : dim(dim), ddof(ddof) {}
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
@@ -432,6 +433,7 @@ public:
 
 private:
   std::vector<int64_t> dim;
+  int ddof;
 };
 class BatchnormInferencePrimitive : public UnaryPrimitive {
 public:

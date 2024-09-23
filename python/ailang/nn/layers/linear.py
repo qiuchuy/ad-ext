@@ -13,24 +13,26 @@ class Linear(Module):
         y = x W^\top + b
     """
 
-    @staticmethod
-    def get_random_array(self, shape: Tuple[int], dtype: np.dtype):
-        np_array = np.random.randn(*shape).astype(dtype)
-        return al.from_numpy(np_array)
+    def gen_random_nparray(self, shape, dtype: np.dtype) -> np.ndarray:
+        if len(shape):
+            random_nparray = np.random.randn(*shape).astype(dtype)
+            return random_nparray
+        else:
+            return dtype(np.random.randn())
 
     def __init__(self, input_dims: int, output_dims: int, bias: bool = True) -> None:
         super().__init__()
         scale = math.sqrt(1.0 / input_dims)
 
         # 实现随机数据支持之前，先
-        self.weight = self.get_random_array((output_dims, input_dims), np.float32)
+        self.weight = self.gen_random_nparray((output_dims, input_dims), np.float32)
         # self.weight = al.random.uniform(
         #     low=-scale,
         #     high=scale,
         #     shape=(output_dims, input_dims),
         # )
         if bias:
-            self.bias = self.get_random_array((output_dims), np.float32)
+            self.bias = self.gen_random_nparray((output_dims,), np.float32)
             # self.bias = al.random.uniform(
             #     low=-scale,
             #     high=scale,
