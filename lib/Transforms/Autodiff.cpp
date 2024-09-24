@@ -66,10 +66,12 @@ void AutoDiff::visit(ParamPtr Node) {
           ModuleReturns.push_back(Adjoint);
         } else {
           std::vector<ValuePtr> InitGradients;
+          size_t NumElements = 1;
           for (auto Axis : ParamShape) {
-            for (size_t Idx = 0; Idx < Axis; Idx++) {
-              InitGradients.push_back(Literal::create(0.f));
-            }
+            NumElements *= Axis;
+          }
+          for (size_t Idx = 0; Idx < NumElements; Idx++) {
+            InitGradients.push_back(Literal::create(0.f));
           }
           auto *ParamGradient = Module->create<ConstantDef>(
               ParamType, TupleContainer::create(InitGradients));
@@ -103,10 +105,12 @@ void AutoDiff::visit(ParamPtr Node) {
         ModuleReturns.push_back(Adjoint);
       } else {
         std::vector<ValuePtr> InitGradients;
+        size_t NumElements = 1;
         for (auto Axis : ParamShape) {
-          for (size_t Idx = 0; Idx < Axis; Idx++) {
-            InitGradients.push_back(Literal::create(0.f));
-          }
+          NumElements *= Axis;
+        }
+        for (size_t Idx = 0; Idx < NumElements; Idx++) {
+          InitGradients.push_back(Literal::create(0.f));
         }
         auto *ParamGradient = Module->create<ConstantDef>(
             ParamType, TupleContainer::create(InitGradients));
@@ -132,10 +136,12 @@ void AutoDiff::visit(ReturnOpPtr Node) {
       if (ItemShape.empty()) {
         InitGradients.push_back(Literal::create(1.f));
       } else {
+        size_t NumElements = 1;
         for (auto Axis : ItemShape) {
-          for (size_t Idx = 0; Idx < Axis; Idx++) {
-            InitGradients.push_back(Literal::create(1.f));
-          }
+          NumElements *= Axis;
+        }
+        for (size_t Idx = 0; Idx < NumElements; Idx++) {
+          InitGradients.push_back(Literal::create(0.f));
         }
       }
       auto *ItemGradient = Module->create<ConstantDef>(
@@ -149,10 +155,12 @@ void AutoDiff::visit(ReturnOpPtr Node) {
     if (ItemShape.empty()) {
       InitGradients.push_back(Literal::create(1.f));
     } else {
+      size_t NumElements = 1;
       for (auto Axis : ItemShape) {
-        for (size_t Idx = 0; Idx < Axis; Idx++) {
-          InitGradients.push_back(Literal::create(1.f));
-        }
+        NumElements *= Axis;
+      }
+      for (size_t Idx = 0; Idx < NumElements; Idx++) {
+        InitGradients.push_back(Literal::create(0.f));
       }
     }
     auto *ItemGradient = Module->create<ConstantDef>(
@@ -176,6 +184,19 @@ void AutoDiff::visit(ExpPtr Node) {
   auto *Value = Node->getOperand(0);
   auto *Adjoint = getAdjoint(Node);
   auto *AdjointNode = Module->create<Mul>(Node->getType(), Node, Adjoint);
+  setAdjoint(Value, AdjointNode);
+}
+
+void AutoDiff::visit(TanhPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Adjoint = getAdjoint(Node);
+  auto *OneConstant = Module->createConstantValue(1.f, Node->getType());
+  auto *NegTanh2 = Module->create<Neg>(
+      Node->getType(),
+      Module->create<Mul>(Node->getType(), Node, Node));
+  auto *AdjointNode = Module->create<Mul>(Node->getType(), Adjoint,
+                                           Module->create<Add>(Node->getType(),
+                                                               OneConstant, NegTanh2));
   setAdjoint(Value, AdjointNode);
 }
 
@@ -227,6 +248,16 @@ void AutoDiff::visit(DivPtr Node) {
   setAdjoint(Lower, LowerAdjoint);
 }
 
+void AutoDiff::visit(MulPtr Node) {
+  auto *Left = Node->getOperand(0);
+  auto *Right = Node->getOperand(1);
+  auto *Adjoint = getAdjoint(Node);
+  auto *LeftAdjoint = Module->create<Mul>(Node->getType(), Adjoint, Right);
+  auto *RightAdjoint = Module->create<Mul>(Node->getType(), Adjoint, Left);
+  setAdjoint(Left, LeftAdjoint);
+  setAdjoint(Right, RightAdjoint);
+}
+
 void AutoDiff::visit(BroadcastPtr Node) {
   auto *Value = Node->getOperand(0);
   auto *Adjoint = getAdjoint(Node);
@@ -251,11 +282,10 @@ void AutoDiff::visit(BroadcastPtr Node) {
 }
 
 void AutoDiff::visit(TransposePtr Node) {
-  // auto *Value = Node->getValue();
-  // auto *Tangent = getTangent(Value);
-  // auto *TangentNode = Module->createAfter<Transpose>(
-  //     Node, Node->getType(), Tangent);
-  // setTangent(Node, TangentNode);
+  auto *Value = Node->getValue();
+  auto *Adjoint = getAdjoint(Node);
+  auto *AdjointNode = Module->create<Transpose>(Node->getType(), Adjoint);
+  setAdjoint(Value, AdjointNode);
 }
 
 void AutoDiff::visit(MatmulPtr Node) {

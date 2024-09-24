@@ -89,10 +89,12 @@ public:
     if (Shape.empty()) {
       FloatValues.push_back(Literal::create(Constant));
     } else {
+      size_t NumElements = 1;
       for (auto Axis : Shape) {
-        for (size_t Idx = 0; Idx < Axis; Idx++) {
-          FloatValues.push_back(Literal::create(Constant));
-        }
+        NumElements *= Axis;
+      }
+      for (size_t Idx = 0; Idx < NumElements; Idx++) {
+        FloatValues.push_back(Literal::create(Constant));
       }
     }
     return create<ConstantDef>(Type, TupleContainer::create(FloatValues));

@@ -28,11 +28,11 @@ public:
   void visit(CompareOpPtr Node) override{};
   void visit(ConcatPtr Node) override{};
   void visit(ExpPtr Node) override;
-  void visit(TanhPtr Node) override{};
+  void visit(TanhPtr Node) override;
   void visit(NegPtr Node) override;
   void visit(DivPtr Node) override;
   void visit(BroadcastPtr Node) override;
-  void visit(MulPtr Node) override{};
+  void visit(MulPtr Node) override;
   void visit(ConstantDefPtr Node) override;
 
 private:
@@ -48,8 +48,15 @@ private:
     return AdjointMap[Value];
   }
 
-  void setAdjoint(ValuePtr Value, ValuePtr Tangent) {
-    AdjointMap[Value] = Tangent;
+  void setAdjoint(ValuePtr Value, ValuePtr Adjoint) {
+    if (AdjointMap.find(Value) != AdjointMap.end()) {
+      // accumulate adjoint
+      auto *ValueAdjoint = AdjointMap[Value];
+      auto *NewAdjoint = Module->create<Add>(Adjoint->getType(), Adjoint, ValueAdjoint);
+      AdjointMap[Value] = NewAdjoint;
+    } else {
+      AdjointMap[Value] = Adjoint;
+    }
   }
 
   bool hasAdjoint(ValuePtr Value) {
