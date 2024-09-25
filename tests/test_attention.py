@@ -16,7 +16,6 @@ class TorchSelfAttention(torch.nn.Module):
         self.query = torch.nn.Linear(d_model, d_model)
         self.key = torch.nn.Linear(d_model, d_model)
         self.value = torch.nn.Linear(d_model, d_model)
-
         # 输出的线性变换
         self.fc_out = torch.nn.Linear(d_model, d_model)
 
@@ -53,13 +52,24 @@ class TorchSelfAttention(torch.nn.Module):
         out = self.fc_out(out)
 
         return out, attention_weights
-    
-    
+
+
 class AilangSelfAttention(nn.Module):
-    
-    
-    
-    
+    def __init__(self, d_model):
+        super()._init__()
+        self.d_model = d_model
+        # nn.Linear (in, out)
+        self.query = nn.Linear(d_model,d_model)
+        self.key = nn.Linear(d_model, d_model)
+        self.value = nn.Linear(d_model, d_model)
+        self.fc_out = nn.Linear(d_model,d_model)
+    def __call__(self, x, mask=None):
+        batch_size, seq_len, d_model = x.shape    
+        
+        Q = self.query(x)
+        K = self.key(x)
+        V = self.value(x)
+
 # 示例用法
 batch_size = 2
 seq_len = 5
