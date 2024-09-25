@@ -19,7 +19,8 @@ public:
   void visit(ConvolutionPtr Node) override{};
   void visit(BatchNorm2dPtr Node) override{};
   void visit(ReluPtr Node) override{};
-  void visit(MeanPtr Node) override{};
+  void visit(SqrtPtr Node) override {};
+  void visit(MeanPtr Node) override {};
   void visit(VariancePtr Node) override {};
   void visit(MatmulPtr Node) override {};
   void visit(AddPtr Node) override{};

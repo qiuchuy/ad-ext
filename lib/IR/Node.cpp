@@ -185,8 +185,19 @@ std::vector<int> Relu::getShape() {
     throw std::runtime_error("ReLU input is not a tensor");
   }
 }
-// Mean
+// Sqrt
+Sqrt::Sqrt(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+  this->inValue = inValue;
+}
+Sqrt::operator std::string() const {
+  return getName() + " = ailang::sqrt(" + getValue()->getName() +
+         "):" + std::string(*getType());
+}
+void Sqrt::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+
+
+// Mean
 Mean::Mean(const TypePtr &opType, const ValuePtr &inValue,
            const std::vector<int64_t> &dim)
     : Node(opType), inValue(inValue), dim(dim) {}

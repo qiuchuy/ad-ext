@@ -300,23 +300,6 @@ public:
   std::string toString() const override;
 };
 
-class SqrtPrimitive : public UnaryPrimitive {
-public:
-  explicit SqrtPrimitive(bool reverse = false) : reverse_(reverse) {};
-  SqrtPrimitive() = default;
-  void eval(const std::vector<Array> &inputs, Array &output) override;
-  void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
-  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
-  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
-  std::string toString() const override;
-
-private:
-  bool reverse_;
-};
-
 class ReducePrimitive : public UnaryPrimitive {
 public:
   enum ReduceType { And, Or, Sum, Prod, Min, Max };
@@ -405,6 +388,16 @@ public:
   TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
     throw std::runtime_error("Not implemented");
   };
+  std::string toString() const override;
+};
+class SqrtPrimitive : public UnaryPrimitive {
+public:
+  SqrtPrimitive() = default;
+  void eval(const std::vector<Array> &inputs, Array &out) override;
+  void evalCPU(const std::vector<Array> &inputs, Array &output) override;
+  void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
+  void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
 };
 class MeanPrimitive : public UnaryPrimitive {

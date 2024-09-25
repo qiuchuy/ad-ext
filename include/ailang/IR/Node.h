@@ -60,6 +60,7 @@ public:
     NEG,
     PARAM,
     POW,
+    SQRT,
     RELU,
     RETURN,
     RSHIFT,
@@ -239,6 +240,19 @@ public:
 private:
   ValuePtr inValue;
 };
+NODE_PTR_TYPE_DECL(Sqrt)
+class Sqrt : public Node {
+public:
+  Sqrt(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::SQRT; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+
+private:
+  ValuePtr inValue;
+};
+
 NODE_PTR_TYPE_DECL(Mean)
 class Mean : public Node {
 public:

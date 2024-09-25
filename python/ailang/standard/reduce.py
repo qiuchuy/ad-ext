@@ -17,7 +17,7 @@ def mean(x: al.array, dim: List[int] = None) -> al.array:
 @_tensor_member_fn
 @al.jit
 def var(x: al.array, dim: List[int], ddof) -> al.array:
-    """Computes the mean of a tensor."""
+    """Computes the var of a tensor."""
     if dim is None:
         shape = x.shape
         dim = list(range(len(shape)))

@@ -309,6 +309,13 @@ void StableHLOLoweringPass::visit(ReluPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(SqrtPtr node) {
+  mlir::Value value = valueMap[node->getValue()];
+  auto op =
+      builder.create<mlir::stablehlo::SqrtOp>(builder.getUnknownLoc(), value);
+  insertValueMapping(node, op);
+}
+
 mlir::Value computeReduce(mlir::Location loc, mlir::TypeRange resultType,
                           mlir::ValueRange operand, mlir::ValueRange zero,
                           mlir::DenseI64ArrayAttr &dimensions,

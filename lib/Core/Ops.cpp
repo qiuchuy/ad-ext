@@ -184,18 +184,18 @@ Array square(const Array &input) {
                input.shape(),
                getStridesFromShape(input.shape(), dtypeSize(output_type)));
 }
-Array sqrt(const Array &input) {
-  Dtype output_type = isFloat(input.dtype());
-  return Array(output_type, std::make_shared<SqrtPrimitive>(false), {input},
-               input.shape(),
-               getStridesFromShape(input.shape(), dtypeSize(output_type)));
-}
-Array rsqrt(const Array &input) {
-  Dtype output_type = isFloat(input.dtype());
-  return Array(output_type, std::make_shared<SqrtPrimitive>(true), {input},
-               input.shape(),
-               getStridesFromShape(input.shape(), dtypeSize(output_type)));
-}
+// Array sqrt(const Array &input) {
+//   Dtype output_type = isFloat(input.dtype());
+//   return Array(output_type, std::make_shared<SqrtPrimitive>(false), {input},
+//                input.shape(),
+//                getStridesFromShape(input.shape(), dtypeSize(output_type)));
+// }
+// Array rsqrt(const Array &input) {
+//   Dtype output_type = isFloat(input.dtype());
+//   return Array(output_type, std::make_shared<SqrtPrimitive>(true), {input},
+//                input.shape(),
+//                getStridesFromShape(input.shape(), dtypeSize(output_type)));
+// }
 
 Array var(const Array &input, const std::vector<int> &axes, bool keepdims,
           int ddof) {
