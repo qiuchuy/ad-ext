@@ -65,6 +65,7 @@ public:
     RSHIFT,
     STORE,
     SUB,
+    SUM,
     TANH,
     TRANSPOSE,
     UNZIPPING,
@@ -90,7 +91,7 @@ public:
   }
 
   template <typename NodeType, typename... ARGS>
-  static NodePtr create(ARGS &&...args) {
+  static NodePtr create(ARGS &&... args) {
     NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
     return Node;
   }
@@ -239,6 +240,7 @@ public:
 private:
   ValuePtr inValue;
 };
+
 NODE_PTR_TYPE_DECL(Mean)
 class Mean : public Node {
 public:
@@ -255,6 +257,24 @@ private:
   ValuePtr inValue;
   std::vector<int64_t> dim;
 };
+
+NODE_PTR_TYPE_DECL(Sum)
+class Sum : public Node {
+public:
+  Sum(const TypePtr &nodeType, const ValuePtr &inValue,
+      const std::vector<int64_t> &dim);
+  NodeKind kind() override { return Node::NodeKind::MEAN; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<int64_t> getDim() { return dim; };
+  std::vector<int> getShape();
+
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> dim;
+};
+
 NODE_PTR_TYPE_DECL(Variance)
 class Variance : public Node {
 public:
@@ -273,6 +293,7 @@ private:
   std::vector<int64_t> dim;
   int ddof;
 };
+
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
 public:

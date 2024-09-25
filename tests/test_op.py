@@ -56,6 +56,13 @@ class TestOp:
         c = al.standard.mean(b, [0, 1, 2])
         assert TestOp.numeric_check(c, np.mean(a, axis=(0, 1, 2)))
 
+    def test_standard_sum(self):
+        a = self.gen_random_nparray((3, 2), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.sum(b)
+        assert TestOp.numeric_check(c, np.sum(a))
+
+
     def test_standard_transpose(self):
         a = self.gen_random_nparray((2, 3), np.float32)
         b = al.from_numpy(a)

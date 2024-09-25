@@ -13,6 +13,14 @@ def mean(x: al.array, dim: List[int] = None) -> al.array:
         dim = list(range(len(shape)))
     return al.prim.mean(x, dim)
 
+@_tensor_member_fn
+@al.jit
+def sum(x: al.array, dim: List[int] = None) -> al.array:
+    """Computes the sum of a tensor."""
+    if dim is None:
+        shape = x.shape
+        dim = list(range(len(shape)))
+    return al.prim.sum(x, dim)
 
 @_tensor_member_fn
 @al.jit

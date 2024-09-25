@@ -118,6 +118,10 @@ void init_ailang_op(py::module_ &m) {
                    const std::vector<int64_t> &dim) {
     return pyunary<ainl::core::MeanPrimitive>({input}, dim);
   });
+  m.def("sum", [](const std::shared_ptr<ainl::core::Tracer> &input,
+                  const std::vector<int64_t> &dim = {}) {
+      return pyunary<ainl::core::SumPrimitive>({input}, dim);
+  }, py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
   m.def("cat",
         [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
            int dim) {
