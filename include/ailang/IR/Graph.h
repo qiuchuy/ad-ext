@@ -138,6 +138,8 @@ public:
     return GraphIterator(endBlock, beginBlock, endBlock);
   }
 
+  void remove(NodePtr Node);
+
 private:
   void insertNodeAtEnd(NodePtr Node);
   void insertNodeAfter(NodePtr After, NodePtr Node);

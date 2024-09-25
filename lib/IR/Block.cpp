@@ -32,6 +32,8 @@ void Block::insertNodeAfter(NodePtr After, NodePtr Node) {
   After->insertAfter(Node);
 }
 
+void Block::remove(NodePtr Node) { Node->remove(); }
+
 Value::ValueKind Block::getValueKind() const { return Value::ValueKind::Block; }
 
 Block::operator std::string() const {

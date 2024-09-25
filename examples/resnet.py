@@ -124,11 +124,8 @@ class TorchResNet(torch.nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        print(x.shape)
         x = self.layer1(x)
-        print(x.shape)
         x = self.layer2(x)
-        print(x.shape)
         x = self.layer3(x)
 
         x = self.layer4(x)

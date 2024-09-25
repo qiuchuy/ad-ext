@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ailang/AST/ASTNode.h"
+#include "ailang/IR/Function.h"
+#include "ailang/IR/Value.h"
 
 namespace ainl::core {
 
@@ -19,4 +21,6 @@ ainl::ir::CompareNode::CompareOpKind CompareOpASTHelper(std::string OpKind);
 
 std::string trim(const std::string &str);
 int caseInsensitiveStrcmp(const std::string &str1, const std::string &str2);
+ir::ValuePtr createFloatConstantValue(ir::ModulePtr M, float Value,
+                                      ainl::ir::TypePtr Type);
 } // namespace ainl::core

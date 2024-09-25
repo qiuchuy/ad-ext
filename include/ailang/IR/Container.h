@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ailang/IR/Value.h"
 
 namespace ainl::ir {

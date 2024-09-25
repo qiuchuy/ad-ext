@@ -18,16 +18,16 @@ class LSTMCell(nn.Module):
         self.bo = al.random.randn(hidden_size, 1, dtype=al.f32)
 
     def sigmoid(self, x):
-        return al.standard.div(
-            1.0, al.standard.add(1.0, al.standard.exp(al.standard.neg(x)))
+        return al.div(
+            1.0, al.add(1.0, al.exp(al.neg(x)))
         )
 
     def forward(self, x_t, h_prev, c_prev):
-        x = al.standard.cat([h_prev, x_t], axis=0)
-        f = self.sigmoid(al.standard.add(al.matmul(self.wf, x), self.bf))
-        i = self.sigmoid(al.standard.add(al.matmul(self.wi, x), self.bi))
-        c_hat = al.standard.tanh(al.standard.add(al.matmul(self.wc, x), self.bc))
-        c = al.standard.add(al.standard.mul(f, c_prev), al.standard.mul(i, c_hat))
-        o = self.sigmoid(al.standard.add(al.matmul(self.wo, x), self.bo))
-        h = al.standard.mul(o, al.standard.tanh(c))
+        x = al.cat([h_prev, x_t], axis=0)
+        f = self.sigmoid(al.add(al.matmul(self.wf, x), self.bf))
+        i = self.sigmoid(al.add(al.matmul(self.wi, x), self.bi))
+        c_hat = al.tanh(al.add(al.matmul(self.wc, x), self.bc))
+        c = al.add(al.mul(f, c_prev), al.mul(i, c_hat))
+        o = self.sigmoid(al.add(al.matmul(self.wo, x), self.bo))
+        h = al.mul(o, al.tanh(c))
         return h, c

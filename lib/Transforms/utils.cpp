@@ -1,4 +1,5 @@
 #include "ailang/Transforms/utils.h"
+#include "ailang/IR/Container.h"
 #include "ailang/IR/Node.h"
 #include "ailang/IR/Value.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -32,8 +33,10 @@
 #include "ailang/IR/Type.h"
 #include "ailang/Transforms/StablehloConversion.h"
 
+using namespace ainl::core;
+using namespace ainl::ir;
+
 namespace ainl::ir {
-mlir::Value compute_mean() {}
 mlir::DenseI64ArrayAttr
 convertI64VectorToDenseI64ArrayAttr(mlir::OpBuilder &builder,
                                     const std::vector<int64_t> &vec) {

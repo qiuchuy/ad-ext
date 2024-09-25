@@ -72,7 +72,7 @@ class Conv2d(Module):
 
     def __call__(self, input):
 
-        y = al.standard.conv2d(
+        y = al.conv2d(
             input,
             self.weight,
             self.stride,
