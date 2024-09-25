@@ -37,9 +37,11 @@ public:
   void visit(ReluPtr node) override;
   void visit(MeanPtr node) override;
   void visit(SumPtr node) override;
+  void visit(VariancePtr node) override;
   void visit(MatmulPtr node) override;
   void visit(AddPtr node) override;
   void visit(Maxpool2dPtr node) override;
+  void visit(Avgpool2dPtr node) override;
   void visit(CompareOpPtr node) override;
   void visit(ConcatPtr node) override;
   void visit(ExpPtr node) override;

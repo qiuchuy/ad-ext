@@ -53,6 +53,7 @@ public:
     MAKETUPLE,
     MATMUL,
     MAXPOOL2D,
+    AVGPOOL2D,
     MEAN,
     MOD,
     MUL,
@@ -69,8 +70,8 @@ public:
     TRANSPOSE,
     UNZIPPING,
     UNKNOWN,
+    VARIANCE,
     WHILE
-
   };
 
   void init() {
@@ -274,6 +275,25 @@ private:
   std::vector<int64_t> dim;
 };
 
+NODE_PTR_TYPE_DECL(Variance)
+class Variance : public Node {
+public:
+  Variance(const TypePtr &nodeType, const ValuePtr &inValue,
+           const std::vector<int64_t> &dim, const int ddof);
+  NodeKind kind() override { return Node::NodeKind::VARIANCE; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<int64_t> getDim() { return dim; }
+  std::vector<int> getShape();
+  int getDdof() { return ddof; }
+
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> dim;
+  int ddof;
+};
+
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
 public:
@@ -293,30 +313,84 @@ private:
 NODE_PTR_TYPE_DECL(Maxpool2d)
 class Maxpool2d : public Node {
 public:
-  Maxpool2d(const TypePtr &nodeType, const ValuePtr &inValue);
+  Maxpool2d(const TypePtr &nodeType, const ValuePtr &inValue,
+            const std::vector<int64_t> &window_dimensions,
+            const std::vector<int64_t> &window_strides,
+            const std::vector<int64_t> &base_dilations,
+            const std::vector<int64_t> &window_dilations,
+            const std::vector<int64_t> &padding);
   NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
   explicit operator std::string() const override;
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_dimensions, window_strides, base_dilations, window_dilations,
+            padding};
+  }
 
 private:
   ValuePtr inValue;
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
+};
+NODE_PTR_TYPE_DECL(Avgpool2d)
+class Avgpool2d : public Node {
+public:
+  Avgpool2d(const TypePtr &nodeType, const ValuePtr &inValue,
+            const std::vector<int64_t> &window_dimensions,
+            const std::vector<int64_t> &window_strides,
+            const std::vector<int64_t> &base_dilations,
+            const std::vector<int64_t> &window_dilations,
+            const std::vector<int64_t> &padding);
+  NodeKind kind() override { return Node::NodeKind::AVGPOOL2D; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_dimensions, window_strides, base_dilations, window_dilations,
+            padding};
+  }
+
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> base_dilations;
+  std::vector<int64_t> window_dilations;
+  std::vector<int64_t> padding;
 };
 
 NODE_PTR_TYPE_DECL(Convolution)
 class Convolution : public Node {
 public:
   Convolution(const TypePtr &nodeType, const ValuePtr &inputValue,
-              const ValuePtr &weightValue);
+              const ValuePtr &weightValue,
+              const std::vector<int64_t> &window_strides,
+              const std::vector<int64_t> &lhsDilation,
+              const std::vector<int64_t> &rhsDilation,
+              const std::vector<int64_t> &padding_args,
+              const std::vector<int64_t> &window_reversal);
   NodeKind kind() override { return Node::NodeKind::CONVOLUTION; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   ValuePtr getInputValue() const { return inputValue; }
   ValuePtr getWeightValue() const { return weightValue; }
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_strides, lhsDilation, rhsDilation, padding_args,
+            window_reversal};
+  }
 
 private:
   ValuePtr inputValue;
   ValuePtr weightValue;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> lhsDilation;
+  std::vector<int64_t> rhsDilation;
+  std::vector<int64_t> padding_args;
+  std::vector<int64_t> window_reversal;
 };
 
 NODE_PTR_TYPE_DECL(BatchNorm2d)

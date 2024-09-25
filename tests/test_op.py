@@ -1,11 +1,15 @@
 import ailang as al
 import typing
 import numpy as np
+import torch
+
+torch.set_printoptions(precision=6)
+
 
 class TestOp:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
-        return np.allclose(a.tolist(), b.tolist())
+        return np.allclose(a.tolist(), b.tolist(), rtol=1e-03, atol=1e-06)
 
     def gen_random_nparray(
         self, shape: typing.Tuple[int], dtype: np.dtype
@@ -47,10 +51,10 @@ class TestOp:
         assert TestOp.numeric_check(c, a[0:1])
 
     def test_standard_mean(self):
-        a = self.gen_random_nparray((3, 2), np.float32)
+        a = self.gen_random_nparray((3, 2, 3), np.float32)
         b = al.from_numpy(a)
-        c = al.standard.mean(b)
-        assert TestOp.numeric_check(c, np.mean(a))
+        c = al.standard.mean(b, [0, 1, 2])
+        assert TestOp.numeric_check(c, np.mean(a, axis=(0, 1, 2)))
 
     def test_standard_sum(self):
         a = self.gen_random_nparray((3, 2), np.float32)
@@ -81,7 +85,7 @@ class TestOp:
         k = al.standard.add(m, n)
         assert TestOp.numeric_check(k, x + y)
 
-        i = 1.
+        i = 1.0
         j = self.gen_random_nparray((2, 3), np.float32)
         al_j = al.from_numpy(j)
         r = al.standard.add(i, al_j)
@@ -109,27 +113,81 @@ class TestOp:
         assert TestOp.numeric_check(c, np.maximum(a, 0))
 
     def test_standard_conv2d(self):
-        a = self.gen_random_nparray((1, 4, 4, 1), np.float32)
-        b = self.gen_random_nparray((3, 3, 1, 1), np.float32)
+        a = self.gen_random_nparray((1, 3, 224, 224), np.float32)  # N C H W
+        b = self.gen_random_nparray((2, 3, 4, 4), np.float32)  #  O I H W
         c = al.from_numpy(a)
         d = al.from_numpy(b)
-        e = al.standard.conv2d(c, d, (2, 2), (0, 0), (1, 1))
-        assert e.shape == (1, 2, 2, 1)
+        e = al.standard.conv2d(c, d, (2, 2), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0))
+        torch_conv = torch.nn.Conv2d(
+            3, 2, kernel_size=4, stride=2, padding=1, bias=False
+        )
+        torch_conv.weight.data = torch.from_numpy(b)
+        torch_res = torch_conv(torch.from_numpy(a)).detach().numpy()
+        assert TestOp.numeric_check(e, torch_res)
 
     def test_standard_var(self):
-        # [TODO]
-        raise NotImplementedError
+        a = self.gen_random_nparray((3, 3, 2), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.var(b, [0, 1], 1)
+        assert TestOp.numeric_check(
+            c, torch.var(torch.from_numpy(a), dim=(0, 1), unbiased=True).numpy()
+        )
 
-    def test_standard_batchnorm2d(self):
-        # [TODO]
-        raise NotImplementedError
+    def test_standard_batchnorm2d_training(self):
+        a = self.gen_random_nparray((1, 3, 20, 20), np.float32)  # N C H W
+        # a = np.ones((1, 3, 5, 5), dtype=np.float32)
+        b = al.from_numpy(a)
+        al_bn = al.nn.Batchnorm2d(3)
+        tc_bn = torch.nn.BatchNorm2d(3, eps=1e-5, momentum=None, affine=False)
+        tc_bn.train()
+        al_bn.train()
+        c = al_bn(b)
+        t = tc_bn(torch.from_numpy(a))
+        assert TestOp.numeric_check(c, t)
+
+    def test_standard_batchnorm2d_eval(self):
+        a = self.gen_random_nparray((1, 64, 224, 224), np.float32)  # N C H W
+        # a = np.ones((1, 3, 5, 5), dtype=np.float32)
+        b = al.from_numpy(a)
+        al_bn = al.nn.Batchnorm2d(64)
+        tc_bn = torch.nn.BatchNorm2d(64, momentum=None, affine=False)
+        tc_bn.eval()
+        al_bn.eval()
+        c = al_bn(b)
+        t = tc_bn(torch.from_numpy(a))
+        assert TestOp.numeric_check(c, t)
 
     def test_standard_maxpool2d(self):
-        raise NotImplementedError
+        a = self.gen_random_nparray((1, 4, 224, 224), np.float32)  # N C H W
+        b = al.from_numpy(a)
+        # also u can use nn
+        c = al.standard.maxpool2d(
+            b,
+            (1, 1, 4, 4),  # kernel_size
+            (1, 1, 3, 3),  # stride
+            (1, 1, 1, 1),  # dilation
+            (1, 1, 1, 1),  # dilation
+            (0, 0, 0, 0, 0, 0, 0, 0),  # padding
+        )
+        torch_maxpool2d = torch.nn.MaxPool2d(4, 3, 0)
+        torch_res = torch_maxpool2d(torch.from_numpy(a)).numpy()
+        assert TestOp.numeric_check(c, torch_res)
 
     def test_standard_avgpool2d(self):
-        # [TODO]
-        raise NotImplementedError
+        a = self.gen_random_nparray((1, 3, 224, 224), np.float32)  # N C H W
+        b = al.from_numpy(a)
+        # also u can use nn
+        c = al.standard.avgpool2d(
+            b,
+            (1, 1, 4, 4),  # kernel_size
+            (1, 1, 3, 3),  # stride
+            (1, 1, 1, 1),  # dilation
+            (1, 1, 1, 1),  # dilation
+            (0, 0, 0, 0, 0, 0, 0, 0),  # padding
+        )
+        torch_avgpool2d = torch.nn.AvgPool2d(4, 3, 0)
+        torch_res = torch_avgpool2d(torch.from_numpy(a)).numpy()
+        assert TestOp.numeric_check(c, torch_res)
 
     def test_standard_div(self):
         a = self.gen_random_nparray((2, 3), np.float32)
@@ -205,4 +263,3 @@ class TestOp:
         d = al.from_numpy(b)
         e = al.standard.matmul(c, d)
         assert TestOp.numeric_check(e, np.matmul(a, b))
-

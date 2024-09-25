@@ -192,11 +192,10 @@ void AutoDiff::visit(TanhPtr Node) {
   auto *Adjoint = getAdjoint(Node);
   auto *OneConstant = Module->createConstantValue(1.f, Node->getType());
   auto *NegTanh2 = Module->create<Neg>(
-      Node->getType(),
-      Module->create<Mul>(Node->getType(), Node, Node));
-  auto *AdjointNode = Module->create<Mul>(Node->getType(), Adjoint,
-                                           Module->create<Add>(Node->getType(),
-                                                               OneConstant, NegTanh2));
+      Node->getType(), Module->create<Mul>(Node->getType(), Node, Node));
+  auto *AdjointNode = Module->create<Mul>(
+      Node->getType(), Adjoint,
+      Module->create<Add>(Node->getType(), OneConstant, NegTanh2));
   setAdjoint(Value, AdjointNode);
 }
 
@@ -276,8 +275,8 @@ void AutoDiff::visit(BroadcastPtr Node) {
       }
     }
   }
-  auto *AdjointNode = Module->create<Sum>(
-      Value->getType(), Adjoint, ReduceDims);
+  auto *AdjointNode =
+      Module->create<Sum>(Value->getType(), Adjoint, ReduceDims);
   setAdjoint(Value, AdjointNode);
 }
 

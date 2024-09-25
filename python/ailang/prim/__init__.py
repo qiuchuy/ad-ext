@@ -14,4 +14,8 @@ from .._C.libailang import (
     sum,
     tanh,
     transpose,
+    relu,
+    var,
+    maxpool2d,
+    avgpool2d,
 )

@@ -22,9 +22,11 @@ public:
   void visit(ReluPtr Node) override{};
   void visit(MeanPtr Node) override{};
   void visit(SumPtr Node) override;
+  void visit(VariancePtr Node) override{};
   void visit(MatmulPtr Node) override;
   void visit(AddPtr Node) override;
   void visit(Maxpool2dPtr Node) override{};
+  void visit(Avgpool2dPtr Node) override{};
   void visit(CompareOpPtr Node) override{};
   void visit(ConcatPtr Node) override{};
   void visit(ExpPtr Node) override;
@@ -52,7 +54,8 @@ private:
     if (AdjointMap.find(Value) != AdjointMap.end()) {
       // accumulate adjoint
       auto *ValueAdjoint = AdjointMap[Value];
-      auto *NewAdjoint = Module->create<Add>(Adjoint->getType(), Adjoint, ValueAdjoint);
+      auto *NewAdjoint =
+          Module->create<Add>(Adjoint->getType(), Adjoint, ValueAdjoint);
       AdjointMap[Value] = NewAdjoint;
     } else {
       AdjointMap[Value] = Adjoint;

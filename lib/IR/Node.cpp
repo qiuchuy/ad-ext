@@ -217,7 +217,7 @@ std::vector<int> Mean::getShape() {
   }
 }
 
-// Mean
+// Sum
 
 Sum::Sum(const TypePtr &opType, const ValuePtr &inValue,
          const std::vector<int64_t> &dim)
@@ -247,6 +247,35 @@ std::vector<int> Sum::getShape() {
   }
 }
 
+// Variance
+
+Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,
+                   const std::vector<int64_t> &dim, const int ddof)
+    : Node(opType), inValue(inValue), dim(dim), ddof(ddof) {}
+Variance::operator std::string() const {
+  auto prefix =
+      getName() + " = ailang::variance(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Variance::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Variance::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Variance input is not a tensor");
+  }
+}
+
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
     : Node(opType) {
@@ -269,8 +298,15 @@ std::vector<int> Transpose::getShape() {
 }
 
 // Maxpool2d
-Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue)
-    : Node(opType) {
+Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue,
+                     const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+    : Node(opType), window_dimensions(window_dimensions),
+      window_strides(window_strides), base_dilations(base_dilations),
+      window_dilations(window_dilations), padding(padding) {
   this->inValue = inValue;
 }
 Maxpool2d::operator std::string() const {
@@ -279,10 +315,35 @@ Maxpool2d::operator std::string() const {
 }
 void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// Avgpool2d
+Avgpool2d::Avgpool2d(const TypePtr &opType, const ValuePtr &inValue,
+                     const std::vector<int64_t> &window_dimensions,
+                     const std::vector<int64_t> &window_strides,
+                     const std::vector<int64_t> &base_dilations,
+                     const std::vector<int64_t> &window_dilations,
+                     const std::vector<int64_t> &padding)
+    : Node(opType), window_dimensions(window_dimensions),
+      window_strides(window_strides), base_dilations(base_dilations),
+      window_dilations(window_dilations), padding(padding) {
+  this->inValue = inValue;
+}
+Avgpool2d::operator std::string() const {
+  return getName() + " = ailang::avgpool2d(" + getValue()->getName() +
+         "):" + std::string(*getType());
+}
+void Avgpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Convolution
 Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
-                         const ValuePtr &weightValue)
-    : Node(opType) {
+                         const ValuePtr &weightValue,
+                         const std::vector<int64_t> &window_strides,
+                         const std::vector<int64_t> &lhsDilation,
+                         const std::vector<int64_t> &rhsDilation,
+                         const std::vector<int64_t> &padding_args,
+                         const std::vector<int64_t> &window_reversal)
+    : Node(opType), window_strides(window_strides), lhsDilation(lhsDilation),
+      rhsDilation(rhsDilation), padding_args(padding_args),
+      window_reversal(window_reversal) {
   this->inputValue = inputValue;
   this->weightValue = weightValue;
 }
