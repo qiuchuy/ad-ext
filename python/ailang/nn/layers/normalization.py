@@ -32,11 +32,11 @@ class Batchnorm2d(Module):
         self.running_var = np.ones((num_features), dtype=np.float32)
 
     def compute_mean(self, x: al.array):
-        return al.standard.mean(x, [0, 2, 3])
+        return al.mean(x, [0, 2, 3])
 
     def compute_var(self, x: al.array):
         # biased
-        return al.standard.var(x, [0, 2, 3], 0)
+        return al.var(x, [0, 2, 3], 0)
 
     def get_running_mean(self):
         assert self.running_mean is not None, "you can get running_mean after inference"
@@ -57,6 +57,6 @@ class Batchnorm2d(Module):
             self.running_var = al.from_numpy(
                 np.ones((self.num_features), dtype=np.float32)
             )
-        return al.standard.batchnorm2d(
+        return al.batchnorm2d(
             x, self.scale, self.offset, self.running_mean, self.running_var
         )

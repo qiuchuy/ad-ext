@@ -45,8 +45,8 @@ class Linear(Module):
     def __call__(self, x: al.array) -> al.array:
         if "bias" in self:
 
-            x = al.standard.matmul(self.weight, x)
-            x = al.standard.add(x, self.bias)
+            x = al.matmul(self.weight, x)
+            x = al.add(x, self.bias)
         else:
-            x = al.standard.matmul(self.weight, x)
+            x = al.matmul(self.weight, x)
         return x

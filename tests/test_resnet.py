@@ -248,6 +248,7 @@ class AilangResNet(nn.Module):
         self.downsample4 = downsample  # 如果需要调整尺寸则添加下采样层
         self.relu5 = nn.ReLU()
 
+    @al.jit
     def __call__(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -261,7 +262,7 @@ class AilangResNet(nn.Module):
 
         out = self.conv3(out)
         out = self.bn3(out)
-        out = al.standard.add(out, identity)
+        out = al.add(out, identity)
         out = self.relu2(out)
         x = out
         # layer2
@@ -275,7 +276,7 @@ class AilangResNet(nn.Module):
 
         # 如果存在下采样，调整输入的尺寸
         identity2 = self.downsample2(x)
-        out = al.standard.add(out, identity2)
+        out = al.add(out, identity2)
         out = self.relu3(out)
 
         # Layer 3
@@ -289,7 +290,7 @@ class AilangResNet(nn.Module):
         out = self.bn7(out)
 
         identity3 = self.downsample3(identity3)
-        out = al.standard.add(out, identity3)
+        out = al.add(out, identity3)
         out = self.relu4(out)
         # Layer 4
         x = out
@@ -302,7 +303,7 @@ class AilangResNet(nn.Module):
         out = self.bn9(out)
 
         identity4 = self.downsample4(identity4)
-        out = al.standard.add(out, identity4)
+        out = al.add(out, identity4)
 
         out = self.relu4(out)
         return out

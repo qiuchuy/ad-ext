@@ -36,7 +36,7 @@ class Maxpool2d(Module):
         assert (
             len(input.shape) == 4
         ), "[nn.Maxpool2d] input's dims expected to be (N,C,H,W)"
-        y = al.standard.maxpool2d(
+        y = al.maxpool2d(
             input,
             self.kernel_size,
             self.stride,
@@ -78,7 +78,7 @@ class Avgpool2d(Module):
         assert (
             len(input.shape) == 4
         ), "[nn.Avgpool2d] input's dims expected to be (N,C,H,W)"
-        y = al.standard.avgpool2d(
+        y = al.avgpool2d(
             input,
             self.kernel_size,
             self.stride,

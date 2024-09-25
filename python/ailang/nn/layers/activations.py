@@ -19,7 +19,7 @@ class ReLU(Module):
         super().__init__()
 
     def __call__(self, x: al.array):
-        return al.standard.relu(x)
+        return al.relu(x)
 
 
 def sigmoid(x):

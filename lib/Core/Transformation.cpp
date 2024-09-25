@@ -154,7 +154,6 @@ void JITTrace::pack(std::vector<std::shared_ptr<Tracer>> &inputs) {
               Container);
         } else if (ElementType->isFloatType()) {
           std::vector<ValuePtr> FloatValues;
-          LOG_DEBUG("%s", ArrayTracer->toString().c_str());
           for (size_t Offset = 0;
                Offset < ArrayTracer->size() / ArrayTracer->itemsize();
                ++Offset) {
