@@ -290,6 +290,35 @@ std::vector<int> Sum::getShape() {
   }
 }
 
+// Max
+
+Max::Max(const TypePtr &opType, const ValuePtr &inValue,
+         const std::vector<int64_t> &dim)
+    : Node(opType), inValue(inValue), dim(dim) {
+  setUse(inValue, 0);
+}
+Max::operator std::string() const {
+  auto prefix = getName() + " = ailang::max(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Max::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Max::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Max input is not a tensor");
+  }
+}
 // Variance
 
 Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,

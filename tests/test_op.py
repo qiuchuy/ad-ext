@@ -70,6 +70,12 @@ class TestOp:
         c = al.standard.sum(b)
         assert TestOp.numeric_check(c, np.sum(a))
 
+    def test_standard_max(self):
+        a = self.gen_random_nparray((3, 2), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.max(b, [1])
+        assert TestOp.numeric_check(c, np.max(a, 1))
+
     def test_standard_transpose(self):
         a = self.gen_random_nparray((2, 3, 4), np.float32)
         b = al.from_numpy(a)
@@ -97,14 +103,14 @@ class TestOp:
         al_j = al.from_numpy(j)
         r = al.standard.add(i, al_j)
         assert TestOp.numeric_check(r, i + j)
-    
+
     def test_standard_pow(self):
         a = np.array([2, 2]).astype(np.float32)
         b = np.array(3).astype(np.float32)
         c = al.from_numpy(a)
         d = al.from_numpy(b)
         e = al.standard.pow(c, d)
-        TestOp.numeric_check(e, a ** b)
+        TestOp.numeric_check(e, a**b)
 
     def test_standard_sub(self):
         a = self.gen_random_nparray((2, 3), np.float32)

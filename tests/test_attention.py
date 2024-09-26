@@ -17,20 +17,19 @@ class AilangSelfAttention(nn.Module):
         self.value = nn.Linear(d_model, d_model)
         self.fc_out = nn.Linear(d_model, d_model)
 
-    @al.jit
     def __call__(self, x, mask=None):
-        seq_len, d_model = x.shape
+        seq_len, d_model = x.shape  # 6 3
         Q = self.query(x)
         K = self.key(x)
         V = self.value(x)
         r = al.from_numpy(np.full((seq_len, seq_len), self.d_k).astype(np.float32))
-        qk = al.matmul(Q, al.transpose(K, [1, 0]))
-
         sqrt = al.sqrt(r)
-        print(r, qk, sqrt)
+        kt = al.transpose(K)
+        qk = al.matmul(Q, kt)
         scores = al.div(qk, sqrt)
-        attention_weights = al.softmax(scores)
-        out = al.matmul(attention_weights, V)
+
+        # attention_weights = al.softmax(scores)
+        out = al.matmul(scores, V)
         print(out)
         return out
 
@@ -93,7 +92,8 @@ x = np.random.randn(seq_len, d_model).astype(np.float32)
 a = al.from_numpy(x)
 # 初始化自注意力层
 self_attention = AilangSelfAttention(d_model, num_heads)
-
+for i in self_attention.children():
+    print(i)
 # 前向传播
 output = self_attention(a)
 
