@@ -67,8 +67,49 @@ class TestOp:
     def test_standard_sum(self):
         a = self.gen_random_nparray((3, 2), np.float32)
         b = al.from_numpy(a)
-        c = al.standard.sum(b)
-        assert TestOp.numeric_check(c, np.sum(a))
+        c = al.standard.sum(b, [1], True)
+        print(c)
+        assert TestOp.numeric_check(c, np.sum(a, 1, keepdims=True))
+
+    def test_standard_softmax(self):
+        a = self.gen_random_nparray((3, 2), np.float32)
+        b = al.from_numpy(a)
+        t = torch.from_numpy(a)
+        c = al.standard.softmax(b)
+
+        def softmax(z, dim=None):
+            if dim is None:
+                dim = -1
+            z_max = np.max(z, axis=dim, keepdims=True)
+            exp_z = np.exp(z - z_max)
+            sum_exp_z = np.sum(exp_z, axis=dim, keepdims=True)
+            return exp_z / sum_exp_z
+
+        print(c)
+        # print(torch.nn.functional.softmax(t).detach().numpy())
+        # print(softmax(a))
+        assert TestOp.numeric_check(
+            c, softmax(a)
+        )
+
+    def test_standard_so(self):
+        def softmax(x: al.array, dim=None) -> al.array:
+            if dim is None:
+                shape = x.shape
+                dim = [len(shape) - 1]
+            x_max = al.standard.max(x, dim)
+            print("@@@", x_max.shape, x.shape)
+            x_max_broad = al.standard.broadcast_to(x_max, tuple(x.shape))
+            sub = al.standard.add(x, al.standard.neg(x_max_broad))
+            exp_z = al.standard.exp(sub)
+            sum_exp_z = al.standard.sum(exp_z, dim)
+            sum_exp_z_broad = al.standard.broadcast_to(sum_exp_z, tuple(x.shape))
+            return al.standard.div(exp_z, sum_exp_z_broad)
+
+        a = self.gen_random_nparray((3, 2), np.float32)
+        b = al.from_numpy(a)
+        c = softmax(b)
+        print("res", c)
 
     def test_standard_max(self):
         a = self.gen_random_nparray((3, 2), np.float32)

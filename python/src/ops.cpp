@@ -127,17 +127,19 @@ void init_ailang_op(py::module_ &m) {
   m.def(
       "sum",
       [](const std::shared_ptr<ainl::core::Tracer> &input,
-         const std::vector<int64_t> &dim = {}) {
-        return pyunary<ainl::core::SumPrimitive>({input}, dim);
+         const std::vector<int64_t> &dim = {}, const bool keepdims = false) {
+        return pyunary<ainl::core::SumPrimitive>({input}, dim, keepdims);
       },
-      py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
+      py::arg("input"), py::arg("dim"),
+      py::arg("keepdims") = std::vector<int64_t>{});
   m.def(
       "max",
       [](const std::shared_ptr<ainl::core::Tracer> &input,
-         const std::vector<int64_t> &dim = {}) {
-        return pyunary<ainl::core::MaximumPrimitive>({input}, dim);
+         const std::vector<int64_t> &dim = {}, const bool keepdims = false) {
+        return pyunary<ainl::core::MaximumPrimitive>({input}, dim, keepdims);
       },
-      py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
+      py::arg("input"), py::arg("dim"),
+      py::arg("keepdims") = std::vector<int64_t>{});
   m.def("cat",
         [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
            int dim) {

@@ -991,11 +991,11 @@ void SumPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
         "[SumPrimitive::evalCPU] expects exactly one input array.");
   }
   auto input = inputs[0];
-  output = pybind11::cast<Array>(eval_callback["sum"](input, dim));
+  output = pybind11::cast<Array>(eval_callback["sum"](input, dim, keepdims));
 }
 
 TypePtr SumPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  assert(inType->isTensorType() && "sum operator only applies to tensors.");
   auto inType = inputTypes[0];
   TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
   std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
@@ -1003,6 +1003,8 @@ TypePtr SumPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
     if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
       outTensorshape.push_back(inTensorShape[Idx]);
+    } else if (keepdims == true) {
+      outTensorshape.push_back(Literal::create(1));
     }
   }
   TypePtr elementType = inTensorType->getElementType();
@@ -1024,8 +1026,8 @@ void SumPrimitive::jit(const std::vector<JITTracer> &inputs,
   }
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Sum>(
-      outputType, input.value(), dim));
-  output.setTracer(single<SumPrimitive>({input.tracer()}, dim));
+      outputType, input.value(), dim, keepdims));
+  output.setTracer(single<SumPrimitive>({input.tracer()}, dim, keepdims));
 }
 
 void SumPrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -1046,11 +1048,11 @@ void MaximumPrimitive::evalCPU(const std::vector<Array> &inputs,
         "[MaximumPrimitive::evalCPU] expects exactly one input array.");
   }
   auto input = inputs[0];
-  output = pybind11::cast<Array>(eval_callback["max"](input, dim));
+  output = pybind11::cast<Array>(eval_callback["max"](input, dim, keepdims));
 }
 
 TypePtr MaximumPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inType->isTensorType() && "mean operator only applies to tensors.");
+  assert(inType->isTensorType() && "max operator only applies to tensors.");
   auto inType = inputTypes[0];
   TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
   std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
@@ -1058,6 +1060,8 @@ TypePtr MaximumPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
   for (size_t Idx = 0; Idx < inTensorShape.size(); ++Idx) {
     if (std::find(dim.begin(), dim.end(), Idx) == dim.end()) {
       outTensorshape.push_back(inTensorShape[Idx]);
+    } else if (keepdims == true) {
+      outTensorshape.push_back(Literal::create(1));
     }
   }
   TypePtr elementType = inTensorType->getElementType();
@@ -1079,8 +1083,8 @@ void MaximumPrimitive::jit(const std::vector<JITTracer> &inputs,
   }
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Max>(
-      outputType, input.value(), dim));
-  output.setTracer(single<MaximumPrimitive>({input.tracer()}, dim));
+      outputType, input.value(), dim, keepdims));
+  output.setTracer(single<MaximumPrimitive>({input.tracer()}, dim, keepdims));
 }
 
 void MaximumPrimitive::jvp(const std::vector<JVPTracer> &inputs,

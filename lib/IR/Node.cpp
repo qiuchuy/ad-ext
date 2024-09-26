@@ -263,8 +263,8 @@ std::vector<int> Mean::getShape() {
 // Sum
 
 Sum::Sum(const TypePtr &opType, const ValuePtr &inValue,
-         const std::vector<int64_t> &dim)
-    : Node(opType), inValue(inValue), dim(dim) {
+         const std::vector<int64_t> &dim, const bool keepdims)
+    : Node(opType), inValue(inValue), dim(dim), keepdims(keepdims) {
   setUse(inValue, 0);
 }
 Sum::operator std::string() const {
@@ -293,8 +293,8 @@ std::vector<int> Sum::getShape() {
 // Max
 
 Max::Max(const TypePtr &opType, const ValuePtr &inValue,
-         const std::vector<int64_t> &dim)
-    : Node(opType), inValue(inValue), dim(dim) {
+         const std::vector<int64_t> &dim, const bool keepdims)
+    : Node(opType), inValue(inValue), dim(dim), keepdims(keepdims) {
   setUse(inValue, 0);
 }
 Max::operator std::string() const {

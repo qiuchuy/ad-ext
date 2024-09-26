@@ -1,18 +1,7 @@
 import ailang as al
-
-from typing import List, Optional
-from .common import _tensor_member_fn
+from typing import List
 
 
-@_tensor_member_fn
-@al.jit
-def relu(x: al.array) -> al.array:
-    """Computes the relu of a tensor."""
-    return al.prim.relu(x)
-
-
-@_tensor_member_fn
-@al.jit
 def softmax(x: al.array, dim: List[int] = None) -> al.array:
     if dim is None:
         shape = x.shape

@@ -325,9 +325,7 @@ void AutoDiff::visit(BatchNorm2dPtr Node) {
   setAdjoint(Variance, VarAdjoint);
 }
 
-void AutoDiff::visit(Maxpool2dPtr Node) {
-  
-}
+void AutoDiff::visit(Maxpool2dPtr Node) {}
 
 void AutoDiff::visit(ConstantDefPtr Node) {
   // auto *Value = Node->getOperand(0);
@@ -406,7 +404,7 @@ void AutoDiff::visit(BroadcastPtr Node) {
     }
   }
   auto *AdjointNode =
-      Module->create<Sum>(Value->getType(), Adjoint, ReduceDims);
+      Module->create<Sum>(Value->getType(), Adjoint, ReduceDims, false);
   setAdjoint(Value, AdjointNode);
 }
 
@@ -432,7 +430,7 @@ void AutoDiff::visit(MatmulPtr Node) {
   }
   auto *LeftTranspose = Module->create<Transpose>(
       TensorType::create(LeftTensorType->getElementType(), LeftTransposeShape),
-      Left,std::vector<int>{});
+      Left, std::vector<int>{});
   auto RightTensorType = asType<TensorType>(Right->getType());
   auto RightTensorShape = RightTensorType->getShape();
   std::vector<ValuePtr> RightTransposeShape;

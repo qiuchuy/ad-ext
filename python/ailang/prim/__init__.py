@@ -22,3 +22,5 @@ from .._C.libailang import (
     maxpool2d,
     avgpool2d,
 )
+
+from .primop import softmax

@@ -16,22 +16,23 @@ def mean(x: al.array, dim: List[int] = None) -> al.array:
 
 @_tensor_member_fn
 @al.jit
-def sum(x: al.array, dim: List[int] = None) -> al.array:
+def sum(x: al.array, dim: List[int] = None, keepdims=False) -> al.array:
     """Computes the sum of a tensor."""
     if dim is None:
         shape = x.shape
         dim = list(range(len(shape)))
-    return al.prim.sum(x, dim)
+    print("woccccc?", keepdims)
+    return al.prim.sum(x, dim, keepdims)
 
 
 @_tensor_member_fn
 @al.jit
-def max(x: al.array, dim: List[int] = None) -> al.array:
+def max(x: al.array, dim: List[int] = None, keepdims=False) -> al.array:
     """Computes the sum of a tensor."""
     if dim is None:
         shape = x.shape
         dim = list(range(len(shape)))
-    return al.prim.max(x, dim)
+    return al.prim.max(x, dim, keepdims)
 
 
 @_tensor_member_fn
