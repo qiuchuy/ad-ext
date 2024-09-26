@@ -17,20 +17,21 @@ public:
   void visit(ParamPtr Node) override;
   void visit(ReturnOpPtr Node) override;
   void visit(TransposePtr Node) override;
-  void visit(ConvolutionPtr Node) override{};
+  void visit(ConvolutionPtr Node) override {};
   void visit(BatchNorm2dPtr Node) override;
   void visit(ReluPtr Node) override;
   void visit(MeanPtr Node) override;
   void visit(SqrtPtr Node) override;
   void visit(SumPtr Node) override;
+  void visit(MaxPtr Node) override {}
   void visit(VariancePtr Node) override;
   void visit(MatmulPtr Node) override;
   void visit(AddPtr Node) override;
-  void visit(PowPtr Node) override{};
+  void visit(PowPtr Node) override {};
   void visit(Maxpool2dPtr Node) override;
-  void visit(Avgpool2dPtr Node) override{};
-  void visit(CompareOpPtr Node) override{};
-  void visit(ConcatPtr Node) override{};
+  void visit(Avgpool2dPtr Node) override {};
+  void visit(CompareOpPtr Node) override {};
+  void visit(ConcatPtr Node) override {};
   void visit(ExpPtr Node) override;
   void visit(TanhPtr Node) override;
   void visit(NegPtr Node) override;
@@ -38,7 +39,7 @@ public:
   void visit(BroadcastPtr Node) override;
   void visit(MulPtr Node) override;
   void visit(ConstantDefPtr Node) override;
-  void visit(SelectPtr Node) override{};
+  void visit(SelectPtr Node) override {};
 
 private:
   llvm::DenseMap<ValuePtr, ValuePtr> AdjointMap;

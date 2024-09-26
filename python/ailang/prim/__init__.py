@@ -14,6 +14,7 @@ from .._C.libailang import (
     pow,
     relu,
     sum,
+    max,
     tanh,
     transpose,
     relu,

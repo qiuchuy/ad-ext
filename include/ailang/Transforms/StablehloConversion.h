@@ -38,6 +38,7 @@ public:
   void visit(SqrtPtr node) override;
   void visit(MeanPtr node) override;
   void visit(SumPtr node) override;
+  void visit(MaxPtr node) override;
   void visit(VariancePtr node) override;
   void visit(MatmulPtr node) override;
   void visit(AddPtr node) override;

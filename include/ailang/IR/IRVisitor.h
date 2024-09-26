@@ -19,6 +19,7 @@ public:
   virtual void visit(MeanPtr node) = 0;
   virtual void visit(SqrtPtr node) = 0;
   virtual void visit(SumPtr node) = 0;
+  virtual void visit(MaxPtr node) = 0;
   virtual void visit(VariancePtr node) = 0;
   virtual void visit(BatchNorm2dPtr node) = 0;
   virtual void visit(BroadcastPtr node) = 0;

@@ -23,6 +23,7 @@ def mul(x, y):
 def div(x, y):
     return _div(x, y)
 
+
 @element_wise
 def pow(x, y):
     return _pow(x, y)
@@ -41,6 +42,7 @@ _register_eval_callback("mul", standard.mul)
 _register_eval_callback("neg", standard.neg)
 _register_eval_callback("pow", standard.pow)
 _register_eval_callback("sum", standard.sum)
+_register_eval_callback("max", standard.max)
 _register_eval_callback("tanh", standard.tanh)
 _register_eval_callback("transpose", standard.transpose)
 _register_eval_callback("relu", standard.relu)
