@@ -147,12 +147,19 @@ void StableHLOLoweringPass::visit(TransposePtr node) {
   mlir::Value value = valueMap[node->getValue()];
   auto shape = node->getShape();
   std::vector<int64_t> perm;
-  for (size_t i = 0; i < shape.size(); ++i) {
-    perm.push_back(shape.size() - 1 - i);
+  auto axes = node->getAxes();
+  if (axes.size() == 0) {
+    for (size_t i = 0; i < shape.size(); i++) {
+      perm.push_back(shape.size() - 1 - i);
+    }
+  } else {
+    for (size_t i = 0; i < shape.size(); ++i) {
+      perm.push_back(static_cast<int64_t>(axes[i]));
+    }
   }
-  auto op = builder.create<mlir::stablehlo::TransposeOp>(
+  auto Op = builder.create<mlir::stablehlo::TransposeOp>(
       builder.getUnknownLoc(), value, perm);
-  insertValueMapping(node, op);
+  insertValueMapping(node, Op);
 }
 
 void StableHLOLoweringPass::visit(MulPtr node) {
@@ -314,6 +321,13 @@ void StableHLOLoweringPass::visit(ReluPtr node) {
   auto op = builder.create<mlir::stablehlo::MaxOp>(builder.getUnknownLoc(),
                                                    value, zeroValue);
 
+  insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(SqrtPtr node) {
+  mlir::Value value = valueMap[node->getValue()];
+  auto op =
+      builder.create<mlir::stablehlo::SqrtOp>(builder.getUnknownLoc(), value);
   insertValueMapping(node, op);
 }
 

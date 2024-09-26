@@ -13,7 +13,7 @@ public:
   AutoDiff(ModulePtr Module) : Module(Module) {}
   void run(ModulePtr Module) override;
 
-  void visit(NodePtr Node) override{};
+  void visit(NodePtr Node) override {};
   void visit(ParamPtr Node) override;
   void visit(ReturnOpPtr Node) override;
   void visit(TransposePtr Node) override;
@@ -21,6 +21,7 @@ public:
   void visit(BatchNorm2dPtr Node) override;
   void visit(ReluPtr Node) override;
   void visit(MeanPtr Node) override;
+  void visit(SqrtPtr Node) override;
   void visit(SumPtr Node) override;
   void visit(VariancePtr Node) override;
   void visit(MatmulPtr Node) override;

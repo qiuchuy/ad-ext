@@ -9,7 +9,9 @@ torch.set_printoptions(precision=6)
 class TestOp:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
-        return np.allclose(a.tolist(), b.tolist(), rtol=1e-03, atol=1e-06)
+        return np.allclose(
+            a.tolist(), b.tolist(), rtol=1e-03, atol=1e-06, equal_nan=True
+        )
 
     def gen_random_nparray(
         self, shape: typing.Tuple[int], dtype: np.dtype
@@ -50,6 +52,12 @@ class TestOp:
         assert c.strides == (8, 4)
         assert TestOp.numeric_check(c, a[0:1])
 
+    def test_standard_sqrt(self):
+        a = self.gen_random_nparray((3, 3), np.float32)
+        a = np.abs(a)  # you must have this with numeric_check's equal_nan = False
+        b = al.from_numpy(a)
+        assert TestOp.numeric_check(al.standard.sqrt(b), np.sqrt(a))
+
     def test_standard_mean(self):
         a = self.gen_random_nparray((3, 2, 3), np.float32)
         b = al.from_numpy(a)
@@ -62,12 +70,11 @@ class TestOp:
         c = al.standard.sum(b)
         assert TestOp.numeric_check(c, np.sum(a))
 
-
     def test_standard_transpose(self):
-        a = self.gen_random_nparray((2, 3), np.float32)
+        a = self.gen_random_nparray((2, 3, 4), np.float32)
         b = al.from_numpy(a)
         c = al.standard.transpose(b)
-        assert c.shape == (3, 2)
+        assert c.shape == (4, 3, 2)
         assert TestOp.numeric_check(c, a.T)
 
     def test_standard_add(self):

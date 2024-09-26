@@ -4,6 +4,7 @@
 #include "ailang/Utils/Logger.h"
 
 #include <initializer_list>
+#include <memory>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/numpy.h>
@@ -76,15 +77,17 @@ void init_ailang_op(py::module_ &m) {
           return pyunary<SlicePrimitive>({input}, start, end, stride);
         });
 
-  m.def("transpose", [](const std::shared_ptr<Tracer> &input) {
-    return pyunary<TransposePrimitive>({input});
+  m.def("transpose",
+        [](const std::shared_ptr<Tracer> &input, const std::vector<int> &axes = {}) {
+          return pyunary<TransposePrimitive>({input}, axes);
+        });
+  m.def("sqrt", [](const std::shared_ptr<Tracer> &input) {
+    return pyunary<SqrtPrimitive>({input});
   });
-
   m.def("matmul", [](const std::shared_ptr<Tracer> &lhs,
                      const std::shared_ptr<Tracer> &rhs) {
     return pyunary<MatMulPrimitive>({lhs, rhs});
   });
-
   m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
     return pyunary<ainl::core::AddPrimitive>({lhs, rhs});

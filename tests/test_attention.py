@@ -4,6 +4,37 @@ import ailang.nn as nn
 import torch.nn.functional as F
 
 
+class AilangSelfAttention(nn.Module):
+    def __init__(self, d_model, num_heads=1):
+        super().__init__()
+        self.d_model = d_model
+        self.d_k = d_model
+        self.d_k = d_model // num_heads
+        assert d_model % num_heads == 0, "d_model必须能够被num_heads整除"
+
+        self.query = nn.Linear(d_model, d_model)
+        self.key = nn.Linear(d_model, d_model)
+        self.value = nn.Linear(d_model, d_model)
+        self.fc_out = nn.Linear(d_model, d_model)
+
+    @al.jit
+    def __call__(self, x, mask=None):
+        seq_len, d_model = x.shape
+        Q = self.query(x)
+        K = self.key(x)
+        V = self.value(x)
+        r = al.from_numpy(np.full((seq_len, seq_len), self.d_k).astype(np.float32))
+        qk = al.matmul(Q, al.transpose(K, [1, 0]))
+
+        sqrt = al.sqrt(r)
+        print(r, qk, sqrt)
+        scores = al.div(qk, sqrt)
+        attention_weights = al.softmax(scores)
+        out = al.matmul(attention_weights, V)
+        print(out)
+        return out
+
+
 class TorchSelfAttention(torch.nn.Module):
     def __init__(self, d_model, num_heads):
         super(TorchSelfAttention, self).__init__()
@@ -16,7 +47,6 @@ class TorchSelfAttention(torch.nn.Module):
         self.query = torch.nn.Linear(d_model, d_model)
         self.key = torch.nn.Linear(d_model, d_model)
         self.value = torch.nn.Linear(d_model, d_model)
-
         # 输出的线性变换
         self.fc_out = torch.nn.Linear(d_model, d_model)
 
@@ -27,11 +57,6 @@ class TorchSelfAttention(torch.nn.Module):
         Q = self.query(x)
         K = self.key(x)
         V = self.value(x)
-
-        # 分割成多个头
-        Q = Q.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
-        K = K.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
-        V = V.view(batch_size, seq_len, self.num_heads, self.d_k).transpose(1, 2)
 
         # 计算Attention
         scores = torch.matmul(Q, K.transpose(-2, -1)) / torch.sqrt(
@@ -53,29 +78,23 @@ class TorchSelfAttention(torch.nn.Module):
         out = self.fc_out(out)
 
         return out, attention_weights
-    
-    
-class AilangSelfAttention(nn.Module):
-    
-    
-    
-    
+
+
 # 示例用法
-batch_size = 2
-seq_len = 5
-d_model = 128  # 输入序列的维度
-num_heads = 8  # 多头注意力
+batch_size = 1
+seq_len = 6
+d_model = 3  # 输入序列的维度
+num_heads = 1  # 多头注意力
+
+import numpy as np
 
 # 输入序列张量
-x = torch.rand(batch_size, seq_len, d_model)
-
+x = np.random.randn(seq_len, d_model).astype(np.float32)
+a = al.from_numpy(x)
 # 初始化自注意力层
-self_attention = SelfAttention(d_model, num_heads)
+self_attention = AilangSelfAttention(d_model, num_heads)
 
 # 前向传播
-output, attention_weights = self_attention(x)
+output = self_attention(a)
 
-print("输出:", output.shape)  # (batch_size, seq_len, d_model)
-print(
-    "注意力权重:", attention_weights.shape
-)  # (batch_size, num_heads, seq_len, seq_len)
+print("输出:", output)  # (batch_size, seq_len, d_model)

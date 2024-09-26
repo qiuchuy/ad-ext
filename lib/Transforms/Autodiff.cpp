@@ -413,7 +413,9 @@ void AutoDiff::visit(BroadcastPtr Node) {
 void AutoDiff::visit(TransposePtr Node) {
   auto *Value = Node->getValue();
   auto *Adjoint = getAdjoint(Node);
-  auto *AdjointNode = Module->create<Transpose>(Node->getType(), Adjoint);
+  auto axes = Node->getAxes();
+  auto *AdjointNode =
+      Module->create<Transpose>(Node->getType(), Adjoint, std::vector<int>{});
   setAdjoint(Value, AdjointNode);
 }
 
@@ -430,7 +432,7 @@ void AutoDiff::visit(MatmulPtr Node) {
   }
   auto *LeftTranspose = Module->create<Transpose>(
       TensorType::create(LeftTensorType->getElementType(), LeftTransposeShape),
-      Left);
+      Left,std::vector<int>{});
   auto RightTensorType = asType<TensorType>(Right->getType());
   auto RightTensorShape = RightTensorType->getShape();
   std::vector<ValuePtr> RightTransposeShape;
@@ -441,7 +443,7 @@ void AutoDiff::visit(MatmulPtr Node) {
   auto *RightTranspose = Module->create<Transpose>(
       TensorType::create(RightTensorType->getElementType(),
                          RightTransposeShape),
-      Right);
+      Right, std::vector<int>{});
   auto *LeftAdjoint =
       Module->create<Matmul>(Left->getType(), Adjoint, RightTranspose);
   auto *RightAdjoint =

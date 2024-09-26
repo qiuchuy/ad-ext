@@ -14,6 +14,12 @@ def add(x: al.array, y: al.array) -> al.array:
 
 @_tensor_member_fn
 @al.jit
+def sqrt(x: al.array) -> al.array:
+    return al.prim.sqrt(x)
+
+
+@_tensor_member_fn
+@al.jit
 def conv2d(
     input,
     weight,
