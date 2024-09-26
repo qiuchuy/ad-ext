@@ -187,8 +187,17 @@ std::vector<int> Relu::getShape() {
     throw std::runtime_error("ReLU input is not a tensor");
   }
 }
-// Mean
+// Sqrt
+Sqrt::Sqrt(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+  this->inValue = inValue;
+}
+Sqrt::operator std::string() const {
+  return getName() + " = ailang::sqrt(" + getValue()->getName() +
+         "):" + std::string(*getType());
+}
+void Sqrt::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// Mean
 Mean::Mean(const TypePtr &opType, const ValuePtr &inValue,
            const std::vector<int64_t> &dim)
     : Node(opType), inValue(inValue), dim(dim) {
@@ -277,8 +286,9 @@ std::vector<int> Variance::getShape() {
 }
 
 // Transpose
-Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue)
-    : Node(opType) {
+Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue,
+                     const std::vector<int> &axes)
+    : Node(opType), axes(axes) {
   setUse(inValue, 0);
   this->inValue = inValue;
 }
@@ -296,6 +306,8 @@ std::vector<int> Transpose::getShape() {
     throw std::runtime_error("Transpose input is not a tensor");
   }
 }
+
+std::vector<int> Transpose::getAxes() { return axes; }
 
 // Maxpool2d
 Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue,

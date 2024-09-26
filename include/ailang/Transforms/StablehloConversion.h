@@ -35,6 +35,7 @@ public:
   void visit(ConvolutionPtr node) override;
   void visit(BatchNorm2dPtr node) override;
   void visit(ReluPtr node) override;
+  void visit(SqrtPtr node) override;
   void visit(MeanPtr node) override;
   void visit(SumPtr node) override;
   void visit(VariancePtr node) override;

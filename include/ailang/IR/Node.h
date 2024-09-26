@@ -3,6 +3,7 @@
 #include <array>
 #include <bits/stdint-intn.h>
 #include <utility>
+#include <vector>
 
 #include "ailang/IR/Block.h"
 #include "ailang/IR/Type.h"
@@ -60,6 +61,7 @@ public:
     NEG,
     PARAM,
     POW,
+    SQRT,
     RELU,
     RETURN,
     RSHIFT,
@@ -91,7 +93,7 @@ public:
   }
 
   template <typename NodeType, typename... ARGS>
-  static NodePtr create(ARGS &&... args) {
+  static NodePtr create(ARGS &&...args) {
     NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
     return Node;
   }
@@ -240,6 +242,18 @@ public:
 private:
   ValuePtr inValue;
 };
+NODE_PTR_TYPE_DECL(Sqrt)
+class Sqrt : public Node {
+public:
+  Sqrt(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::SQRT; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+
+private:
+  ValuePtr inValue;
+};
 
 NODE_PTR_TYPE_DECL(Mean)
 class Mean : public Node {
@@ -298,16 +312,19 @@ NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
 public:
   // 似乎有同名类
-  Transpose(const TypePtr &nodeType, const ValuePtr &inValue);
+  Transpose(const TypePtr &nodeType, const ValuePtr &inValue,
+            const std::vector<int> &axes);
   NodeKind kind() override { return Node::NodeKind::TRANSPOSE; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   // 在需要将 Transpsoe 类的对象转换为字符串类型时使用。
   ValuePtr getValue() const { return inValue; }
   std::vector<int> getShape();
+  std::vector<int> getAxes();
 
 private:
   ValuePtr inValue;
+  std::vector<int> axes;
 };
 
 NODE_PTR_TYPE_DECL(Maxpool2d)

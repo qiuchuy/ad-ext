@@ -25,14 +25,18 @@ class Linear(Module):
         scale = math.sqrt(1.0 / input_dims)
 
         # 实现随机数据支持之前，先
-        self.weight = self.gen_random_nparray((output_dims, input_dims), np.float32)
+        self.weight = al.from_numpy(
+            self.gen_random_nparray((output_dims, input_dims), np.float32)
+        )
         # self.weight = al.random.uniform(
         #     low=-scale,
         #     high=scale,
         #     shape=(output_dims, input_dims),
         # )
         if bias:
-            self.bias = self.gen_random_nparray((output_dims,), np.float32)
+            self.bias = al.from_numpy(
+                self.gen_random_nparray((output_dims,), np.float32)
+            )
             # self.bias = al.random.uniform(
             #     low=-scale,
             #     high=scale,
@@ -43,9 +47,8 @@ class Linear(Module):
         return f"input_dims={self.weight.shape[1]}, output_dims={self.weight.shape[0]}, bias={'bias' in self}"
 
     def __call__(self, x: al.array) -> al.array:
-        if "bias" in self:
-
-            x = al.matmul(self.weight, x)
+        if "bias" in self.__dict__:
+            x = al.matmul(x,self.weight)
             x = al.add(x, self.bias)
         else:
             x = al.matmul(self.weight, x)

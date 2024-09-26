@@ -4,6 +4,7 @@ import ailang as al
 
 from ailang import array
 
+
 class TestGrad:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
@@ -49,7 +50,7 @@ class TestGrad:
         @al.grad
         def g(x, y):
             return al.sum(al.mul(x, y))
-        
+
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = np.array([[5, 6], [7, 8]], dtype=np.float32)
         c = al.from_numpy(a)
@@ -77,7 +78,7 @@ class TestGrad:
         @al.grad
         def g(x):
             return al.sum(al.neg(x))
-        
+
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
@@ -89,16 +90,19 @@ class TestGrad:
         def g(x):
             y = al.broadcast_to(x, (2, 2))
             return al.sum(y)
-        a = np.array(1.).astype(np.float32)
+
+        a = np.array(1.0).astype(np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
         assert TestGrad.numeric_check(value, np.sum(np.ones((2, 2))))
-        assert TestGrad.numeric_check(grad, np.array(4.))
+        assert TestGrad.numeric_check(grad, np.array(4.0))
 
     def test_transpose(self):
         @al.grad
         def g(x):
-            return al.sum(al.transpose(x))
+            # for
+            return al.sum(al.transpose(x, [1, 0]))
+
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
@@ -109,16 +113,18 @@ class TestGrad:
         @al.grad
         def g(x):
             return al.sum(al.tanh(x))
+
         a = np.array([[0, 0], [0, 0]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
         assert TestGrad.numeric_check(value, np.sum(np.tanh(a)))
-        assert TestGrad.numeric_check(grad, 1 - np.tanh(a)**2)
+        assert TestGrad.numeric_check(grad, 1 - np.tanh(a) ** 2)
 
     def test_matmul(self):
         @al.grad
         def g(x, y):
             return al.sum(al.matmul(x, y))
+
         a = np.array([[1], [2]], dtype=np.float32)
         b = np.array([[3, 4]], dtype=np.float32)
         c = al.from_numpy(a)
@@ -127,7 +133,3 @@ class TestGrad:
         assert TestGrad.numeric_check(value, np.sum(np.matmul(a, b)))
         assert TestGrad.numeric_check(gradx, np.ones((2, 2)) @ b.T)
         assert TestGrad.numeric_check(grady, a.T @ np.ones((2, 2)))
-
-
-    
-    

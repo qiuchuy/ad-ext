@@ -306,6 +306,24 @@ void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
   auto input = inputs[0];
   output = pybind11::cast<Array>(eval_callback["transpose"](input));
 }
+TypePtr TransposePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 1) {
+    throw std::runtime_error(
+        "[TransposePrimitive::inferType] expects exactly one input type.");
+  }
+  auto InputType = inputTypes[0];
+  auto TensorType = asType<ir::TensorType>(InputType);
+  auto InputShape = TensorType->getConcreteShape();
+  std::vector<int> ResultShape = {};
+  for (auto InDim : axes) {
+    ResultShape.push_back(InputShape[InDim]);
+  }
+  std::vector<ValuePtr> ResultShapeValue;
+  for (auto Dim : ResultShape) {
+    ResultShapeValue.push_back(ir::Literal::create(Dim));
+  }
+  return TensorType::create(TensorType->getElementType(), ResultShapeValue);
+}
 
 void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
@@ -317,12 +335,10 @@ void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
   auto input = inputs[0];
   std::vector<ir::TypePtr> inputType = {input.value()->getType()};
   std::vector<ir::ValuePtr> inputValues = {input.value()};
-  auto outputType = ir::resolveContract("transpose", inputType);
-
-  auto module = getTracedModule();
+  auto outputType = inferType(inputType);
   output.setValue(
-      ir::resolveContract("transpose", module, outputType, inputValues));
-  output.setTracer(single<TransposePrimitive>({input.tracer()}));
+      getTracedModule()->create<Transpose>(outputType, input.value(), axes));
+  output.setTracer(single<TransposePrimitive>({input.tracer()}, axes));
 }
 
 void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -564,16 +580,6 @@ void SquarePrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string SquarePrimitive::toString() const { return "Square"; }
 
-// Sqrt
-void SqrtPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
-  evalCPU(inputs, output);
-}
-void SqrtPrimitive::jit(const std::vector<JITTracer> &inputs,
-                        JITTracer &output) {}
-void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
-                        JVPTracer &output) {}
-
-std::string SqrtPrimitive::toString() const { return "Sqrt"; }
 // sigmoid
 void SigmoidPrimitive::eval(const std::vector<Array> &inputs, Array &out) {
   evalCPU(inputs, out);
@@ -745,6 +751,46 @@ void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string ReluPrimitive::toString() const { return "relu"; }
+
+// Sqrt
+void SqrtPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[SqrtPrimitive::evalCPU] expects exactly one input array.");
+  }
+  auto input = inputs[0];
+  output = pybind11::cast<Array>(eval_callback["sqrt"](input));
+}
+TypePtr SqrtPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  assert(inType->isTensorType() && "Sqrt operator only applies to tensors.");
+  auto inType = inputTypes[0];
+  TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
+  std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
+  TypePtr elementType = inTensorType->getElementType();
+  return TensorType::create(elementType, inTensorShape);
+  // copy-construct
+}
+
+void SqrtPrimitive::jit(const std::vector<JITTracer> &inputs,
+                        JITTracer &output) {
+
+  if (inputs.size() != 1) {
+    throw std::invalid_argument(
+        "[SqrtPrimitive::jit] expects exactly one input tracer.");
+  }
+  auto input = inputs[0];
+  auto outputType = inferType({input.value()->getType()});
+  output.setValue(
+      getTracedModule()->getGraph()->create<Sqrt>(outputType, input.value()));
+  output.setTracer(single<SqrtPrimitive>({input.tracer()}));
+}
+void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                        JVPTracer &output) {}
+
+std::string SqrtPrimitive::toString() const { return "Sqrt"; }
 // Mean
 void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
