@@ -8,6 +8,7 @@
 #include "ailang/IR/Type.h"
 #include "ailang/IR/Value.h"
 #include "ailang/Transforms/Pass.h"
+#include "ailang/Transforms/utils.h"
 #include "stablehlo/dialect/StablehloOps.h"
 
 using namespace ainl::ir;
@@ -197,6 +198,135 @@ void AutoDiff::visit(TanhPtr Node) {
       Node->getType(), Adjoint,
       Module->create<Add>(Node->getType(), OneConstant, NegTanh2));
   setAdjoint(Value, AdjointNode);
+}
+
+void AutoDiff::visit(ReluPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *ComapreResult = Module->create<CompareOp>(
+      Node->getType(), Value, Module->createConstantValue(0.f, Node->getType()),
+      CompareOp::CompareType::GT);
+  auto *Adjoint = getAdjoint(Node);
+  auto *SelectResult =
+      Module->create<Select>(Node->getType(), ComapreResult, Adjoint,
+                             Module->createConstantValue(0.f, Node->getType()));
+  setAdjoint(Value, SelectResult);
+}
+
+void AutoDiff::visit(MeanPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto Dim = Node->getDim();
+  auto *Adjoint = getAdjoint(Node);
+  auto AdjointType = asType<TensorType>(Adjoint->getType());
+  auto ValueType = asType<TensorType>(Value->getType());
+  auto *BroadcastedAdjointValue = Module->create<Broadcast>(
+      ValueType, Adjoint, ValueType->getConcreteShape());
+  float NumElements = 1.f;
+  for (auto Axis : Dim) {
+    NumElements *= ValueType->getConcreteShape()[Axis];
+  }
+  auto *Divisor = Module->create<Broadcast>(
+      ValueType, Module->createConstantValue(NumElements, Node->getType()),
+      ValueType->getConcreteShape());
+  auto *AdjointNode =
+      Module->create<Div>(ValueType, BroadcastedAdjointValue, Divisor);
+  setAdjoint(Value, AdjointNode);
+}
+
+void AutoDiff::visit(VariancePtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto Dim = Node->getDim();
+  auto *MeanValue = Module->create<Mean>(Node->getType(), Value, Dim);
+  auto ValueType = asType<TensorType>(Value->getType());
+  auto *BroadcastedMeanValue = Module->create<Broadcast>(
+      ValueType, MeanValue, ValueType->getConcreteShape());
+  auto *SubtractValue = Module->create<Add>(
+      Value->getType(), Value,
+      Module->create<Neg>(Value->getType(), BroadcastedMeanValue));
+  auto *Adjoint = getAdjoint(Node);
+  auto *BroadcastedAdjointValue = Module->create<Broadcast>(
+      ValueType, Adjoint, ValueType->getConcreteShape());
+  float NumElements = 1.f;
+  for (auto Axis : Dim) {
+    NumElements *= ValueType->getConcreteShape()[Axis];
+  }
+  int Ddof = Node->getDdof();
+  if (Ddof) {
+    assert(NumElements > 1.f && "NumElements must be greater than 1");
+    auto *Divisor =
+        Module->createConstantValue(NumElements - 1, Value->getType());
+    auto *MulDivisor = Module->create<Div>(
+        Value->getType(), Module->createConstantValue(2.f, Value->getType()),
+        Divisor);
+    auto *MulSubtractValue =
+        Module->create<Mul>(Value->getType(), MulDivisor, SubtractValue);
+    auto *AdjointNode = Module->create<Mul>(
+        Value->getType(), BroadcastedAdjointValue, MulSubtractValue);
+    setAdjoint(Value, AdjointNode);
+  } else {
+    auto *Divisor = Module->createConstantValue(NumElements, Value->getType());
+    auto *MulDivisor = Module->create<Div>(
+        Value->getType(), Module->createConstantValue(2.f, Value->getType()),
+        Divisor);
+    auto *MulSubtractValue =
+        Module->create<Mul>(Value->getType(), MulDivisor, SubtractValue);
+    auto *AdjointNode = Module->create<Mul>(
+        Value->getType(), BroadcastedAdjointValue, MulSubtractValue);
+    setAdjoint(Value, AdjointNode);
+  }
+}
+
+void AutoDiff::visit(BatchNorm2dPtr Node) {
+  auto *InputValue = Node->getValue();
+  auto *Scale = Node->getScale();
+  auto *Mean = Node->getMean();
+  auto *Variance = Node->getVariance();
+  auto *Offset = Node->getOffset();
+  auto InputValueType = asType<TensorType>(InputValue->getType());
+  auto *BroadcastedMean = Module->create<Broadcast>(
+      Node->getType(), Mean, InputValueType->getConcreteShape());
+  auto *BroadcastedVariance = Module->create<Broadcast>(
+      Node->getType(), Variance, InputValueType->getConcreteShape());
+  auto *BroadcastedScale = Module->create<Broadcast>(
+      Node->getType(), Scale, InputValueType->getConcreteShape());
+  auto *BroadcastedOffset = Module->create<Broadcast>(
+      Node->getType(), Offset, InputValueType->getConcreteShape());
+  auto *SqrtVariance = Module->create<Pow>(
+      Node->getType(),
+      Module->create<Add>(Node->getType(), BroadcastedVariance,
+                          Module->createConstantValue(1e-5f, Node->getType())),
+      Module->createConstantValue(0.5f, Node->getType()));
+  auto *Adjoint = getAdjoint(Node);
+  auto *ScalingDivSqrtVariance =
+      Module->create<Div>(Node->getType(), BroadcastedScale, SqrtVariance);
+  auto *InputValueAdjoint =
+      Module->create<Mul>(Node->getType(), Adjoint, ScalingDivSqrtVariance);
+  auto *MeanAdjoint = Module->create<Mul>(
+      Node->getType(), Adjoint,
+      Module->create<Neg>(Node->getType(), ScalingDivSqrtVariance));
+  setAdjoint(InputValue, InputValueAdjoint);
+  setAdjoint(Mean, MeanAdjoint);
+  auto *InputValueSubMean = Module->create<Add>(
+      Node->getType(), InputValue,
+      Module->create<Neg>(Node->getType(), BroadcastedMean));
+  auto *InputValuePow = Module->create<Pow>(
+      Node->getType(),
+      Module->create<Add>(Node->getType(), BroadcastedVariance,
+                          Module->createConstantValue(1e-5f, Node->getType())),
+      Module->createConstantValue(-1.5f, Node->getType()));
+  auto *VarAdjoint = Module->create<Mul>(
+      Node->getType(), Adjoint,
+      Module->create<Mul>(
+          Node->getType(), BroadcastedScale,
+          Module->create<Mul>(Node->getType(), InputValueSubMean,
+                              Module->create<Mul>(Node->getType(),
+                                                  Module->createConstantValue(
+                                                      -0.5f, Node->getType()),
+                                                  InputValuePow))));
+  setAdjoint(Variance, VarAdjoint);
+}
+
+void AutoDiff::visit(Maxpool2dPtr Node) {
+  
 }
 
 void AutoDiff::visit(ConstantDefPtr Node) {

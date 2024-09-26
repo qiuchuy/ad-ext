@@ -65,6 +65,7 @@ void IdentityPrimitive::jvp(const std::vector<JVPTracer> &inputs,
 
 std::string IdentityPrimitive::toString() const { return "Identity"; }
 
+// Add
 void AddPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
 }
@@ -104,6 +105,62 @@ void AddPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                        JVPTracer &output) {}
 
 std::string AddPrimitive::toString() const { return "Add"; }
+
+// Pow
+void PowPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void PowPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[PowPrimitive::evalCPU] expects exactly two input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  output = pybind11::cast<Array>(eval_callback["pow"](input0, input1));
+}
+
+TypePtr PowPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 2) {
+    throw std::invalid_argument(
+        "[PowPrimitive::inferType] expects exactly two input types.");
+  }
+  auto input0 = inputTypes[0];
+  auto input1 = inputTypes[1];
+  auto tensor0 = asType<TensorType>(input0);
+  auto tensor1 = asType<TensorType>(input1);
+  if (tensor0->getConcreteShape() != tensor1->getConcreteShape()) {
+    throw std::invalid_argument("[PowPrimitive::inferType] expects two tensor "
+                                "types with the same shape.");
+  }
+  return tensor0;
+}
+
+void PowPrimitive::jit(const std::vector<JITTracer> &inputs,
+                       JITTracer &output) {
+  if (inputs.size() != 2) {
+    throw std::invalid_argument(
+        "[PowPrimitive::jit] expects exactly two input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType()};
+  // type inference
+  auto outputType = inferType(inputType);
+
+  auto Module = getTracedModule();
+
+  output.setValue(
+      Module->create<Pow>(outputType, input0.value(), input1.value()));
+  output.setTracer(single<PowPrimitive>({input0.tracer(), input1.tracer()}));
+}
+
+void PowPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                       JVPTracer &output) {}
+
+std::string PowPrimitive::toString() const { return "Pow"; }
 
 void FlattenPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
@@ -745,6 +802,69 @@ void ReluPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 
 std::string ReluPrimitive::toString() const { return "relu"; }
+
+// Select
+
+void SelectPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
+  evalCPU(inputs, output);
+}
+
+void SelectPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
+  if (inputs.size() != 3) {
+    throw std::invalid_argument(
+        "[SelectPrimitive::evalCPU] expects exactly three input arrays.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  auto input2 = inputs[2];
+  output =
+      pybind11::cast<Array>(eval_callback["select"](input0, input1, input2));
+}
+
+TypePtr SelectPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 3) {
+    throw std::runtime_error(
+        "[SelectPrimitive::inferType] expects exactly three input types.");
+  }
+
+  auto InputTensorType0 = asType<TensorType>(inputTypes[0]);
+  assert(InputTensorType0->getElementType() ==
+             SingletonTypePtr<BoolType>::get() &&
+         "The first input of select operator should be a boolean tensor.");
+
+  assert(inputTypes[1]->equals(inputTypes[2]) &&
+         "The second and third input of select operator should have the same "
+         "type.");
+
+  return inputTypes[1];
+}
+
+void SelectPrimitive::jit(const std::vector<JITTracer> &inputs,
+                          JITTracer &output) {
+  if (inputs.size() != 3) {
+    throw std::invalid_argument(
+        "[SelectPrimitive::jit] expects exactly three input tracers.");
+  }
+  auto input0 = inputs[0];
+  auto input1 = inputs[1];
+  auto input2 = inputs[2];
+  std::vector<ir::TypePtr> inputType = {input0.value()->getType(),
+                                        input1.value()->getType(),
+                                        input2.value()->getType()};
+  std::vector<ir::ValuePtr> inputValues = {input0.value(), input1.value(),
+                                           input2.value()};
+  auto outputType = inferType(inputType);
+  output.setValue(getTracedModule()->create<Select>(
+      outputType, input0.value(), input1.value(), input2.value()));
+  output.setTracer(single<SelectPrimitive>(
+      {input0.tracer(), input1.tracer(), input2.tracer()}));
+}
+
+void SelectPrimitive::jvp(const std::vector<JVPTracer> &inputs,
+                          JVPTracer &output) {}
+
+std::string SelectPrimitive::toString() const { return "select"; }
+
 // Mean
 void MeanPrimitive::eval(const std::vector<Array> &inputs, Array &output) {
   evalCPU(inputs, output);
@@ -779,6 +899,12 @@ void MeanPrimitive::jit(const std::vector<JITTracer> &inputs,
         "[MeanPrimitive::jit] expects exactly one input tracer.");
   }
   auto input = inputs[0];
+  auto InputTensorType = asType<TensorType>(input.value()->getType());
+  if (dim.empty()) {
+    for (size_t i = 0; i < InputTensorType->getShape().size(); i++) {
+      dim.push_back(i);
+    }
+  }
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Mean>(
       outputType, input.value(), dim));
@@ -851,7 +977,7 @@ void SumPrimitive::jit(const std::vector<JITTracer> &inputs,
                        JITTracer &output) {
   if (inputs.size() != 1) {
     throw std::invalid_argument(
-        "[MeanPrimitive::jit] expects exactly one input tracer.");
+        "[SumPrimitive::jit] expects exactly one input tracer.");
   }
   auto input = inputs[0];
   auto InputTensorType = asType<TensorType>(input.value()->getType());
@@ -863,7 +989,7 @@ void SumPrimitive::jit(const std::vector<JITTracer> &inputs,
   auto outputType = inferType({input.value()->getType()});
   output.setValue(getTracedModule()->getGraph()->create<Sum>(
       outputType, input.value(), dim));
-  output.setTracer(single<MeanPrimitive>({input.tracer()}, dim));
+  output.setTracer(single<SumPrimitive>({input.tracer()}, dim));
 }
 
 void SumPrimitive::jvp(const std::vector<JVPTracer> &inputs,

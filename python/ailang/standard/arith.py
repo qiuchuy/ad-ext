@@ -166,6 +166,14 @@ def mul(x: al.array, y: al.array) -> al.array:
 
 @_tensor_member_fn
 @al.jit
+@element_wise
+def pow(x: al.array, y: al.array) -> al.array:
+    """Power."""
+    return al.prim.pow(x, y)
+
+
+@_tensor_member_fn
+@al.jit
 def matmul(x: al.array, y: al.array) -> al.array:
     """Matrix multiplication."""
     return al.prim.matmul(x, y)

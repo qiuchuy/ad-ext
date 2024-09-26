@@ -14,6 +14,7 @@ public:
   virtual void visit(ConvolutionPtr node) = 0;
   virtual void visit(MatmulPtr node) = 0;
   virtual void visit(AddPtr node) = 0;
+  virtual void visit(PowPtr node) = 0;
   virtual void visit(ReluPtr node) = 0;
   virtual void visit(MeanPtr node) = 0;
   virtual void visit(SumPtr node) = 0;
@@ -29,6 +30,7 @@ public:
   virtual void visit(NegPtr node) = 0;
   virtual void visit(DivPtr node) = 0;
   virtual void visit(MulPtr node) = 0;
+  virtual void visit(SelectPtr node) = 0;
   virtual void visit(ConstantDefPtr node) = 0;
   ~IRVisitor() = default;
 };

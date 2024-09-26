@@ -115,9 +115,9 @@ void init_ailang_op(py::module_ &m) {
   });
 
   m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input,
-                   const std::vector<int64_t> &dim) {
+                   const std::vector<int64_t> &dim = {}) {
     return pyunary<ainl::core::MeanPrimitive>({input}, dim);
-  });
+  }, py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
   m.def("sum", [](const std::shared_ptr<ainl::core::Tracer> &input,
                   const std::vector<int64_t> &dim = {}) {
       return pyunary<ainl::core::SumPrimitive>({input}, dim);
@@ -143,6 +143,10 @@ void init_ailang_op(py::module_ &m) {
   m.def("mul", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
     return pyunary<ainl::core::MultiplyPrimitive>({lhs, rhs});
+  });
+  m.def("pow", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
+                  const std::shared_ptr<ainl::core::Tracer> &rhs) {
+    return pyunary<ainl::core::PowPrimitive>({lhs, rhs});
   });
   m.def("broadcast_to", [](const std::shared_ptr<ainl::core::Tracer> &input,
                            const std::vector<int> &shape) {

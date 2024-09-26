@@ -10,6 +10,7 @@ from .._C.libailang import (
     mean,
     mul,
     neg,
+    pow,
     relu,
     sum,
     tanh,

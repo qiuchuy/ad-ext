@@ -226,6 +226,14 @@ void StableHLOLoweringPass::visit(AddPtr node) {
   insertValueMapping(node, op);
 }
 
+void StableHLOLoweringPass::visit(PowPtr Node) {
+  auto LHS = valueMap[Node->getOperand(0)];
+  auto RHS = valueMap[Node->getOperand(1)];
+  auto Op = builder.create<mlir::stablehlo::PowOp>(builder.getUnknownLoc(),
+                                                   LHS.getType(), LHS, RHS);
+  insertValueMapping(Node, Op);
+}
+
 void StableHLOLoweringPass::visit(ConvolutionPtr node) {
   mlir::Value input = valueMap[node->getInputValue()];
   mlir::Value weight = valueMap[node->getWeightValue()];
@@ -723,6 +731,16 @@ void StableHLOLoweringPass::visit(CompareOpPtr node) {
   auto op = builder.create<mlir::stablehlo::CompareOp>(
       builder.getUnknownLoc(), lhs, rhs, direction, compareType);
   insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(SelectPtr Node) {
+  auto Condition = valueMap[Node->getOperand(0)];
+  auto TrueValue = valueMap[Node->getOperand(1)];
+  auto FalseValue = valueMap[Node->getOperand(2)];
+  auto Op = builder.create<mlir::stablehlo::SelectOp>(
+      builder.getUnknownLoc(), TrueValue.getType(), Condition, TrueValue,
+      FalseValue);
+  insertValueMapping(Node, Op);
 }
 
 void StableHLOLoweringPass::visit(ConcatPtr Node) {

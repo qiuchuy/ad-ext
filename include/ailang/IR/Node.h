@@ -147,6 +147,15 @@ private:
   TypePtr contentType;
 };
 
+NODE_PTR_TYPE_DECL(Pow)
+class Pow : public Node {
+public:
+  Pow(const TypePtr &nodeType, const ValuePtr &lhs, const ValuePtr &rhs);
+  NodeKind kind() override { return Node::NodeKind::POW; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+};
+
 NODE_PTR_TYPE_DECL(ReturnOp)
 class ReturnOp : public Node {
 public:
@@ -239,6 +248,21 @@ public:
 
 private:
   ValuePtr inValue;
+};
+
+NODE_PTR_TYPE_DECL(Select)
+class Select : public Node {
+public:
+  Select(const TypePtr &nodeType, const ValuePtr &condition,
+         const ValuePtr &trueValue, const ValuePtr &falseValue);
+  NodeKind kind() override { return Node::NodeKind::IF; }
+  explicit operator std::string() const override;
+  void accept(IRVisitor *visitor) override;
+
+private:
+  ValuePtr condition;
+  ValuePtr trueValue;
+  ValuePtr falseValue;
 };
 
 NODE_PTR_TYPE_DECL(Mean)

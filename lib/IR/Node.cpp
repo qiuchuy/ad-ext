@@ -147,6 +147,20 @@ Add::operator std::string() const {
 
 void Add::accept(IRVisitor *visitor) { visitor->visit(this); }
 
+// Pow
+Pow::Pow(const TypePtr &opType, const ValuePtr &lhs, const ValuePtr &rhs)
+    : Node(opType) {
+  setUse(lhs, 0);
+  setUse(rhs, 1);
+}
+
+Pow::operator std::string() const {
+  return getName() + " = ailang::pow(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + "): " + std::string(*getType());
+}
+
+void Pow::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 Broadcast::Broadcast(const TypePtr &opType, const ValuePtr &inValue,
                      std::vector<int> shape)
     : Node(opType), inValue(inValue), shape(shape) {
@@ -172,6 +186,7 @@ void Broadcast::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Relu
 Relu::Relu(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+  setUse(inValue, 0);
   this->inValue = inValue;
 }
 Relu::operator std::string() const {
@@ -187,6 +202,25 @@ std::vector<int> Relu::getShape() {
     throw std::runtime_error("ReLU input is not a tensor");
   }
 }
+
+// Select
+Select::Select(const TypePtr &opType, const ValuePtr &condition,
+               const ValuePtr &trueValue, const ValuePtr &falseValue)
+    : Node(opType), condition(condition), trueValue(trueValue),
+      falseValue(falseValue) {
+  setUse(condition, 0);
+  setUse(trueValue, 1);
+  setUse(falseValue, 2);
+}
+
+Select::operator std::string() const {
+  return getName() + " = ailang::select(" + getOperand(0)->getName() + ", " +
+         getOperand(1)->getName() + ", " + getOperand(2)->getName() +
+         "):" + std::string(*getType());
+}
+
+void Select::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Mean
 
 Mean::Mean(const TypePtr &opType, const ValuePtr &inValue,
@@ -251,7 +285,9 @@ std::vector<int> Sum::getShape() {
 
 Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,
                    const std::vector<int64_t> &dim, const int ddof)
-    : Node(opType), inValue(inValue), dim(dim), ddof(ddof) {}
+    : Node(opType), inValue(inValue), dim(dim), ddof(ddof) {
+  setUse(inValue, 0);
+}
 Variance::operator std::string() const {
   auto prefix =
       getName() + " = ailang::variance(" + getValue()->getName() + ")";
