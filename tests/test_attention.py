@@ -25,14 +25,11 @@ class AilangSelfAttention(nn.Module):
         V = self.value(x)
         r = al.from_numpy(np.full((seq_len, seq_len), self.d_k).astype(np.float32))
         qk = al.matmul(Q, al.transpose(K, [1, 0]))
-
         sqrt = al.sqrt(r)
-        print(r, qk, sqrt)
         scores = al.div(qk, sqrt)
-        attention_weights = al.softmax(scores)
-        out = al.matmul(attention_weights, V)
-        print(out)
-        return out
+        # attention_weights = al.softmax(scores)
+        out = al.matmul(scores, V)
+        return Q
 
 
 class TorchSelfAttention(torch.nn.Module):
@@ -97,4 +94,4 @@ self_attention = AilangSelfAttention(d_model, num_heads)
 # 前向传播
 output = self_attention(a)
 
-print("输出:", output)  # (batch_size, seq_len, d_model)
+# print("输出:", output)  # (batch_size, seq_len, d_model)

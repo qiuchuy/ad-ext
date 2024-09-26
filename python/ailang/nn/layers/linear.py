@@ -50,6 +50,7 @@ class Linear(Module):
         if "bias" in self.__dict__:
             x = al.matmul(x,self.weight)
             x = al.add(x, self.bias)
+            return x
         else:
-            x = al.matmul(self.weight, x)
+            x = al.matmul(x, self.weight)
         return x

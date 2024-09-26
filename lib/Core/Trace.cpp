@@ -98,7 +98,6 @@ findTopTrace(const std::vector<std::shared_ptr<Tracer>> &tracers) {
 
   auto maxIndex = std::distance(levels.begin(),
                                 std::max_element(levels.begin(), levels.end()));
-
   return tracers[maxIndex]->trace();
 }
 } // namespace ainl::core
