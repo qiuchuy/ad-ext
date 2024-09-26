@@ -306,6 +306,24 @@ void TransposePrimitive::evalCPU(const std::vector<Array> &inputs,
   auto input = inputs[0];
   output = pybind11::cast<Array>(eval_callback["transpose"](input));
 }
+TypePtr TransposePrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
+  if (inputTypes.size() != 1) {
+    throw std::runtime_error(
+        "[TransposePrimitive::inferType] expects exactly one input type.");
+  }
+  auto InputType = inputTypes[0];
+  auto TensorType = asType<ir::TensorType>(InputType);
+  auto InputShape = TensorType->getConcreteShape();
+  std::vector<int> ResultShape = {};
+  for (auto InDim : axes) {
+    ResultShape.push_back(InputShape[InDim]);
+  }
+  std::vector<ValuePtr> ResultShapeValue;
+  for (auto Dim : ResultShape) {
+    ResultShapeValue.push_back(ir::Literal::create(Dim));
+  }
+  return TensorType::create(TensorType->getElementType(), ResultShapeValue);
+}
 
 void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
                              JITTracer &output) {
@@ -317,12 +335,10 @@ void TransposePrimitive::jit(const std::vector<JITTracer> &inputs,
   auto input = inputs[0];
   std::vector<ir::TypePtr> inputType = {input.value()->getType()};
   std::vector<ir::ValuePtr> inputValues = {input.value()};
-  auto outputType = ir::resolveContract("transpose", inputType);
-
-  auto module = getTracedModule();
+  auto outputType = inferType(inputType);
   output.setValue(
-      ir::resolveContract("transpose", module, outputType, inputValues));
-  output.setTracer(single<TransposePrimitive>({input.tracer()}));
+      getTracedModule()->create<Transpose>(outputType, input.value(), axes));
+  output.setTracer(single<TransposePrimitive>({input.tracer()}, axes));
 }
 
 void TransposePrimitive::jvp(const std::vector<JVPTracer> &inputs,
@@ -749,8 +765,7 @@ void SqrtPrimitive::evalCPU(const std::vector<Array> &inputs, Array &output) {
   output = pybind11::cast<Array>(eval_callback["sqrt"](input));
 }
 TypePtr SqrtPrimitive::inferType(const std::vector<TypePtr> &inputTypes) {
-  assert(inType->isTensorType() &&
-         "Sqrt operator only applies to tensors.");
+  assert(inType->isTensorType() && "Sqrt operator only applies to tensors.");
   auto inType = inputTypes[0];
   TensorTypePtr inTensorType = SAFE_TYPE_DOWNCAST(inType, TensorType);
   std::vector<ValuePtr> inTensorShape = inTensorType->getShape();
@@ -768,10 +783,10 @@ void SqrtPrimitive::jit(const std::vector<JITTracer> &inputs,
   }
   auto input = inputs[0];
   auto outputType = inferType({input.value()->getType()});
-  output.setValue(getTracedModule()->getGraph()->create<Sqrt>(
-      outputType, input.value()));
+  output.setValue(
+      getTracedModule()->getGraph()->create<Sqrt>(outputType, input.value()));
   output.setTracer(single<SqrtPrimitive>({input.tracer()}));
-                        }
+}
 void SqrtPrimitive::jvp(const std::vector<JVPTracer> &inputs,
                         JVPTracer &output) {}
 

@@ -18,7 +18,8 @@ ValuePtr transposeNodeContract(const ModulePtr &module, const TypePtr &nodeType,
   if (!inValue->getType()->isTensorType()) {
     throw ainl::core::AINLError("transpose operator only applies to tensors.");
   }
-  return module->getGraph()->create<Transpose>(nodeType, inValue);
+  throw std::invalid_argument("[transposeNodeContract] not implement now.");
+  // return module->getGraph()->create<Transpose>(nodeType, inValue);
 }
 ValuePtr matmulNodeContract(const ModulePtr &module, const TypePtr &nodeType,
                             const ValuePtr &lhs, const ValuePtr &rhs) {

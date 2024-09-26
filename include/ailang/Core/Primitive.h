@@ -180,14 +180,16 @@ private:
 class TransposePrimitive : public UnaryPrimitive {
 public:
   TransposePrimitive() = default;
+  explicit TransposePrimitive(const std::vector<int> &axes) : axes(axes) {}
   void eval(const std::vector<Array> &inputs, Array &output) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;
   void jvp(const std::vector<JVPTracer> &inputs, JVPTracer &output) override;
-  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override {
-    throw std::runtime_error("Not implemented");
-  };
+  TypePtr inferType(const std::vector<TypePtr> &inputTypes) override;
   std::string toString() const override;
+
+private:
+  std::vector<int> axes;
 };
 
 class MatMulPrimitive : public UnaryPrimitive {
@@ -205,7 +207,7 @@ public:
 
 class AsTypePrimitive : public UnaryPrimitive {
 public:
-  explicit AsTypePrimitive(Dtype dtype) : dtype_(dtype){};
+  explicit AsTypePrimitive(Dtype dtype) : dtype_(dtype) {};
   AsTypePrimitive() = default;
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override {}
@@ -362,7 +364,7 @@ public:
                                 const std::vector<int64_t> &window_reversal)
       : window_strides(window_strides), lhsDilation(lhsDilation),
         rhsDilation(rhsDilation), padding_args(padding_args),
-        window_reversal(window_reversal){};
+        window_reversal(window_reversal) {};
   void eval(const std::vector<Array> &inputs, Array &out) override;
   void evalCPU(const std::vector<Array> &inputs, Array &output) override;
   void jit(const std::vector<JITTracer> &inputs, JITTracer &output) override;

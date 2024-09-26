@@ -23,8 +23,8 @@ public:
   void visit(SqrtPtr Node) override {};
   void visit(MeanPtr Node) override {};
   void visit(VariancePtr Node) override {};
-  void visit(MatmulPtr Node) override {};
-  void visit(AddPtr Node) override {};
+  void visit(MatmulPtr Node) override;
+  void visit(AddPtr Node) override;
   void visit(SumPtr Node) override;
   void visit(Maxpool2dPtr Node) override {};
   void visit(Avgpool2dPtr Node) override {};

@@ -70,12 +70,11 @@ class TestOp:
         c = al.standard.sum(b)
         assert TestOp.numeric_check(c, np.sum(a))
 
-
     def test_standard_transpose(self):
-        a = self.gen_random_nparray((2, 3), np.float32)
+        a = self.gen_random_nparray((2, 3, 4), np.float32)
         b = al.from_numpy(a)
         c = al.standard.transpose(b)
-        assert c.shape == (3, 2)
+        assert c.shape == (4,3, 2)
         assert TestOp.numeric_check(c, a.T)
 
     def test_standard_add(self):
