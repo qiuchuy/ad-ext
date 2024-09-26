@@ -29,7 +29,7 @@ class AilangSelfAttention(nn.Module):
         scores = al.div(qk, sqrt)
         # attention_weights = al.softmax(scores)
         out = al.matmul(scores, V)
-        return Q
+        return out
 
 
 class TorchSelfAttention(torch.nn.Module):
