@@ -12,10 +12,9 @@ class TestOp:
         return np.allclose(
             a.tolist(), b.tolist(), rtol=1e-03, atol=1e-06, equal_nan=True
         )
+
     @staticmethod
-    def gen_random_nparray(
-        shape: typing.Tuple[int], dtype: np.dtype
-    ) -> np.ndarray:
+    def gen_random_nparray(shape: typing.Tuple[int], dtype: np.dtype) -> np.ndarray:
         if len(shape):
             random_nparray = np.random.randn(*shape).astype(dtype)
             return random_nparray
@@ -88,28 +87,7 @@ class TestOp:
         print(c)
         # print(torch.nn.functional.softmax(t).detach().numpy())
         # print(softmax(a))
-        assert TestOp.numeric_check(
-            c, softmax(a)
-        )
-
-    def test_standard_so(self):
-        def softmax(x: al.array, dim=None) -> al.array:
-            if dim is None:
-                shape = x.shape
-                dim = [len(shape) - 1]
-            x_max = al.standard.max(x, dim)
-            print("@@@", x_max.shape, x.shape)
-            x_max_broad = al.standard.broadcast_to(x_max, tuple(x.shape))
-            sub = al.standard.add(x, al.standard.neg(x_max_broad))
-            exp_z = al.standard.exp(sub)
-            sum_exp_z = al.standard.sum(exp_z, dim)
-            sum_exp_z_broad = al.standard.broadcast_to(sum_exp_z, tuple(x.shape))
-            return al.standard.div(exp_z, sum_exp_z_broad)
-
-        a = self.gen_random_nparray((3, 2), np.float32)
-        b = al.from_numpy(a)
-        c = softmax(b)
-        print("res", c)
+        assert TestOp.numeric_check(c, softmax(a))
 
     def test_standard_max(self):
         a = self.gen_random_nparray((3, 2), np.float32)
@@ -146,13 +124,12 @@ class TestOp:
         assert TestOp.numeric_check(r, i + j)
 
         q = TestOp.gen_random_nparray((2, 3), np.float32)
-        w = TestOp.gen_random_nparray((3, ), np.float32) 
+        w = TestOp.gen_random_nparray((3,), np.float32)
         al_q = al.from_numpy(q)
         al_w = al.from_numpy(w)
         t = al.standard.add(al_q, al_w)
         assert TestOp.numeric_check(t, q + w)
 
-    
     def test_standard_pow(self):
         a = np.array([2, 2]).astype(np.float32)
         b = np.array(3).astype(np.float32)
