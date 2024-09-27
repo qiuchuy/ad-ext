@@ -170,6 +170,15 @@ void AutoDiff::visit(ReturnOpPtr Node) {
   }
 }
 
+void AutoDiff::visit(SqrtPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto *Adjoint = getAdjoint(Node);
+  auto *AdjointNode = Module->create<Div>(
+      Node->getType(), Adjoint,
+      Module->create<Mul>(Node->getType(), Module->createConstantValue(2.f, Node->getType()), Node));
+  setAdjoint(Value, AdjointNode);
+}
+
 void AutoDiff::visit(SumPtr Node) {
   auto *Value = Node->getOperand(0);
   auto Dim = Node->getDim();

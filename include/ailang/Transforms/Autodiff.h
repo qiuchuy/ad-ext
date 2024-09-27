@@ -21,7 +21,7 @@ public:
   void visit(BatchNorm2dPtr Node) override;
   void visit(ReluPtr Node) override;
   void visit(MeanPtr Node) override;
-  void visit(SqrtPtr Node) override {};
+  void visit(SqrtPtr Node) override;
   void visit(SumPtr Node) override;
   void visit(MaxPtr Node) override {}
   void visit(VariancePtr Node) override;

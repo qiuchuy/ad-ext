@@ -91,7 +91,6 @@ void init_ailang_op(py::module_ &m) {
   m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
     return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
-    return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
   });
   m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
                      const std::shared_ptr<ainl::core::Tracer> &weightValue,

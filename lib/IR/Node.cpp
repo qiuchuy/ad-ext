@@ -223,6 +223,7 @@ void Select::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Sqrt
 Sqrt::Sqrt(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+  setUse(inValue, 0);
   this->inValue = inValue;
 }
 Sqrt::operator std::string() const {
