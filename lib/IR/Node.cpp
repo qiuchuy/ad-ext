@@ -223,6 +223,7 @@ void Select::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Sqrt
 Sqrt::Sqrt(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
+  setUse(inValue, 0);
   this->inValue = inValue;
 }
 Sqrt::operator std::string() const {
@@ -263,8 +264,8 @@ std::vector<int> Mean::getShape() {
 // Sum
 
 Sum::Sum(const TypePtr &opType, const ValuePtr &inValue,
-         const std::vector<int64_t> &dim)
-    : Node(opType), inValue(inValue), dim(dim) {
+         const std::vector<int64_t> &dim, const bool keepdims)
+    : Node(opType), inValue(inValue), dim(dim), keepdims(keepdims) {
   setUse(inValue, 0);
 }
 Sum::operator std::string() const {
@@ -290,6 +291,35 @@ std::vector<int> Sum::getShape() {
   }
 }
 
+// Max
+
+Max::Max(const TypePtr &opType, const ValuePtr &inValue,
+         const std::vector<int64_t> &dim, const bool keepdims)
+    : Node(opType), inValue(inValue), dim(dim), keepdims(keepdims) {
+  setUse(inValue, 0);
+}
+Max::operator std::string() const {
+  auto prefix = getName() + " = ailang::max(" + getValue()->getName() + ")";
+  std::string postfix = "<dim=[";
+  for (auto d : dim) {
+    if (d == dim.back())
+      postfix += std::to_string(d) + "]>";
+    else
+      postfix += std::to_string(d) + ",";
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Max::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+std::vector<int> Max::getShape() {
+  if (auto tensorType = dynamic_cast<TensorType *>(inValue->getType().get())) {
+    return tensorType->getConcreteShape();
+  } else {
+    throw std::runtime_error("Max input is not a tensor");
+  }
+}
 // Variance
 
 Variance::Variance(const TypePtr &opType, const ValuePtr &inValue,

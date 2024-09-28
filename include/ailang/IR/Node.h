@@ -300,19 +300,38 @@ NODE_PTR_TYPE_DECL(Sum)
 class Sum : public Node {
 public:
   Sum(const TypePtr &nodeType, const ValuePtr &inValue,
-      const std::vector<int64_t> &dim);
+      const std::vector<int64_t> &dim, const bool keepdims);
   NodeKind kind() override { return Node::NodeKind::MEAN; }
   explicit operator std::string() const override;
   ValuePtr getValue() const { return inValue; }
   void accept(IRVisitor *visitor) override;
   std::vector<int64_t> getDim() { return dim; };
   std::vector<int> getShape();
+  bool getKeepdims() { return keepdims; }
 
 private:
   ValuePtr inValue;
   std::vector<int64_t> dim;
+  bool keepdims;
 };
+NODE_PTR_TYPE_DECL(Max)
+class Max : public Node {
+public:
+  Max(const TypePtr &nodeType, const ValuePtr &inValue,
+      const std::vector<int64_t> &dim, const bool keepdims);
+  NodeKind kind() override { return Node::NodeKind::MEAN; }
+  explicit operator std::string() const override;
+  ValuePtr getValue() const { return inValue; }
+  void accept(IRVisitor *visitor) override;
+  std::vector<int64_t> getDim() { return dim; };
+  std::vector<int> getShape();
+  bool getKeepdims() { return keepdims; }
 
+private:
+  ValuePtr inValue;
+  std::vector<int64_t> dim;
+  bool keepdims;
+};
 NODE_PTR_TYPE_DECL(Variance)
 class Variance : public Node {
 public:

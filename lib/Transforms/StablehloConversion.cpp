@@ -427,9 +427,27 @@ void StableHLOLoweringPass::visit(MeanPtr node) {
 
 void StableHLOLoweringPass::visit(SumPtr node) {
   auto CurrentBlock = builder.getInsertionBlock();
-  auto ResultType = createRankedTensorTypeFromTensorType(
-      node->getType(), *theModule.getContext());
+  bool keepdims = node->getKeepdims();
   mlir::Value value = valueMap[node->getValue()];
+  auto dims = node->getDim();
+  mlir::Type ElementType =
+      value.getType().cast<mlir::TensorType>().getElementType();
+  std::vector<int> inShape = node->getShape();
+  mlir::RankedTensorType ResultType;
+  if (keepdims == false)
+    ResultType = createRankedTensorTypeFromTensorType(node->getType(),
+                                                      *theModule.getContext());
+  else {
+    std::vector<int64_t> resultTensorShape;
+    for (size_t Idx = 0; Idx < inShape.size(); ++Idx) {
+      if (std::find(dims.begin(), dims.end(), Idx) == dims.end()) {
+        resultTensorShape.push_back(static_cast<int64_t>(inShape[Idx]));
+      }
+    }
+
+    ResultType = mlir::RankedTensorType::get(
+        mlir::ArrayRef<int64_t>(resultTensorShape), ElementType);
+  }
   mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
       builder.getUnknownLoc(),
       builder.getZeroAttr(ResultType.getElementType()));
@@ -439,8 +457,6 @@ void StableHLOLoweringPass::visit(SumPtr node) {
   auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
       builder.getUnknownLoc(), ResultType, inputs, initValues, dimensions);
   auto *Body = builder.createBlock(&reduceOp.getBodyRegion());
-  mlir::Type ElementType =
-      value.getType().cast<mlir::TensorType>().getElementType();
   mlir::Value Element = Body->addArgument(
       mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
   mlir::Value Accumulator = Body->addArgument(
@@ -452,9 +468,90 @@ void StableHLOLoweringPass::visit(SumPtr node) {
   builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
                                             AddResult.getResult());
   builder.setInsertionPointToEnd(CurrentBlock);
-  insertValueMapping(node, reduceOp->getResult(0));
+  auto res = reduceOp->getResult(0);
+  std::vector<int64_t> reshapeTensorShape;
+  if (keepdims) {
+    for (size_t Idx = 0; Idx < inShape.size(); ++Idx) {
+      if (std::find(dims.begin(), dims.end(), Idx) == dims.end()) {
+        reshapeTensorShape.push_back(static_cast<int64_t>(inShape[Idx]));
+      } else {
+        reshapeTensorShape.push_back(1);
+      }
+    }
+
+    mlir::RankedTensorType reshapeTensorType = mlir::RankedTensorType::get(
+        mlir::ArrayRef<int64_t>(reshapeTensorShape), ElementType);
+    auto op = builder.create<mlir::stablehlo::ReshapeOp>(
+        builder.getUnknownLoc(), reshapeTensorType, reduceOp->getResult(0));
+    insertValueMapping(node, op);
+  } else {
+    insertValueMapping(node, res);
+  }
 }
 
+void StableHLOLoweringPass::visit(MaxPtr node) {
+  auto CurrentBlock = builder.getInsertionBlock();
+  bool keepdims = node->getKeepdims();
+  mlir::Value value = valueMap[node->getValue()];
+  auto dims = node->getDim();
+  mlir::Type ElementType =
+      value.getType().cast<mlir::TensorType>().getElementType();
+  std::vector<int> inShape = node->getShape();
+  mlir::RankedTensorType ResultType;
+  if (keepdims == false)
+    ResultType = createRankedTensorTypeFromTensorType(node->getType(),
+                                                      *theModule.getContext());
+  else {
+    std::vector<int64_t> resultTensorShape;
+    for (size_t Idx = 0; Idx < inShape.size(); ++Idx) {
+      if (std::find(dims.begin(), dims.end(), Idx) == dims.end()) {
+        resultTensorShape.push_back(static_cast<int64_t>(inShape[Idx]));
+      }
+    }
+
+    ResultType = mlir::RankedTensorType::get(
+        mlir::ArrayRef<int64_t>(resultTensorShape), ElementType);
+  }
+  mlir::Value initValue = builder.create<mlir::stablehlo::ConstantOp>(
+      builder.getUnknownLoc(),
+      builder.getZeroAttr(ResultType.getElementType()));
+  llvm::SmallVector<mlir::Value, 1> inputs = {value};
+  llvm::SmallVector<mlir::Value, 1> initValues = {initValue};
+  auto dimensions = builder.getDenseI64ArrayAttr(node->getDim());
+  auto reduceOp = builder.create<mlir::stablehlo::ReduceOp>(
+      builder.getUnknownLoc(), ResultType, inputs, initValues, dimensions);
+  auto *Body = builder.createBlock(&reduceOp.getBodyRegion());
+  mlir::Value Element = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  mlir::Value Accumulator = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  builder.setInsertionPointToEnd(Body);
+  std::vector<mlir::Value> AddArgs = {Element, Accumulator};
+  auto AddResult =
+      builder.create<mlir::stablehlo::MaxOp>(builder.getUnknownLoc(), AddArgs);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddResult.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+  auto res = reduceOp->getResult(0);
+  std::vector<int64_t> reshapeTensorShape;
+  if (keepdims) {
+    for (size_t Idx = 0; Idx < inShape.size(); ++Idx) {
+      if (std::find(dims.begin(), dims.end(), Idx) == dims.end()) {
+        reshapeTensorShape.push_back(static_cast<int64_t>(inShape[Idx]));
+      } else {
+        reshapeTensorShape.push_back(1);
+      }
+    }
+
+    mlir::RankedTensorType reshapeTensorType = mlir::RankedTensorType::get(
+        mlir::ArrayRef<int64_t>(reshapeTensorShape), ElementType);
+    auto op = builder.create<mlir::stablehlo::ReshapeOp>(
+        builder.getUnknownLoc(), reshapeTensorType, reduceOp->getResult(0));
+    insertValueMapping(node, op);
+  } else {
+    insertValueMapping(node, res);
+  }
+}
 void StableHLOLoweringPass::visit(VariancePtr node) {
   auto CurrentBlock = builder.getInsertionBlock();
   auto ResultType = createRankedTensorTypeFromTensorType(

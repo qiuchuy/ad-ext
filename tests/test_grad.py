@@ -92,6 +92,16 @@ class TestGrad:
         value, grad = g(b)
         assert TestGrad.numeric_check(grad, -np.ones_like(a))
 
+    def test_sqrt(self):
+        @al.grad
+        def g(x):
+            return al.sum(al.sqrt(x))
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        assert TestGrad.numeric_check(grad, 0.5 / np.sqrt(a))
+
     def test_broadcast(self):
         @al.grad
         def g(x):

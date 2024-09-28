@@ -146,8 +146,12 @@ def element_wise(f):
         array1, array2 = args
         if not isinstance(array1, al.tracer):
             array1 = al.create_tracer(array1)
+        else:
+            array1 = al.promote_tracer(array1)
         if not isinstance(array2, al.tracer):
             array2 = al.create_tracer(array2)
+        else:
+            array2 = al.promote_tracer(array2)
         shape1 = list(array1.shape)
         shape2 = list(array2.shape)
         broadcasted_shape, array1_need_broadcast, array2_need_broadcast = (

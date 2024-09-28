@@ -14,6 +14,7 @@ from .._C.libailang import (
     pow,
     relu,
     sum,
+    max,
     tanh,
     transpose,
     relu,
@@ -21,3 +22,5 @@ from .._C.libailang import (
     maxpool2d,
     avgpool2d,
 )
+
+from .primop import softmax

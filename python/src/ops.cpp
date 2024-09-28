@@ -77,10 +77,10 @@ void init_ailang_op(py::module_ &m) {
           return pyunary<SlicePrimitive>({input}, start, end, stride);
         });
 
-  m.def("transpose",
-        [](const std::shared_ptr<Tracer> &input, const std::vector<int> &axes = {}) {
-          return pyunary<TransposePrimitive>({input}, axes);
-        });
+  m.def("transpose", [](const std::shared_ptr<Tracer> &input,
+                        const std::vector<int> &axes = {}) {
+    return pyunary<TransposePrimitive>({input}, axes);
+  });
   m.def("sqrt", [](const std::shared_ptr<Tracer> &input) {
     return pyunary<SqrtPrimitive>({input});
   });
@@ -90,7 +90,6 @@ void init_ailang_op(py::module_ &m) {
   });
   m.def("add", [](const std::shared_ptr<ainl::core::Tracer> &lhs,
                   const std::shared_ptr<ainl::core::Tracer> &rhs) {
-    return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
     return pyunary<ainl::core::AddPrimitive>({lhs, rhs});
   });
   m.def("conv2d", [](const std::shared_ptr<ainl::core::Tracer> &inputValue,
@@ -117,14 +116,29 @@ void init_ailang_op(py::module_ &m) {
         {input, scale, offset, mean, variance});
   });
 
-  m.def("mean", [](const std::shared_ptr<ainl::core::Tracer> &input,
-                   const std::vector<int64_t> &dim = {}) {
-    return pyunary<ainl::core::MeanPrimitive>({input}, dim);
-  }, py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
-  m.def("sum", [](const std::shared_ptr<ainl::core::Tracer> &input,
-                  const std::vector<int64_t> &dim = {}) {
-      return pyunary<ainl::core::SumPrimitive>({input}, dim);
-  }, py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
+  m.def(
+      "mean",
+      [](const std::shared_ptr<ainl::core::Tracer> &input,
+         const std::vector<int64_t> &dim = {}) {
+        return pyunary<ainl::core::MeanPrimitive>({input}, dim);
+      },
+      py::arg("input"), py::arg("dim") = std::vector<int64_t>{});
+  m.def(
+      "sum",
+      [](const std::shared_ptr<ainl::core::Tracer> &input,
+         const std::vector<int64_t> &dim = {}, const bool keepdims = false) {
+        return pyunary<ainl::core::SumPrimitive>({input}, dim, keepdims);
+      },
+      py::arg("input"), py::arg("dim"),
+      py::arg("keepdims") = std::vector<int64_t>{});
+  m.def(
+      "max",
+      [](const std::shared_ptr<ainl::core::Tracer> &input,
+         const std::vector<int64_t> &dim = {}, const bool keepdims = false) {
+        return pyunary<ainl::core::MaximumPrimitive>({input}, dim, keepdims);
+      },
+      py::arg("input"), py::arg("dim"),
+      py::arg("keepdims") = std::vector<int64_t>{});
   m.def("cat",
         [](const std::vector<std::shared_ptr<ainl::core::Tracer>> &inputs,
            int dim) {
