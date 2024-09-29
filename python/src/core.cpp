@@ -578,10 +578,4 @@ void init_ailang_core(py::module &m) {
     }
   });
 
-  m.def("promote_tracer", [](py::object &tracer) {
-    auto object_tracer = tracer.cast<std::shared_ptr<Tracer>>();
-    std::vector<std::shared_ptr<Tracer>> promoted_tracer = {object_tracer};
-    getCurrentTrace()->pack(promoted_tracer);
-    return py::cast(promoted_tracer[0]);
-  });
 }

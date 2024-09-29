@@ -25,8 +25,6 @@ public:
   BaseTrace(BaseTrace &&other) = delete;
   BaseTrace &operator=(const BaseTrace &other) = delete;
   BaseTrace &operator=(BaseTrace &&other) = delete;
-  static void enableJITEagerEval();
-  static void disableJITEagerEval();
   virtual ~BaseTrace() = default;
   virtual void pack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;
   virtual void unpack(std::vector<std::shared_ptr<Tracer>> &inputs) = 0;

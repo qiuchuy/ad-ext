@@ -129,8 +129,8 @@ void init_ailang_op(py::module_ &m) {
          const std::vector<int64_t> &dim = {}, const bool keepdims = false) {
         return pyunary<ainl::core::SumPrimitive>({input}, dim, keepdims);
       },
-      py::arg("input"), py::arg("dim"),
-      py::arg("keepdims") = std::vector<int64_t>{});
+      py::arg("input"), py::arg("dim") = std::vector<int64_t>{},
+      py::arg("keepdims") = false);
   m.def(
       "max",
       [](const std::shared_ptr<ainl::core::Tracer> &input,

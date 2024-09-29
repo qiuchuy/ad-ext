@@ -192,8 +192,6 @@ class TestGrad:
         torch_input.requires_grad = True
         t = tc_bn(torch_input).sum()
         t.backward()
-        print(grad)
-        print(torch_input.grad)
         assert TestGrad.numeric_check(grad, torch_input.grad.detach().numpy())
 
     # def test_conv2d(self):

@@ -27,7 +27,6 @@ class TorchSelfAttention(torch.nn.Module):
         Q = self.query(x)
         K = self.key(x)
         V = self.value(x)
-        print("torch", Q, K, V)
         sqrt_d_k = torch.sqrt(torch.tensor(self.d_k, dtype=torch.float32))
         qk = torch.matmul(Q, K.transpose(-2, -1)) / sqrt_d_k
         attention_weights = F.softmax(qk, dim=-1)
@@ -74,12 +73,12 @@ class AilangSelfAttention(nn.Module):
         self.fc_out.weight = al.from_numpy(pd["fc_out.weight"])
         self.fc_out.bias = al.from_numpy(pd["fc_out.bias"])
 
+    @al.jit
     def __call__(self, x, mask=None):
-        seq_len, d_model = x.shape  # 6 3
+        # seq_len, d_model = x.shape  # 6 3
         Q = self.query(x)
         K = self.key(x)
         V = self.value(x)
-        print("ailang", Q, K, V)
         r = al.from_numpy(np.full((seq_len, seq_len), self.d_k).astype(np.float32))
         sqrt = al.sqrt(r)
         kt = al.transpose(K, [1, 0])
@@ -103,4 +102,4 @@ def test_attention():
     ailang_model = AilangSelfAttention(d_model, num_heads)
     ailang_res = ailang_model(a)
     torch_res = torch_model(t)
-    numeric_check(ailang_res, torch_res.detach().numpy())
+    assert numeric_check(ailang_res, torch_res.detach().numpy())

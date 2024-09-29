@@ -66,9 +66,12 @@ Tracer::Tracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
 
 void Tracer::eval() {
   LOG_DEBUG("%s", "Starting evaluating tracers as a subgraph.");
-  auto trace = findTopTrace(inputs());
   std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
-      [&recursion, &trace](std::shared_ptr<Tracer> tracer) -> void {
+      [&recursion](std::shared_ptr<Tracer> tracer) -> void {
+    auto trace = findTopTrace(tracer->inputs());
+  LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
+                              trace->toString())
+                      .c_str());
     if (tracer->evaluated()) {
       return;
     } else {
@@ -84,9 +87,7 @@ void Tracer::eval() {
     }
   };
 
-  LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
-                              trace->toString())
-                      .c_str());
+
   recursion(shared_from_this());
 }
 

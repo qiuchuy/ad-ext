@@ -11,9 +11,6 @@ namespace ainl::core {
 
 BaseTrace::BaseTrace(int level, TraceMode mode) : level(level), mode(mode) {}
 
-void BaseTrace::enableJITEagerEval() { JITTracer::eager_ = true; }
-void BaseTrace::disableJITEagerEval() { JITTracer::eager_ = false; }
-
 EvaluationTrace::EvaluationTrace(int level)
     : BaseTrace(level, BaseTrace::TraceMode::eval) {}
 

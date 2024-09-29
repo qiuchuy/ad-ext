@@ -25,8 +25,6 @@ public:
   create(const std::vector<std::shared_ptr<Tracer>> &inputs,
          const std::shared_ptr<Primitive> &prim) {
     auto tracer = std::make_shared<JITTracer>(inputs, prim);
-    if (eager_)
-      tracer->eval();
     return tracer;
   }
   bool evaluated() const override;
@@ -48,7 +46,6 @@ public:
 private:
   std::shared_ptr<Tracer> tracer_;
   ir::ValuePtr value_;
-  static bool eager_;
 };
 
 class JVPTracer : public Tracer {
