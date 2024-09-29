@@ -61,8 +61,6 @@ void AutoDiff::visit(ParamPtr Node) {
         if (ParamShape.empty()) {
           auto *Adjoint = Module->create<ConstantDef>(
               ParamType, TupleContainer::create({Literal::create(0.f)}));
-          // [TODO] FIXME
-          // auto *Dummy = Module->create<Exp>(ParamType, Param);
           setAdjoint(Param, Adjoint);
           ModuleReturns.push_back(Adjoint);
         } else {
@@ -76,8 +74,6 @@ void AutoDiff::visit(ParamPtr Node) {
           }
           auto *ParamGradient = Module->create<ConstantDef>(
               ParamType, TupleContainer::create(InitGradients));
-          // [TODO] FIXME
-          // auto *Dummy = Module->create<Exp>(ParamType, Param);
           setAdjoint(Param, ParamGradient);
           ModuleReturns.push_back(ParamGradient);
         }
@@ -100,8 +96,6 @@ void AutoDiff::visit(ParamPtr Node) {
       if (ParamShape.empty()) {
         auto *Adjoint = Module->create<ConstantDef>(
             ParamType, TupleContainer::create({Literal::create(0.f)}));
-        // [TODO] FIXME
-        // auto *Dummy = Module->create<Exp>(ParamType, Params[0]);
         setAdjoint(Params[0], Adjoint);
         ModuleReturns.push_back(Adjoint);
       } else {
@@ -115,8 +109,6 @@ void AutoDiff::visit(ParamPtr Node) {
         }
         auto *ParamGradient = Module->create<ConstantDef>(
             ParamType, TupleContainer::create(InitGradients));
-        // [TODO] FIXME
-        // auto *Dummy = Module->create<Exp>(ParamType, Params[0]);
         setAdjoint(Params[0], ParamGradient);
         ModuleReturns.push_back(ParamGradient);
       }
@@ -175,7 +167,9 @@ void AutoDiff::visit(SqrtPtr Node) {
   auto *Adjoint = getAdjoint(Node);
   auto *AdjointNode = Module->create<Div>(
       Node->getType(), Adjoint,
-      Module->create<Mul>(Node->getType(), Module->createConstantValue(2.f, Node->getType()), Node));
+      Module->create<Mul>(Node->getType(),
+                          Module->createConstantValue(2.f, Node->getType()),
+                          Node));
   setAdjoint(Value, AdjointNode);
 }
 
@@ -188,6 +182,23 @@ void AutoDiff::visit(SumPtr Node) {
   auto *BroadcastedAdjointValue = Module->create<Broadcast>(
       ValueType, Adjoint, ValueType->getConcreteShape());
   setAdjoint(Value, BroadcastedAdjointValue);
+}
+
+void AutoDiff::visit(MaxPtr Node) {
+  auto *Value = Node->getOperand(0);
+  auto Dim = Node->getDim();
+  auto ValueTensorType = asType<TensorType>(Value->getType());
+  auto *BroadcastedMaxValue = Module->create<Broadcast>(
+      ValueTensorType, Node, ValueTensorType->getConcreteShape());
+  auto *CompareValue = Module->create<CompareOp>(
+      Value->getType(), Value, BroadcastedMaxValue, CompareOp::CompareType::GE);
+  auto *Adjoint = getAdjoint(Node);
+  auto *BroadcastedAdjoint = Module->create<Broadcast>(
+      ValueTensorType, Adjoint, ValueTensorType->getConcreteShape());
+  auto *SelectedAdjoint = Module->create<Select>(
+      BroadcastedAdjoint->getType(), CompareValue, BroadcastedAdjoint,
+      Module->createConstantValue(0.f, BroadcastedAdjoint->getType()));
+  setAdjoint(Value, SelectedAdjoint);
 }
 
 void AutoDiff::visit(ExpPtr Node) {
@@ -405,24 +416,39 @@ void AutoDiff::visit(BroadcastPtr Node) {
     for (size_t Idx = 0; Idx < BroadcastShape.size(); Idx++) {
       ReduceDims.push_back(Idx);
     }
+    auto *AdjointNode =
+        Module->create<Sum>(Value->getType(), Adjoint, ReduceDims, false);
+    setAdjoint(Value, AdjointNode);
   } else {
-    for (size_t Idx = 0; Idx < Shape.size(); Idx++) {
-      if (Shape[Idx] != BroadcastShape[Idx]) {
-        ReduceDims.push_back(Idx);
+    if (Shape.size() == BroadcastShape.size()) {
+      for (size_t Idx = 0; Idx < Shape.size(); Idx++) {
+        if (Shape[Shape.size() - Idx - 1] !=
+            BroadcastShape[Shape.size() - Idx - 1]) {
+          ReduceDims.push_back(Shape.size() - Idx - 1);
+        }
       }
+      auto *AdjointNode =
+          Module->create<Sum>(Value->getType(), Adjoint, ReduceDims, true);
+      setAdjoint(Value, AdjointNode);
+    } else {
+      for (size_t Idx = 0; Idx < Shape.size(); Idx++) {
+        if (Shape[Shape.size() - Idx - 1] !=
+            BroadcastShape[Shape.size() - Idx - 1]) {
+          ReduceDims.push_back(Idx);
+        }
+      }
+      auto *AdjointNode =
+          Module->create<Sum>(Value->getType(), Adjoint, ReduceDims, false);
+      setAdjoint(Value, AdjointNode);
     }
   }
-  auto *AdjointNode =
-      Module->create<Sum>(Value->getType(), Adjoint, ReduceDims, false);
-  setAdjoint(Value, AdjointNode);
 }
 
 void AutoDiff::visit(TransposePtr Node) {
   auto *Value = Node->getValue();
   auto *Adjoint = getAdjoint(Node);
-  auto axes = Node->getAxes();
-  auto *AdjointNode =
-      Module->create<Transpose>(Node->getType(), Adjoint, std::vector<int>{});
+  auto Axes = Node->getAxes();
+  auto *AdjointNode = Module->create<Transpose>(Node->getType(), Adjoint, Axes);
   setAdjoint(Value, AdjointNode);
 }
 

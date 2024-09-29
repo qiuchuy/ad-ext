@@ -194,6 +194,45 @@ class TestGrad:
         t.backward()
         assert TestGrad.numeric_check(grad, torch_input.grad.detach().numpy())
 
+    def test_max(self):
+        @al.grad
+        def g(x):
+            return al.sum(al.max(x, [0, 1], True))
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        assert TestGrad.numeric_check(grad, np.array([[0, 0], [0, 1]]))
+
+    def test_sum(self):
+        @al.grad
+        def g(x):
+            return al.sum(al.sum(x, [0, 1], True))
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        assert TestGrad.numeric_check(grad, np.ones_like(a))
+
+    def test_softmax(self):
+        @al.grad
+        def g(x):
+            return al.sum(al.prim.softmax(x, dim=[1]))
+
+        def torch_softmax(x):
+            exp_x = torch.exp(x)
+            sum_exp_x = torch.sum(exp_x, dim=1).reshape(-1, 1)
+            return torch.div(exp_x, sum_exp_x)
+
+        a = np.array([[1, 2], [3, 4]], dtype=np.float32)
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        torch_input = torch.from_numpy(a)
+        torch_input.requires_grad = True
+        torch_output = torch.sum(torch_softmax(torch_input))
+        torch_output.backward()
+        assert TestGrad.numeric_check(grad, torch_input.grad.detach().numpy())
+
     # def test_conv2d(self):
     #     @al.grad
     #     def g(x, y):

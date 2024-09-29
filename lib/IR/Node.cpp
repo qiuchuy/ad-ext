@@ -277,6 +277,7 @@ Sum::operator std::string() const {
     else
       postfix += std::to_string(d) + ",";
   }
+  postfix += "<keepdim:" + std::to_string(keepdims) + ">";
   postfix += ":" + std::string(*getType());
   return prefix + postfix;
 }
@@ -307,6 +308,7 @@ Max::operator std::string() const {
     else
       postfix += std::to_string(d) + ",";
   }
+  postfix += "<keepdim:" + std::to_string(keepdims) + ">";
   postfix += ":" + std::string(*getType());
   return prefix + postfix;
 }

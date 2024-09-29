@@ -69,9 +69,9 @@ void Tracer::eval() {
   std::function<void(std::shared_ptr<Tracer> tracer)> recursion =
       [&recursion](std::shared_ptr<Tracer> tracer) -> void {
     auto trace = findTopTrace(tracer->inputs());
-  LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
-                              trace->toString())
-                      .c_str());
+    LOG_DEBUG("%s", std::string("[eval] Current program transformation: " +
+                                trace->toString())
+                        .c_str());
     if (tracer->evaluated()) {
       return;
     } else {
@@ -86,7 +86,6 @@ void Tracer::eval() {
       }
     }
   };
-
 
   recursion(shared_from_this());
 }

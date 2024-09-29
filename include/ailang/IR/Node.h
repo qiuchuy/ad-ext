@@ -93,7 +93,7 @@ public:
   }
 
   template <typename NodeType, typename... ARGS>
-  static NodePtr create(ARGS &&...args) {
+  static NodePtr create(ARGS &&... args) {
     NodePtr Node = new NodeType(std::forward<ARGS>(args)...);
     return Node;
   }

@@ -185,11 +185,8 @@ void JITTrace::process(const std::shared_ptr<Primitive> &prim,
                        const std::vector<std::shared_ptr<Tracer>> &outputs) {
   auto PackedInputs = inputs;
   pack(PackedInputs);
-  LOG_DEBUG("%s", "[jit] processing");
   auto arrays = convertTracerVector<JITTracer>(PackedInputs);
-  LOG_DEBUG("%s", "[jit] processing");
   auto outputTracers = convertTracerVector<JITTracer>(outputs);
-  LOG_DEBUG("%s", "[jit] processing");
   prim->jit(arrays, outputTracers);
   update(outputs, outputTracers);
 }
