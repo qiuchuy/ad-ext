@@ -105,8 +105,8 @@ void StableHLOLoweringPass::run(ModulePtr module) {
       builder.setInsertionPointToEnd(function.addBlock());
     }
     for (auto node : *block) {
-      // LOG_DEBUG("[pass] Lowering [%s] down to stablehlo",
-      //           std::string(*node).c_str());
+      LOG_DEBUG("[pass] Lowering [%s] down to stablehlo",
+                std::string(*node).c_str());
       node->accept(this);
     }
   }
@@ -159,6 +159,16 @@ void StableHLOLoweringPass::visit(TransposePtr node) {
   }
   auto Op = builder.create<mlir::stablehlo::TransposeOp>(
       builder.getUnknownLoc(), value, perm);
+  insertValueMapping(node, Op);
+}
+
+void StableHLOLoweringPass::visit(ReshapePtr node) {
+  mlir::Value value = valueMap[node->getOperand(0)];
+  auto Op = builder.create<mlir::stablehlo::ReshapeOp>(
+      builder.getUnknownLoc(),
+      createRankedTensorTypeFromTensorType(node->getType(),
+                                           *theModule->getContext()),
+      value);
   insertValueMapping(node, Op);
 }
 
@@ -329,6 +339,32 @@ void StableHLOLoweringPass::visit(SqrtPtr node) {
   auto op =
       builder.create<mlir::stablehlo::SqrtOp>(builder.getUnknownLoc(), value);
   insertValueMapping(node, op);
+}
+
+void StableHLOLoweringPass::visit(ReversePtr Node) {
+  mlir::Value Value = valueMap[Node->getOperand(0)];
+  auto Axes = Node->getAxes();
+  std::vector<int64_t> I64Axes = {Axes.begin(), Axes.end()};
+  auto Op = builder.create<mlir::stablehlo::ReverseOp>(
+      builder.getUnknownLoc(), Value,
+      convertI64VectorToDenseI64ArrayAttr(builder, I64Axes));
+  insertValueMapping(Node, Op);
+}
+
+void StableHLOLoweringPass::visit(SlicePtr node) {
+  mlir::Value Value = valueMap[node->getOperand(0)];
+  auto Starts = node->getStarts();
+  std::vector<int64_t> I64Starts = {Starts.begin(), Starts.end()};
+  auto Ends = node->getEnds();
+  std::vector<int64_t> I64Ends = {Ends.begin(), Ends.end()};
+  auto Strides = node->getStrides();
+  std::vector<int64_t> I64Strides = {Strides.begin(), Strides.end()};
+  auto Op = builder.create<mlir::stablehlo::SliceOp>(
+      builder.getUnknownLoc(), Value,
+      convertI64VectorToDenseI64ArrayAttr(builder, I64Starts),
+      convertI64VectorToDenseI64ArrayAttr(builder, I64Ends),
+      convertI64VectorToDenseI64ArrayAttr(builder, I64Strides));
+  insertValueMapping(node, Op);
 }
 
 mlir::Value computeReduce(mlir::Location loc, mlir::TypeRange resultType,
@@ -732,6 +768,68 @@ void StableHLOLoweringPass::visit(Maxpool2dPtr node) {
   insertValueMapping(node, ReduceWindowOp->getResult(0));
 }
 
+void StableHLOLoweringPass::visit(ScatterAddMaxPtr node) {
+  mlir::Value Operand = valueMap[node->getOperand(0)];
+  mlir::Value Source = valueMap[node->getOperand(1)];
+  mlir::Value InitValue = valueMap[node->getOperand(2)];
+  // auto Op = builder.create<mlir::stablehlo::SelectAndScatterOp>(
+  //     builder.getUnknownLoc(), value, indices, updates);
+  // insertValueMapping(node, Op);
+  auto *CurrentBlock = builder.getInsertionBlock();
+  mlir::stablehlo::SelectAndScatterOp();
+  auto ScatterAddMaxArgs = node->getArgs();
+  auto WindowDimensions =
+      convertI64VectorToDenseI64ArrayAttr(builder, ScatterAddMaxArgs[0]);
+  auto WindowStrides =
+      convertI64VectorToDenseI64ArrayAttr(builder, ScatterAddMaxArgs[1]);
+  auto PaddingArgs = ScatterAddMaxArgs[2];
+  auto PaddingTensorType =
+      mlir::RankedTensorType::get({4, 2}, builder.getIntegerType(64));
+  mlir::DenseIntElementsAttr Padding =
+      mlir::DenseIntElementsAttr::get(PaddingTensorType, PaddingArgs);
+  auto Op = builder.create<mlir::stablehlo::SelectAndScatterOp>(
+      builder.getUnknownLoc(), Operand.getType(), Operand, Source, InitValue,
+      WindowDimensions, WindowStrides, Padding);
+
+  auto *Body = builder.createBlock(&Op.getSelect());
+  builder.setInsertionPointToEnd(Body);
+  auto ElementType =
+      Operand.getType().cast<mlir::TensorType>().getElementType();
+  auto CompareArg0 = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  auto CompareArg1 = Body->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  auto CompareDirection = mlir::stablehlo::ComparisonDirection::GE;
+  mlir::stablehlo::ComparisonType CompareType;
+  if (auto OperandTensorType =
+          asType<TensorType>(node->getOperand(0)->getType())) {
+    auto ElementType = OperandTensorType->getElementType();
+    if (ElementType->isFloatType())
+      CompareType = mlir::stablehlo::ComparisonType::FLOAT;
+  }
+  CompareType = mlir::stablehlo::ComparisonType::SIGNED;
+  auto CmpOp = builder.create<mlir::stablehlo::CompareOp>(
+      builder.getUnknownLoc(), CompareArg0, CompareArg1, CompareDirection,
+      CompareType);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            CmpOp.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+
+  auto *ScatterBody = builder.createBlock(&Op.getScatter());
+  builder.setInsertionPointToEnd(ScatterBody);
+  auto ScatterArg0 = ScatterBody->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  auto ScatterArg1 = ScatterBody->addArgument(
+      mlir::RankedTensorType::get({}, ElementType), builder.getUnknownLoc());
+  auto AddOp = builder.create<mlir::stablehlo::AddOp>(builder.getUnknownLoc(),
+                                                      ScatterArg0, ScatterArg1);
+  builder.create<mlir::stablehlo::ReturnOp>(builder.getUnknownLoc(),
+                                            AddOp.getResult());
+  builder.setInsertionPointToEnd(CurrentBlock);
+
+  insertValueMapping(node, Op);
+}
+
 void StableHLOLoweringPass::visit(Avgpool2dPtr node) {
   auto CurrentBlock = builder.getInsertionBlock();
   mlir::Value value = valueMap[node->getValue()];
@@ -794,10 +892,12 @@ void StableHLOLoweringPass::visit(Avgpool2dPtr node) {
       kernel_size_size_value);
   insertValueMapping(node, res);
 }
+
 void StableHLOLoweringPass::visit(BroadcastPtr Node) {
   mlir::Value Value = valueMap[Node->getOperand(0)];
   auto Shape = Node->getBroadCastShape();
   auto InputTensorType = asType<TensorType>(Node->getOperand(0)->getType());
+
   auto PrevShape = InputTensorType->getConcreteShape();
   std::vector<int64_t> BroadCastDimensions;
   size_t OperandIndex = 0;
@@ -819,12 +919,40 @@ void StableHLOLoweringPass::visit(BroadcastPtr Node) {
   }
   auto ResultTensorType =
       TensorType::create(InputTensorType->getElementType(), ResultValueShape);
-  auto Op = builder.create<mlir::stablehlo::BroadcastInDimOp>(
-      builder.getUnknownLoc(),
-      createRankedTensorTypeFromTensorType(ResultTensorType,
-                                           *theModule->getContext()),
-      Value, ArrayRef<int64_t>(BroadCastDimensions));
-  insertValueMapping(Node, Op);
+  if (Node->isDynamicBroadcast()) {
+    auto NodeTensorType = asType<TensorType>(Node->getType());
+    auto NodeShape = NodeTensorType->getConcreteShape();
+    std::vector<int> I64NodeShape;
+    for (auto Dim : NodeShape) {
+      I64NodeShape.push_back(Dim);
+    }
+    auto OutputDimensionType = TensorType::create(
+        IntTypePtr::get(),
+        {Literal::create(static_cast<int>(I64NodeShape.size()))});
+    auto OutputDimensionAttr = mlir::DenseElementsAttr::get(
+        createRankedTensorTypeFromTensorType(OutputDimensionType,
+                                             *theModule->getContext()),
+        ArrayRef<int>(I64NodeShape));
+    auto OutputDimension = builder.create<mlir::stablehlo::ConstantOp>(
+        builder.getUnknownLoc(),
+        createRankedTensorTypeFromTensorType(OutputDimensionType,
+                                             *theModule->getContext()),
+        OutputDimensionAttr);
+    auto Op = builder.create<mlir::stablehlo::DynamicBroadcastInDimOp>(
+        builder.getUnknownLoc(),
+        createRankedTensorTypeFromTensorType(NodeTensorType,
+                                             *theModule->getContext()),
+        Value, OutputDimension,
+        builder.getDenseI64ArrayAttr(BroadCastDimensions));
+    insertValueMapping(Node, Op);
+  } else {
+    auto Op = builder.create<mlir::stablehlo::BroadcastInDimOp>(
+        builder.getUnknownLoc(),
+        createRankedTensorTypeFromTensorType(ResultTensorType,
+                                             *theModule->getContext()),
+        Value, ArrayRef<int64_t>(BroadCastDimensions));
+    insertValueMapping(Node, Op);
+  }
 }
 
 void StableHLOLoweringPass::visit(CompareOpPtr node) {

@@ -61,9 +61,11 @@ public:
     NEG,
     PARAM,
     POW,
+    SLICE,
     SQRT,
     RELU,
     RETURN,
+    REVERSE,
     RSHIFT,
     STORE,
     SUB,
@@ -227,15 +229,17 @@ NODE_PTR_TYPE_DECL(Broadcast)
 class Broadcast : public Node {
 public:
   Broadcast(const TypePtr &nodeType, const ValuePtr &inValue,
-            std::vector<int> shape);
+            std::vector<int> shape, bool dynamic = false);
   NodeKind kind() override { return Node::NodeKind::BROADCAST; }
   void accept(IRVisitor *visitor) override;
   explicit operator std::string() const override;
   std::vector<int> getBroadCastShape() const { return shape; }
+  bool isDynamicBroadcast() const { return dynamic; }
 
 private:
   ValuePtr inValue;
   std::vector<int> shape;
+  bool dynamic;
 };
 
 NODE_PTR_TYPE_DECL(Relu)
@@ -351,6 +355,32 @@ private:
   int ddof;
 };
 
+NODE_PTR_TYPE_DECL(Reshape)
+class Reshape : public Node {
+public:
+  Reshape(const TypePtr &nodeType, const ValuePtr &inValue);
+  NodeKind kind() override { return Node::NodeKind::MEAN; }
+  explicit operator std::string() const override;
+  void accept(IRVisitor *visitor) override;
+  std::vector<int> getShape();
+
+private:
+};
+
+NODE_PTR_TYPE_DECL(Reverse)
+class Reverse : public Node {
+public:
+  Reverse(const TypePtr &nodeType, const ValuePtr &inValue,
+          const std::vector<int> &axes);
+  NodeKind kind() override { return Node::NodeKind::REVERSE; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<int> getAxes() { return axes; }
+
+private:
+  std::vector<int> axes;
+};
+
 NODE_PTR_TYPE_DECL(Transpose)
 class Transpose : public Node {
 public:
@@ -368,6 +398,25 @@ public:
 private:
   ValuePtr inValue;
   std::vector<int> axes;
+};
+
+NODE_PTR_TYPE_DECL(Slice)
+class Slice : public Node {
+public:
+  Slice(const TypePtr &nodeType, const ValuePtr &inValue,
+        const std::vector<int> &starts, const std::vector<int> &ends,
+        const std::vector<int> &strides);
+  NodeKind kind() override { return Node::NodeKind::SLICE; }
+  void accept(IRVisitor *visitor) override;
+  explicit operator std::string() const override;
+  std::vector<int> getStarts() { return starts; }
+  std::vector<int> getEnds() { return ends; }
+  std::vector<int> getStrides() { return strides; }
+
+private:
+  std::vector<int> starts;
+  std::vector<int> ends;
+  std::vector<int> strides;
 };
 
 NODE_PTR_TYPE_DECL(Maxpool2d)
@@ -396,6 +445,28 @@ private:
   std::vector<int64_t> window_dilations;
   std::vector<int64_t> padding;
 };
+
+NODE_PTR_TYPE_DECL(ScatterAddMax)
+class ScatterAddMax : public Node {
+public:
+  ScatterAddMax(const TypePtr &nodeType, const ValuePtr &operand,
+                const ValuePtr &source, const ValuePtr &init_value,
+                const std::vector<int64_t> &window_dimensions,
+                const std::vector<int64_t> &window_strides,
+                const std::vector<int64_t> &padding);
+  NodeKind kind() override { return Node::NodeKind::MAXPOOL2D; }
+  explicit operator std::string() const override;
+  void accept(IRVisitor *visitor) override;
+  std::vector<std::vector<int64_t>> getArgs() const {
+    return {window_dimensions, window_strides, padding};
+  }
+
+private:
+  std::vector<int64_t> window_dimensions;
+  std::vector<int64_t> window_strides;
+  std::vector<int64_t> padding;
+};
+
 NODE_PTR_TYPE_DECL(Avgpool2d)
 class Avgpool2d : public Node {
 public:

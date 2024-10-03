@@ -345,7 +345,89 @@ void AutoDiff::visit(BatchNorm2dPtr Node) {
   setAdjoint(Variance, VarAdjoint);
 }
 
-void AutoDiff::visit(Maxpool2dPtr Node) {}
+void AutoDiff::visit(Maxpool2dPtr Node) {
+  // layout: NxCxHxW: 0, 1, 2, 3
+  // Batched Scatter and Select_And_Scatter is not supported
+  // In Recent IREE Release, We handle each batch separately
+  auto MaxpoolArgs = Node->getArgs();
+  auto WindowDimensions = MaxpoolArgs[0];
+  auto WindowStrides = MaxpoolArgs[1];
+  auto PaddingArgs = MaxpoolArgs[4];
+  auto *Value = Node->getOperand(0);
+  auto ValueTensorType = asType<TensorType>(Value->getType());
+  auto ValueShape = ValueTensorType->getConcreteShape();
+  auto *Adjoint = getAdjoint(Node);
+  auto *InitZeroValue = Module->create<ConstantDef>(
+      TensorType::create(ValueTensorType->getElementType(), {}),
+      TupleContainer::create({Literal::create(0.f)}));
+  auto *ScatterOp = Module->create<ScatterAddMax>(
+      ValueTensorType, Value, Adjoint, InitZeroValue, WindowDimensions,
+      WindowStrides, PaddingArgs);
+  setAdjoint(Value, ScatterOp);
+}
+
+void AutoDiff::visit(ConvolutionPtr Node) {
+  auto *InputValue = Node->getOperand(0);
+  auto InputTensorShape =
+      asType<TensorType>(InputValue->getType())->getConcreteShape();
+  auto InputSize = InputTensorShape[2];
+  assert(InputSize == InputTensorShape[3] && "Conv input must be square");
+  auto *Weight = Node->getOperand(1);
+  auto WeightShape = asType<TensorType>(Weight->getType())->getConcreteShape();
+  auto WeightValueShape = asType<TensorType>(Weight->getType())->getShape();
+  auto KernelSize = WeightShape[2];
+  assert(KernelSize == WeightShape[3] && "Conv kernel must be square");
+  auto ConvArgs = Node->getArgs();
+  auto WindowStrides = ConvArgs[0];
+  auto KernelStride = WindowStrides[0];
+  assert(KernelStride == WindowStrides[1] && "Conv stride must be square");
+  auto LhsDilation = ConvArgs[1];
+  auto RhsDilation = ConvArgs[2];
+  auto PaddingArgs = ConvArgs[3];
+  auto WindowReversal = ConvArgs[4];
+  auto *Adjoint = getAdjoint(Node);
+  auto NodeTensorShape =
+      asType<TensorType>(Node->getType())->getConcreteShape();
+  auto NodeSize = NodeTensorShape[2];
+  assert(NodeSize == NodeTensorShape[3] && "Conv output must be square");
+  // Reverse the weight
+  auto *ReversedWeight = Module->create<Reverse>(Weight->getType(), Weight,
+                                                 std::vector<int>{2, 3});
+  auto TransposedReversedWeightType = TensorType::create(
+      asType<TensorType>(ReversedWeight->getType())->getElementType(),
+      {WeightValueShape[1], WeightValueShape[0], WeightValueShape[2],
+       WeightValueShape[3]});
+  auto *TransposedReversedWeight =
+      Module->create<Transpose>(TransposedReversedWeightType, ReversedWeight,
+                                std::vector<int>{1, 0, 2, 3});
+  // Compute new conv parameters
+  std::vector<int64_t> TransposedStrides;
+  for (size_t Idx = 0; Idx < WindowStrides.size(); Idx++) {
+    TransposedStrides.push_back(1);
+  }
+  std::vector<int64_t> TransposedLhsDilation;
+  for (size_t Idx = 0; Idx < WindowStrides.size(); Idx++) {
+    TransposedLhsDilation.push_back(KernelStride);
+  }
+  std::vector<int64_t> TransposedPaddingArgs;
+  int64_t PaddingBefore;
+  int64_t PaddingAfter;
+  PaddingBefore = KernelSize - 1 - PaddingArgs[0];
+  PaddingAfter = InputSize + KernelSize - 1 - PaddingBefore -
+                 ((NodeSize - 1) * KernelStride + 1);
+  // for (size_t Idx = 0; Idx < PaddingArgs.size(); Idx++) {
+  //   TransposedPaddingArgs.push_back(KernelSize - 1 - PaddingArgs[Idx]);
+  // }
+  TransposedPaddingArgs.push_back(PaddingBefore);
+  TransposedPaddingArgs.push_back(PaddingAfter);
+  TransposedPaddingArgs.push_back(PaddingBefore);
+  TransposedPaddingArgs.push_back(PaddingAfter);
+  auto *ValueAdjoint = Module->create<Convolution>(
+      InputValue->getType(), Adjoint, TransposedReversedWeight,
+      TransposedStrides, TransposedLhsDilation, RhsDilation,
+      TransposedPaddingArgs, WindowReversal);
+  setAdjoint(InputValue, ValueAdjoint);
+}
 
 void AutoDiff::visit(ConstantDefPtr Node) {
   // auto *Value = Node->getOperand(0);

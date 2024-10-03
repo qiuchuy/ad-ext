@@ -17,10 +17,11 @@ public:
   void visit(ParamPtr Node) override;
   void visit(ReturnOpPtr Node) override;
   void visit(TransposePtr Node) override;
-  void visit(ConvolutionPtr Node) override{};
+  void visit(ConvolutionPtr Node) override;
   void visit(BatchNorm2dPtr Node) override;
   void visit(ReluPtr Node) override;
   void visit(MeanPtr Node) override;
+  void visit(SlicePtr Node) override{};
   void visit(SqrtPtr Node) override;
   void visit(SumPtr Node) override;
   void visit(MaxPtr Node) override;
@@ -39,7 +40,10 @@ public:
   void visit(BroadcastPtr Node) override;
   void visit(MulPtr Node) override;
   void visit(ConstantDefPtr Node) override;
+  void visit(ReversePtr Node) override{};
   void visit(SelectPtr Node) override{};
+  void visit(ReshapePtr Node) override{};
+  void visit(ScatterAddMaxPtr Node) override{};
 
 private:
   llvm::DenseMap<ValuePtr, ValuePtr> AdjointMap;

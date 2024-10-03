@@ -162,8 +162,8 @@ Pow::operator std::string() const {
 void Pow::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 Broadcast::Broadcast(const TypePtr &opType, const ValuePtr &inValue,
-                     std::vector<int> shape)
-    : Node(opType), inValue(inValue), shape(shape) {
+                     std::vector<int> shape, bool dynamic)
+    : Node(opType), inValue(inValue), shape(shape), dynamic(dynamic) {
   setUse(inValue, 0);
 }
 
@@ -220,6 +220,45 @@ Select::operator std::string() const {
 }
 
 void Select::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+// Slice
+Slice::Slice(const TypePtr &opType, const ValuePtr &inValue,
+             const std::vector<int> &begin, const std::vector<int> &end,
+             const std::vector<int> &strides)
+    : Node(opType), starts(begin), ends(end), strides(strides) {
+  setUse(inValue, 0);
+}
+
+Slice::operator std::string() const {
+  auto prefix =
+      getName() + " = ailang::slice(" + getOperand(0)->getName() + ")";
+  std::string postfix = "<begin=[";
+  for (size_t i = 0; i < starts.size(); i++) {
+    if (i == starts.size() - 1) {
+      postfix += std::to_string(starts[i]) + "], end=[";
+    } else {
+      postfix += std::to_string(starts[i]) + ",";
+    }
+  }
+  for (size_t i = 0; i < ends.size(); i++) {
+    if (i == ends.size() - 1) {
+      postfix += std::to_string(ends[i]) + "], strides=[";
+    } else {
+      postfix += std::to_string(ends[i]) + ",";
+    }
+  }
+  for (size_t i = 0; i < strides.size(); i++) {
+    if (i == strides.size() - 1) {
+      postfix += std::to_string(strides[i]) + "]>";
+    } else {
+      postfix += std::to_string(strides[i]) + ",";
+    }
+  }
+  postfix += ":" + std::string(*getType());
+  return prefix + postfix;
+}
+
+void Slice::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Sqrt
 Sqrt::Sqrt(const TypePtr &opType, const ValuePtr &inValue) : Node(opType) {
@@ -353,6 +392,33 @@ std::vector<int> Variance::getShape() {
   }
 }
 
+// Reshape
+Reshape::Reshape(const TypePtr &opType, const ValuePtr &inValue)
+    : Node(opType) {
+  setUse(inValue, 0);
+}
+
+Reshape::operator std::string() const {
+  return getName() + " = ailang::reshape(" + getOperand(0)->getName() +
+         "):" + std::string(*getType());
+}
+
+void Reshape::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+// Reverse
+Reverse::Reverse(const TypePtr &opType, const ValuePtr &inValue,
+                 const std::vector<int> &axes)
+    : Node(opType), axes(axes) {
+  setUse(inValue, 0);
+}
+
+Reverse::operator std::string() const {
+  return getName() + " = ailang::reverse(" + getOperand(0)->getName() +
+         "):" + std::string(*getType());
+}
+
+void Reverse::accept(IRVisitor *visitor) { visitor->visit(this); }
+
 // Transpose
 Transpose::Transpose(const TypePtr &opType, const ValuePtr &inValue,
                      const std::vector<int> &axes)
@@ -387,6 +453,7 @@ Maxpool2d::Maxpool2d(const TypePtr &opType, const ValuePtr &inValue,
     : Node(opType), window_dimensions(window_dimensions),
       window_strides(window_strides), base_dilations(base_dilations),
       window_dilations(window_dilations), padding(padding) {
+  setUse(inValue, 0);
   this->inValue = inValue;
 }
 Maxpool2d::operator std::string() const {
@@ -394,6 +461,27 @@ Maxpool2d::operator std::string() const {
          "):" + std::string(*getType());
 }
 void Maxpool2d::accept(IRVisitor *visitor) { visitor->visit(this); }
+
+// ScatterAddMax
+ScatterAddMax::ScatterAddMax(const TypePtr &opType, const ValuePtr &operand,
+                             const ValuePtr &source, const ValuePtr &init_value,
+                             const std::vector<int64_t> &window_dimensions,
+                             const std::vector<int64_t> &window_strides,
+                             const std::vector<int64_t> &padding)
+    : Node(opType), window_dimensions(window_dimensions),
+      window_strides(window_strides), padding(padding) {
+  setUse(operand, 0);
+  setUse(source, 1);
+  setUse(init_value, 2);
+}
+
+ScatterAddMax::operator std::string() const {
+  return getName() + " = ailang::scatter_add(" + getOperand(0)->getName() +
+         ", " + getOperand(1)->getName() + ", " + getOperand(2)->getName() +
+         "): " + std::string(*getType());
+}
+
+void ScatterAddMax::accept(IRVisitor *visitor) { visitor->visit(this); }
 
 // Avgpool2d
 Avgpool2d::Avgpool2d(const TypePtr &opType, const ValuePtr &inValue,
@@ -424,6 +512,8 @@ Convolution::Convolution(const TypePtr &opType, const ValuePtr &inputValue,
     : Node(opType), window_strides(window_strides), lhsDilation(lhsDilation),
       rhsDilation(rhsDilation), padding_args(padding_args),
       window_reversal(window_reversal) {
+  setUse(inputValue, 0);
+  setUse(weightValue, 1);
   this->inputValue = inputValue;
   this->weightValue = weightValue;
 }

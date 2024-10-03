@@ -164,9 +164,9 @@ class TestOp:
         b = TestOp.gen_random_nparray((2, 3, 4, 4), np.float32)  #  O I H W
         c = al.from_numpy(a)
         d = al.from_numpy(b)
-        e = al.standard.conv2d(c, d, (2, 2), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0))
+        e = al.standard.conv2d(c, d, (3, 3), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0))
         torch_conv = torch.nn.Conv2d(
-            3, 2, kernel_size=4, stride=2, padding=1, bias=False
+            3, 2, kernel_size=4, stride=3, padding=1, bias=False
         )
         torch_conv.weight.data = torch.from_numpy(b)
         torch_res = torch_conv(torch.from_numpy(a)).detach().numpy()

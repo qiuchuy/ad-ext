@@ -8,15 +8,14 @@ from ailang import array
 
 torch.set_printoptions(precision=6)
 
+
 class TestGrad:
     @staticmethod
     def numeric_check(a: al.array, b: np.ndarray):
         return np.allclose(a.tolist(), b.tolist(), rtol=1e-03, atol=1e-06)
 
     @staticmethod
-    def gen_random_nparray(
-        shape: typing.Tuple[int], dtype: np.dtype
-    ) -> np.ndarray:
+    def gen_random_nparray(shape: typing.Tuple[int], dtype: np.dtype) -> np.ndarray:
         if len(shape):
             random_nparray = np.random.randn(*shape).astype(dtype)
             return random_nparray
@@ -111,7 +110,7 @@ class TestGrad:
         a = np.array(1.0).astype(np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        assert TestGrad.numeric_check(grad, np.array(4.))
+        assert TestGrad.numeric_check(grad, np.array(4.0))
 
     def test_transpose(self):
         @al.grad
@@ -132,7 +131,7 @@ class TestGrad:
         a = np.array([[0, 0], [0, 0]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
-        assert TestGrad.numeric_check(grad, 1 - np.tanh(a)**2)
+        assert TestGrad.numeric_check(grad, 1 - np.tanh(a) ** 2)
 
     def test_matmul(self):
         @al.grad
@@ -151,6 +150,7 @@ class TestGrad:
         @al.grad
         def g(x):
             return al.sum(al.relu(x))
+
         a = np.array([[1, -2], [-3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
@@ -160,6 +160,7 @@ class TestGrad:
         @al.grad
         def g(x):
             return al.sum(al.mean(x))
+
         a = np.array([[1, 2], [3, 4]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
@@ -168,7 +169,8 @@ class TestGrad:
     def test_var(self):
         @al.grad
         def g(x):
-            return al.sum(al.var(x,[0, 1], 0))
+            return al.sum(al.var(x, [0, 1], 0))
+
         a = np.array([[1, 1], [3, 3]], dtype=np.float32)
         b = al.from_numpy(a)
         value, grad = g(b)
@@ -233,30 +235,48 @@ class TestGrad:
         torch_output.backward()
         assert TestGrad.numeric_check(grad, torch_input.grad.detach().numpy())
 
-    # def test_conv2d(self):
-    #     @al.grad
-    #     def g(x, y):
-    #         return al.sum(al.standard.conv2d(x, y, (2, 2), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0)))
+    def test_maxpool2d(self):
+        # 注意，这里的单测必须和最终test, maxpool2d的输入形状保持一致
+        @al.grad
+        def g(x):
+            return al.sum(
+                al.maxpool2d(
+                    x,
+                    (1, 1, 2, 2),
+                    (1, 1, 2, 2),
+                    (1, 1, 1, 1),
+                    (1, 1, 1, 1),
+                    (0, 0, 0, 0, 0, 0, 0, 0),
+                )
+            )
 
+        a = TestGrad.gen_random_nparray((1, 64, 56, 56), np.float32)  # N C H W
+        torch_input = torch.from_numpy(a)
+        torch_input.requires_grad = True
+        b = al.from_numpy(a)
+        value, grad = g(b)
+        torch_output = torch.sum(torch.max_pool2d(
+            torch_input, kernel_size=2, stride=2, padding=0
+        ))
+        torch_output.backward()
+        assert TestGrad.numeric_check(grad, torch_input.grad.detach().numpy())
 
-    #     a = self.gen_random_nparray((1, 3, 224, 224), np.float32)  # N C H W
-    #     b = self.gen_random_nparray((2, 3, 4, 4), np.float32)  #  O I H W
-    #     c = al.from_numpy(a)
-    #     d = al.from_numpy(b)
-    #     al_value, al_gradx, al_grady = g(c, d, (2, 2), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0))
-    #     torch_conv = torch.nn.Conv2d(
-    #         3, 2, kernel_size=4, stride=2, padding=1, bias=False
-    #     )
-    #     torch_conv.weight.data = torch.from_numpy(b)
-    #     torch_input = torch.from_numpy(a)
-    #     torch_res = torch.sum(torch_conv(torch_input))
-    #     torch_res.backward()
-    #     torch_gradx = torch_input.grad.detach().numpy()
-    #     torch_grady = torch_conv.weight.grad.detach().numpy()
-    #     torch_value = torch_conv(torch.from_numpy(a)).detach().numpy()
-    #     assert TestGrad.numeric_check(al_value, torch_value)
-    #     assert TestGrad.numeric_check(al_gradx, torch_gradx)
-    #     assert TestGrad.numeric_check(al_grady, torch_grady)
+    def test_conv2d(self):
+        @al.grad
+        def g(x, y):
+            return al.sum(al.conv2d(x, y, (2, 2), (1, 1), (1, 1), (1, 1, 1, 1), (0, 0)))
 
-
-    
+        a = self.gen_random_nparray((1, 3, 224, 224), np.float32)
+        b = self.gen_random_nparray((2, 3, 4, 4), np.float32)
+        c = al.from_numpy(a)
+        d = al.from_numpy(b)
+        value, gradc, gradd = g(c, d)
+        torch_conv = torch.nn.Conv2d(
+            3, 2, kernel_size=4, stride=2, padding=1, bias=False
+        )
+        torch_conv.weight.data = torch.from_numpy(b)
+        torch_input = torch.from_numpy(a)
+        torch_input.requires_grad = True
+        torch_res = torch.sum(torch_conv(torch_input))
+        torch_res.backward()
+        assert TestGrad.numeric_check(gradc, torch_input.grad.detach().numpy())

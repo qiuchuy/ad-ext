@@ -32,10 +32,12 @@ public:
   void visit(ParamPtr node) override;
   void visit(ReturnOpPtr node) override;
   void visit(TransposePtr node) override;
+  void visit(ReshapePtr node) override;
   void visit(ConvolutionPtr node) override;
   void visit(BatchNorm2dPtr node) override;
   void visit(ReluPtr node) override;
   void visit(SqrtPtr node) override;
+  void visit(SlicePtr node) override;
   void visit(MeanPtr node) override;
   void visit(SumPtr node) override;
   void visit(MaxPtr node) override;
@@ -50,11 +52,13 @@ public:
   void visit(ExpPtr node) override;
   void visit(TanhPtr node) override;
   void visit(NegPtr node) override;
+  void visit(ReversePtr node) override;
   void visit(SelectPtr node) override;
   void visit(DivPtr node) override;
   void visit(BroadcastPtr node) override;
   void visit(MulPtr node) override;
   void visit(ConstantDefPtr node) override;
+  void visit(ScatterAddMaxPtr node) override;
 
 private:
   mlir::func::FuncOp createFunctionOpFromModule(ModulePtr module);

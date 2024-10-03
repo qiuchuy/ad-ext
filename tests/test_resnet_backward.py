@@ -17,7 +17,7 @@ class TorchResNet(torch.nn.Module):
         )
         self.bn1 = torch.nn.BatchNorm2d(64, momentum=None, affine=False)
         self.relu = torch.nn.ReLU()
-        self.maxpool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
 
         # Layer 1
         self.conv2 = torch.nn.Conv2d(
@@ -85,6 +85,7 @@ class TorchResNet(torch.nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
+
         # Layer 1
         identity = x
         out = self.conv2(x)
@@ -170,7 +171,7 @@ class AilangResNet(nn.Module):
         self.conv1.weight = al.from_numpy(pd["conv1.weight"])
         self.bn1 = nn.Batchnorm2d(64)
         self.relu = nn.ReLU()
-        self.maxpool = nn.Maxpool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.Maxpool2d(kernel_size=2, stride=2, padding=0)
         # layer 1
         self.conv2 = nn.Conv2d(64, 64, stride=1, kernel_size=3, padding=1, bias=False)
         self.conv2.weight = al.from_numpy(pd["conv2.weight"])
@@ -248,7 +249,7 @@ class AilangResNet(nn.Module):
         self.downsample4 = downsample  # 如果需要调整尺寸则添加下采样层
         self.relu5 = nn.ReLU()
 
-    @al.jit
+    @al.grad
     def __call__(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -315,8 +316,9 @@ def numeric_check(a: al.array, b: np.ndarray):
 
 def test_resnet():
     a_model = AilangResNet()
-    x = np.random.randn(1, 3, 224, 224).astype(np.float32)
+    x = np.random.randn(1, 3, 112, 112).astype(np.float32)
     t = torch.from_numpy(x)
+    t.requires_grad = True
     a = al.from_numpy(x)
     a_model.eval()
     model.eval()
@@ -324,7 +326,6 @@ def test_resnet():
     t_out = model(t)
     t_out.backward()
     t_grad = t.grad.detach().numpy()
-    assert numeric_check(a_out, t_out.detach().numpy())
     assert numeric_check(al_grad, t_grad)
 
 

@@ -17,6 +17,7 @@ public:
   virtual void visit(PowPtr node) = 0;
   virtual void visit(ReluPtr node) = 0;
   virtual void visit(MeanPtr node) = 0;
+  virtual void visit(SlicePtr node) = 0;
   virtual void visit(SqrtPtr node) = 0;
   virtual void visit(SumPtr node) = 0;
   virtual void visit(MaxPtr node) = 0;
@@ -34,6 +35,9 @@ public:
   virtual void visit(MulPtr node) = 0;
   virtual void visit(SelectPtr node) = 0;
   virtual void visit(ConstantDefPtr node) = 0;
+  virtual void visit(ReshapePtr node) = 0;
+  virtual void visit(ReversePtr node) = 0;
+  virtual void visit(ScatterAddMaxPtr node) = 0;
   ~IRVisitor() = default;
 };
 

@@ -18,9 +18,7 @@ class LSTMCell(nn.Module):
         self.bo = al.random.randn(hidden_size, 1, dtype=al.f32)
 
     def sigmoid(self, x):
-        return al.div(
-            1.0, al.add(1.0, al.exp(al.neg(x)))
-        )
+        return al.div(1.0, al.add(1.0, al.exp(al.neg(x))))
 
     def forward(self, x_t, h_prev, c_prev):
         x = al.cat([h_prev, x_t], axis=0)
