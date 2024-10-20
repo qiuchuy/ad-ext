@@ -391,43 +391,93 @@ void init_ailang_core(py::module &m) {
   m.def(
       "from_numpy",
       [](py::buffer arr, const std::string &device = "cpu") {
-        py::buffer_info buffer = arr.request();
-        Dtype dtype = getDtypeFromFormat(buffer.format);
-        auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
-        auto stride =
-            std::vector<int>(buffer.strides.begin(), buffer.strides.end());
-        Device dev;
-        if (device == "cpu") {
-          dev = cpu;
-        } else if (device == "gpu") {
-          dev = gpu;
-        } else {
-          throw std::invalid_argument(
-              "Invalid device type when creating array from numpy array.");
-        }
+          // Get buffer information from the NumPy array
+          py::buffer_info buffer = arr.request();
 
-        // Calculate total size of the array
-        size_t total_size = buffer.itemsize;
-        for (auto dim : shape) {
-          total_size *= dim;
-        }
+          // Get the data type from the format string
+          Dtype dtype = getDtypeFromFormat(buffer.format);
 
-        // Allocate new memory and copy data
-        void *new_data = std::malloc(total_size);
-        if (!new_data) {
-          throw std::runtime_error("Failed to allocate memory for array copy");
-        }
-        std::memcpy(new_data, buffer.ptr, total_size);
+          // Copy shape and stride from the buffer
+          auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
+          auto stride = std::vector<int>(buffer.strides.begin(), buffer.strides.end());
 
-        // Create a new Buffer with the copied data
-        auto new_buffer = allocator::Buffer(new_data);
+          // Determine the device type (CPU or GPU)
+          Device dev;
+          if (device == "cpu") {
+              dev = cpu;
+          } else if (device == "gpu") {
+              dev = gpu;
+          } else {
+              throw std::invalid_argument("Invalid device type when creating array from numpy array.");
+          }
 
-        auto result = std::make_shared<Array>(std::move(new_buffer), dtype,
-                                              shape, stride, dev);
-        return result;
+          // Instead of copying data, use the existing buffer pointer (buffer.ptr)
+          // We don't allocate new memory or copy data here
+          void *data_ptr = buffer.ptr;
+          arr.inc_ref();
+          arr.inc_ref();
+
+          // Create the buffer using the existing data pointer, without copying
+          auto shared_buffer = allocator::Buffer(data_ptr);
+
+          // Create a new Array object that shares memory with the NumPy array
+          auto result = std::make_shared<Array>(std::move(shared_buffer), dtype, shape, stride, dev);
+
+          return result;
       },
-      "construct ainl array from numpy array", py::arg("arr"),
-      py::arg("device") = "cpu");
+      "Construct an Array from a NumPy array, sharing the same memory",
+      py::arg("arr"), py::arg("device") = "cpu"
+  );
+
+  // m.def(
+  //     "from_numpy",
+  //     [](py::buffer arr, const std::string &device = "cpu") {
+  //       py::buffer_info buffer = arr.request();
+  //       Dtype dtype = getDtypeFromFormat(buffer.format);
+  //       auto shape = std::vector<int>(buffer.shape.begin(), buffer.shape.end());
+  //       auto stride =
+  //           std::vector<int>(buffer.strides.begin(), buffer.strides.end());
+  //       Device dev;
+  //       if (device == "cpu") {
+  //         dev = cpu;
+  //       } else if (device == "gpu") {
+  //         dev = gpu;
+  //       } else {
+  //         throw std::invalid_argument(
+  //             "Invalid device type when creating array from numpy array.");
+  //       }
+
+  //       // Calculate total size of the array
+  //       size_t total_size = buffer.itemsize;
+  //       for (auto dim : shape) {
+  //         total_size *= dim;
+  //       }
+
+  //       // Allocate new memory and copy data
+  //       void *new_data = std::malloc(total_size);
+  //       if (!new_data) {
+  //         throw std::runtime_error("Failed to allocate memory for array copy");
+  //       }
+  //       std::memcpy(new_data, buffer.ptr, total_size);
+
+  //       // Create a new Buffer with the copied data
+  //       auto new_buffer = allocator::Buffer(new_data);
+
+  //       auto result = std::make_shared<Array>(std::move(new_buffer), dtype,
+  //                                             shape, stride, dev);
+  //       return result;
+  //     },
+  //     "construct ainl array from numpy array", py::arg("arr"),
+  //     py::arg("device") = "cpu");
+  
+  m.def("to_numpy", [](Array &a) {
+    if (!a.evaluated()) {
+      a.eval();
+    }
+    auto shape = a.shape();
+    auto ptr = a.data<float>();
+    return py::array_t<float>(shape, ptr);
+  });
 
   m.def(
       "trace_impl",

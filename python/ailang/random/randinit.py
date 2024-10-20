@@ -9,7 +9,7 @@ dtype_mapping = {
     al.f64: np.float64,
 }
 
-def randn(shape: Tuple[int], dtype: al.dtype, device: str = "cpu") -> al.array:
+def randn(shape: Tuple[int], dtype: al.dtype=al.f32, device: str = "cpu") -> al.array:
     r"""
     Generate a random array with the given shape, data type, and device.
 

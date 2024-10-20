@@ -100,7 +100,7 @@ Dtype getDtypeFromFormat(const std::string &formatStr) {
     return Int32;
   } else if (formatStr == "l" || formatStr == "L") {
     return Int64;
-  } else if (formatStr == "f") {
+  } else if (formatStr == "f" || formatStr == "e") {
     return Float32;
   } else if (formatStr == "d") {
     return Float64;
