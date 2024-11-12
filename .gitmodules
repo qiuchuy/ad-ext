@@ -1,0 +1,5 @@
+[submodule "third_party/stablehlo"]
+	path = third_party/stablehlo
+	url = https://github.com/openxla/stablehlo
+
+

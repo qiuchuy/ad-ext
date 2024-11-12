@@ -1,0 +1,15 @@
+add_ailang_library(AILangIR
+  Block.cpp
+  Container.cpp
+  Function.cpp
+  Graph.cpp
+  IRVisitor.cpp
+  Linklist.cpp
+  Literal.cpp
+  Node.cpp
+  Symbol.cpp
+  Tensor.cpp
+  Type.cpp
+  Use.cpp
+  Value.cpp
+)

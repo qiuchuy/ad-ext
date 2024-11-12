@@ -1,0 +1,49 @@
+# CMake artifacts
+build/
+build-*/
+
+# third-party
+third-party/
+
+# Local-only config options
+version_info.json
+CMakeUserPresets.json
+
+# Python files
+.python-version
+*.venv
+.venv
+
+# Visual Studio files
+.env
+.vs/
+.vscode/
+*.sdf
+*.opensdf
+*.VC.opendb
+*.suo
+*.user
+compile_commands.json
+
+# macOS files
+.DS_Store
+
+#
+.pytest_cache/
+ainl.egg-info/
+build/
+__pycache__/
+.idea/
+.vscode/
+cmake-build-debug/
+ailang.egg-info/
+log.txt
+
+local_test/
+cudnn-baseline/
+log
+.clangd/
+.cache/
+AILang/python/ailang/ffi/*.so
+AILang/python/ailang/_C/libailang.so
+

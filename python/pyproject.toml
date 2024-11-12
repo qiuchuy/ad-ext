@@ -1,0 +1,13 @@
+[project]
+name = "ailang"
+version = "0.1"
+description = "A language and compiler for custom Deep Learning operations"
+requires-python = ">=3.8"
+
+[dependencies]
+gast = "0.5.3"
+iree-compiler = { version = "20240226.813", numpy = "Any", PyYAML = "Any" }
+iree-runtime = { version = "20240226.813", numpy = "Any", PyYAML = "Any" }
+pybind11 = "2.10.4"
+numpy = "1.26.4"
+pytest = { version = "7.4.0", iniconfig = "Any", packaging = "Any", pluggy = ">=0.12,<2.0" }
