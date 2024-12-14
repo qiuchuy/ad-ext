@@ -5,14 +5,24 @@ from .common import _tensor_member_fn
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def relu(x: al.array) -> al.array:
     """Computes the relu of a tensor."""
     return al.prim.relu(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
+def sigmoid(x: al.array) -> al.array:
+    """Computes the relu of a tensor."""
+    exp = al.prim.exp(al.prim.neg(x))
+    import numpy as np
+    one = al.prim.broadcast_to(al.from_numpy(np.array(1)), tuple(x.shape))
+    return al.div(one, al.add(one, exp))
+
+
+@_tensor_member_fn
+@al.to_static
 def softmax(x: al.array, dim: List[int] = None) -> al.array:
     if dim is None:
         shape = x.shape

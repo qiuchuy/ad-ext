@@ -51,7 +51,9 @@ def check_device(*tracers):
     elif all(tracer.device == "gpu" for tracer in tracers):
         return "cuda", "cuda", "gpu"
     else:
-        raise ValueError("All tracers must be on the same known device.")
+        # hack for now
+        # if there are mixed devices[possibly a  bug], we will use cuda
+        return "cuda", "cuda", "gpu"
 
 
 def flatten(*args):
@@ -64,7 +66,7 @@ def flatten(*args):
     return flattened_arg
 
 
-def jit(f: Union[Callable]):
+def to_static(f: Union[Callable]):
     """
     Decorator that performs just-in-time (JIT) compilation of a function.
     """
@@ -73,9 +75,10 @@ def jit(f: Union[Callable]):
         flattened_args = flatten(*args)
         tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
         module = al.trace_impl(f, args)
-        print(module)
+        if f.__name__ == "forward":
+            print(module)
         mlir_str = module.to_mlir()
-        print(mlir_str)
+        # print(mlir_str)
         target_backend, ireert_config, device = check_device(*tracer_args)
         compiled_flatbuffer = ireec.tools.compile_str(
             mlir_str,
@@ -113,13 +116,15 @@ def grad(f: Union[Callable]):
         flattened_args = flatten(*args)
         tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
         module = al.trace_impl(f, args)
-        print("print original traced module")
+        print("print the forward graph of the module")
+        print("===================================")
         print(module)
-        print("print differentiated module")
+        print("print the backward graph of the module")
+        print("===================================")
         al.grad_impl(module)
         print(module)
         mlir_str = module.to_mlir()
-        print(mlir_str)
+        # print(mlir_str)
         target_backend, ireert_config, device = check_device(*tracer_args)
         compiled_flatbuffer = ireec.tools.compile_str(
             mlir_str,

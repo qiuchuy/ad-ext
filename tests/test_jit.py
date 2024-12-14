@@ -11,7 +11,7 @@ class TestJIT:
         return np.allclose(a.tolist(), b.tolist())
 
     def test_transpose(self):
-        @al.jit
+        @al.to_static
         def g(x):
             b = al.transpose(x)
             c = al.transpose(b)

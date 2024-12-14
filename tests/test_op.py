@@ -84,7 +84,6 @@ class TestOp:
             sum_exp_z = np.sum(exp_z, axis=dim, keepdims=True)
             return exp_z / sum_exp_z
 
-        print(c)
         # print(torch.nn.functional.softmax(t).detach().numpy())
         # print(softmax(a))
         assert TestOp.numeric_check(c, softmax(a))
@@ -285,6 +284,12 @@ class TestOp:
         b = al.from_numpy(a)
         c = al.standard.exp(b)
         assert TestOp.numeric_check(c, np.exp(a))
+
+    def test_sigmoid(self):
+        a = TestOp.gen_random_nparray((2, 3), np.float32)
+        b = al.from_numpy(a)
+        c = al.standard.sigmoid(b)
+        assert TestOp.numeric_check(c, np.sigmoid(a))
 
     def test_standard_tanh(self):
         a = TestOp.gen_random_nparray((2, 3), np.float32)

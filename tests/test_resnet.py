@@ -248,7 +248,7 @@ class AilangResNet(nn.Module):
         self.downsample4 = downsample  # 如果需要调整尺寸则添加下采样层
         self.relu5 = nn.ReLU()
 
-    @al.jit
+    @al.to_static
     def __call__(self, x):
         x = self.conv1(x)
         x = self.bn1(x)

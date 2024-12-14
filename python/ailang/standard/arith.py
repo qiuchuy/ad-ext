@@ -5,7 +5,7 @@ from .common import _tensor_member_fn, element_wise
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 @element_wise
 def add(x: al.array, y: al.array) -> al.array:
     """Add two tensors."""
@@ -13,13 +13,13 @@ def add(x: al.array, y: al.array) -> al.array:
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def sqrt(x: al.array) -> al.array:
     return al.prim.sqrt(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def conv2d(
     input,
     weight,
@@ -29,7 +29,7 @@ def conv2d(
     padding_args,
     window_reversal,
 ) -> al.array:
-    "Compute the maxpool2d of the input"
+    "Compute the conv2d of the input"
     return al.prim.conv2d(
         input,
         weight,
@@ -42,14 +42,14 @@ def conv2d(
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def relu(x: al.array) -> al.array:
     """ReLU."""
     return al.prim.relu(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def batchnorm2d(
     input: al.array,
     scale: al.array,
@@ -69,7 +69,7 @@ def batchnorm2d(
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def maxpool2d(
     x: al.array,
     window_dimensions,
@@ -111,7 +111,7 @@ def maxpool2d(
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def avgpool2d(
     x: al.array,
     window_dimensions,
@@ -126,28 +126,28 @@ def avgpool2d(
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def exp(x: al.array) -> al.array:
     """Exponential."""
     return al.prim.exp(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def tanh(x: al.array) -> al.array:
     """Tanh."""
     return al.prim.tanh(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def neg(x: al.array) -> al.array:
     """Negation."""
     return al.prim.neg(x)
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 @element_wise
 def div(x: al.array, y: al.array) -> al.array:
     """Division."""
@@ -155,7 +155,7 @@ def div(x: al.array, y: al.array) -> al.array:
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 @element_wise
 def sub(x: al.array, y: al.array) -> al.array:
     """Subtraction."""
@@ -163,7 +163,7 @@ def sub(x: al.array, y: al.array) -> al.array:
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 @element_wise
 def mul(x: al.array, y: al.array) -> al.array:
     """Multiplication."""
@@ -171,7 +171,7 @@ def mul(x: al.array, y: al.array) -> al.array:
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 @element_wise
 def pow(x: al.array, y: al.array) -> al.array:
     """Power."""
@@ -179,7 +179,7 @@ def pow(x: al.array, y: al.array) -> al.array:
 
 
 @_tensor_member_fn
-@al.jit
+@al.to_static
 def matmul(x: al.array, y: al.array) -> al.array:
     """Matrix multiplication."""
     return al.prim.matmul(x, y)

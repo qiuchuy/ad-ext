@@ -229,6 +229,24 @@ public:
   Dtype dtype() const { return dtype_; }
   size_t ndim() const { return shape_->size(); }
   Device device() const { return device_; }
+  void setDevice(const std::string &deviceStr) {
+    if (deviceStr == "cpu") {
+      device_ = cpu;
+    } else if (deviceStr == "gpu") {
+      device_ = gpu;
+    } else {
+      throw std::invalid_argument("Invalid device type.");
+    }
+  }
+  std::string deviceStr() {
+    if (device_ == cpu) {
+      return "cpu";
+    } else if (device_ == gpu) {
+      return "gpu";
+    } else {
+      throw std::invalid_argument("Invalid device type.");
+    }
+  }
 
   template <typename T> T item() {
     if (!evaluated()) {
@@ -269,6 +287,22 @@ public:
       os << (*(data<T>() + offset / itemsize()));
       return;
     }
+    size_t numel = 1;
+    for (size_t i = 0; i < ndim(); i++) {
+      numel *= shape_->at(i);
+    }
+    if (numel >= 50) {
+      os << "[";
+      // only ouput the first 100 elements
+      for (size_t i = 0; i < 100; i++) {
+        os << (*(data<T>() + i));
+        if (i != 99) {
+          os << ", ";
+        }
+      }
+      os << "...]";
+      return;
+    }
     os << "[";
     if (dim == ndim() - 1) {
       LOG_DEBUG("[print] Printing array at %d with offset %d",
@@ -285,6 +319,7 @@ public:
         print<T>(os, offset + i * stride_->at(dim), dim + 1);
         if (i != shape_->at(dim) - 1) {
           os << ",";
+          os<< std::endl;
         }
       }
     }

@@ -1,7 +1,7 @@
 from ._C.libailang import *
 from ._C.libailang import _register_eval_callback
 from .random import randn
-from .transform import jit, grad
+from .transform import to_static, grad
 from . import prim
 from . import standard
 from . import nn

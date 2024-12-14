@@ -37,6 +37,10 @@ Array::Array(Dtype dtype, std::shared_ptr<Primitive> prim,
 Array::Array(const std::vector<std::shared_ptr<Tracer>> &inputs,
              const std::shared_ptr<Primitive> &prim)
     : Tracer(inputs, prim) {
+  if (inputs.size()) {
+    auto input = asTracer<Array>(inputs[0]);
+    device_ = input->device();
+  }
   trace_ = getStandardEvalTrace();
 }
 
@@ -173,6 +177,8 @@ Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
 
 std::ostream &operator<<(std::ostream &os, const Array &arr) {
   os << "Array(";
+  os<< std::endl;
+
   switch (arr.dtype().type) {
   case Dtype::DataType::BoolType:
     arr.print<bool>(os, 0, 0);

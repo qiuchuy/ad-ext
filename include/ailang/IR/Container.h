@@ -27,6 +27,10 @@ public:
       if (i != values.size() - 1) {
         name += ", ";
       }
+      if (i >= 50) {
+        name += "...";
+        break;
+      }
     }
     name += ")";
     return name;

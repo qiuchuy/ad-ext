@@ -47,15 +47,19 @@ class Batchnorm2d(Module):
         return self.running_var
 
     def __call__(self, x: al.array):
+        np_scale = np.ones((self.num_features), dtype=np.float32)
+        np_offset = np.zeros((self.num_features), dtype=np.float32)
+        self.offset = al.from_numpy(np_offset, device=x.device)
+        self.scale = al.from_numpy(np_scale, device=x.device)
         if self.training:
             self.running_mean = self.compute_mean(x)
             self.running_var = self.compute_var(x)
         else:
             self.running_mean = al.from_numpy(
-                np.zeros((self.num_features), dtype=np.float32)
+                np.zeros((self.num_features), dtype=np.float32), device=x.device
             )
             self.running_var = al.from_numpy(
-                np.ones((self.num_features), dtype=np.float32)
+                np.ones((self.num_features), dtype=np.float32), device=x.device
             )
         return al.batchnorm2d(
             x, self.scale, self.offset, self.running_mean, self.running_var

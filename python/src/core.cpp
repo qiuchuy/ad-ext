@@ -210,6 +210,11 @@ void init_ailang_core(py::module &m) {
         auto array_tracer = asTracer<Array>(tracer.tracer());
         auto shape = array_tracer->shape();
         return shape;
+      })
+      .def_property("device", [](JITTracer &tracer) {
+        return tracer.device().toString();
+      }, [](JITTracer &tracer, const std::string &deviceStr) {
+        tracer.setDevice(deviceStr);
       });
   py::class_<Array, Tracer, std::shared_ptr<Array>>(m, "array",
                                                     py::buffer_protocol())
@@ -365,8 +370,10 @@ void init_ailang_core(py::module &m) {
       .def_property_readonly("data_size", &Array::size)
       .def_property_readonly("dtype", &Array::dtype)
       .def_property_readonly("ndim", &Array::ndim)
-      .def_property_readonly("device",
-                             [](Array &a) { return a.device().toString(); })
+      .def_property("device",
+                    [](Array &a) { return a.device().toString(); },  // Getter
+                    [](Array &a, const std::string &deviceStr) { a.setDevice(deviceStr); })  // Setter
+
       .def("item",
            [](Array &a) {
              switch (a.dtype().type) {
@@ -538,7 +545,7 @@ void init_ailang_core(py::module &m) {
           eval_callback[name] = f;
         });
 
-  m.def("create_tracer", [](const py::object &non_tracer_object) {
+  m.def("create_tracer", [](const py::object &non_tracer_object, const std::string &device) {
     if (py::isinstance<py::int_>(non_tracer_object)) {
       auto value = non_tracer_object.cast<int>();
       if (getCurrentTrace()->mode == BaseTrace::TraceMode::jit) {
@@ -548,9 +555,11 @@ void init_ailang_core(py::module &m) {
         auto constant_node = getTracedModule()->create<ConstantDef>(
             TensorType::create(int_literal->getType(), {}), container);
         auto jit_tracer = JITTracer::create(array_tracer, constant_node);
+        jit_tracer->setDevice(device);
         return py::cast(jit_tracer);
       } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
         auto array_tracer = std::make_shared<Array>(value);
+        array_tracer->setDevice(device);
         return py::cast(array_tracer);
       } else {
         throw std::runtime_error(
@@ -565,9 +574,11 @@ void init_ailang_core(py::module &m) {
         auto constant_node = getTracedModule()->create<ConstantDef>(
             TensorType::create(float_literal->getType(), {}), container);
         auto jit_tracer = JITTracer::create(array_tracer, constant_node);
+        jit_tracer->setDevice(device);
         return py::cast(jit_tracer);
       } else if (getCurrentTrace()->mode == BaseTrace::TraceMode::eval) {
         auto array_tracer = std::make_shared<Array>(value);
+        array_tracer->setDevice(device);
         return py::cast(array_tracer);
       } else {
         throw std::runtime_error(

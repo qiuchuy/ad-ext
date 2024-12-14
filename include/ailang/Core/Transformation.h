@@ -13,10 +13,22 @@ namespace ainl::core {
 class JITTracer : public Tracer {
 public:
   JITTracer(const std::shared_ptr<Tracer> &tracer, const ir::ValuePtr &value)
-      : Tracer({}, nullptr), tracer_(tracer), value_(value) {}
+      : Tracer({}, nullptr), tracer_(tracer), value_(value) {
+        if (auto jit_tracer = asTracer<Array>(tracer)) {
+        device_ = jit_tracer->device();
+        } else if (auto array = asTracer<JITTracer>(tracer)) {
+          device_ = array->device();
+        }
+        }
   JITTracer(const std::vector<std::shared_ptr<Tracer>> &inputs,
             const std::shared_ptr<Primitive> &prim)
-      : Tracer(inputs, prim) {}
+      : Tracer(inputs, prim) {
+        if (auto array = asTracer<Array>(inputs[0])) {
+          device_ = array->device();
+        } else if (auto jit_tracer = asTracer<JITTracer>(inputs[0])) {
+          device_ = jit_tracer->device();
+        }
+      }
   static std::shared_ptr<JITTracer>
   create(const std::shared_ptr<Tracer> &tracer, const ir::ValuePtr &value) {
     return std::make_shared<JITTracer>(tracer, value);
@@ -41,11 +53,22 @@ public:
   std::shared_ptr<Tracer> clone() override {
     return std::make_shared<JITTracer>(*this);
   }
+  Device device() const { return device_; }
+  void setDevice(const std::string &deviceStr) {
+    if (deviceStr == "cpu") {
+      device_ = cpu;
+    } else if (deviceStr == "gpu") {
+      device_ = gpu;
+    } else {
+      throw std::invalid_argument("Invalid device type.");
+    }
+  }
   friend class BaseTrace;
 
 private:
   std::shared_ptr<Tracer> tracer_;
   ir::ValuePtr value_;
+  Device device_;
 };
 
 class JVPTracer : public Tracer {

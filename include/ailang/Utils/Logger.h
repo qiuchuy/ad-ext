@@ -21,7 +21,7 @@ enum LogPriority {
 
 class Logger {
 private:
-  LogPriority priority = DebugPriority;
+  LogPriority priority = CriticalPriority;
   std::mutex logMutex;
   const char *filePath = 0;
   FILE *file = 0;

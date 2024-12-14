@@ -73,7 +73,7 @@ class AilangSelfAttention(nn.Module):
         self.fc_out.weight = al.from_numpy(pd["fc_out.weight"])
         self.fc_out.bias = al.from_numpy(pd["fc_out.bias"])
 
-    @al.jit
+    @al.to_static
     def __call__(self, x, mask=None):
         # seq_len, d_model = x.shape  # 6 3
         Q = self.query(x)

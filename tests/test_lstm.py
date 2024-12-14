@@ -164,7 +164,7 @@ class ALLSTMCell(nn.Module):
     def sigmoid(self, x):
         return al.div(1.0, al.add(1.0, al.exp(al.neg(x))))
 
-    @al.jit
+    @al.to_static
     def forward(self, x_t, h_prev, c_prev):
         i = self.sigmoid(
             al.add(

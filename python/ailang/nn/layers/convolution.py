@@ -71,7 +71,6 @@ class Conv2d(Module):
         return al.from_numpy(np_array)
 
     def __call__(self, input):
-
         y = al.conv2d(
             input,
             self.weight,

@@ -3,6 +3,7 @@
 #include "ailang/IR/Symbol.h"
 #include "ailang/IR/Type.h"
 #include "ailang/Utils/Utils.h"
+#include <functional>
 #include <stdexcept>
 
 namespace ainl::ir {
