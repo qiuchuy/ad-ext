@@ -1,18 +1,42 @@
 import ailang as al
 import torch
 
-def measure_inference_time(model, input_tensor, runs=1):
+def measure_inference_time(model, input_tensor, show_min_max=False, runs=1):
     """
     Measure the average inference time of a model on CUDA.
 
     Args:
-        model (nn.Module): The PyTorch model to measure.
-        input_tensor (torch.Tensor): The input tensor for inference.
+        model (nn.Module): The model to measure.
+        input_tensor (Tensor): The input tensor for inference.
         runs (int): Number of runs to average the inference time over.
 
     Returns:
         float: Average inference time in milliseconds.
     """
+    if model == "lstm":
+        import subprocess
+        import re
+
+        def read_last_line(file_path):
+            with open(file_path, 'r') as file:
+                # Read the last line
+                last_line = file.readlines()[-1]
+                print(last_line.strip())
+            
+                # Extract min, max, mean values
+                match = re.search(r'\[min, max, mean\] = \[(\d+\.\d+), (\d+\.\d+), (\d+\.\d+)\]', last_line)
+                if match:
+                    min_val = float(match.group(1))
+                    max_val = float(match.group(2))
+                    mean_val = float(match.group(3))
+                    return min_val, max_val, mean_val
+                else:
+                    raise ValueError("The expected pattern was not found in the last line.")
+
+        print("Start fused kernel kernel optimized by AILang...")
+        subprocess.run("python /workspace/extension-cpp/test/test_extension.py > /workspace/extension-cpp/results/fused_lstm.log", shell=True, check=True)
+        file_path = '/workspace/extension-cpp/results/fused_lstm.log' 
+        return read_last_line(file_path)
 
     # Create CUDA events to measure time
     start_event = torch.cuda.Event(enable_timing=True)

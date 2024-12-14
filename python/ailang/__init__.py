@@ -7,6 +7,7 @@ from . import standard
 from . import nn
 from .prim import add as _add, mul as _mul, div as _div, pow as _pow
 from .standard import element_wise
+from .nn import lstm
 
 
 @element_wise
