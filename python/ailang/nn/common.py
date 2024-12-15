@@ -34,7 +34,7 @@ def measure_inference_time(model, input_tensor, show_min_max=False, runs=1):
                     raise ValueError("The expected pattern was not found in the last line.")
 
         print("Start fused kernel kernel optimized by AILang...")
-        subprocess.run("python /workspace/extension-cpp/test/test_extension.py > /workspace/extension-cpp/results/fused_lstm.log", shell=True, check=True)
+        subprocess.run("/opt/conda/bin/python /workspace/extension-cpp/test/test_extension.py > /workspace/extension-cpp/results/fused_lstm.log", shell=True, check=True)
         file_path = '/workspace/extension-cpp/results/fused_lstm.log' 
         return read_last_line(file_path)
 
