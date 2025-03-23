@@ -1,6 +1,6 @@
 [project]
 name = "ailang"
-version = "0.1"
+version = "1.0"
 description = "A language and compiler for custom Deep Learning operations"
 requires-python = ">=3.8"
 

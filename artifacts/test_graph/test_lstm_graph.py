@@ -79,8 +79,10 @@ class LSTMCell:
 
 
 # Example usage
-input_size = 3
-hidden_size = 2
+#input_size = 3
+#hidden_size = 2
+input_size = 4
+hidden_size = 4
 
 lstm_cell = LSTMCell(input_size, hidden_size)
 
@@ -89,8 +91,10 @@ import torch
 import torch.nn as nn
 
 # Initialize PyTorch LSTM cell
-input_size = 3
-hidden_size = 2
+#input_size = 3
+#hidden_size = 2
+input_size = 4
+hidden_size = 4
 lstm_cell_torch = nn.LSTMCell(input_size, hidden_size)
 
 # Set weights and biases to match NumPy LSTM cell
@@ -275,8 +279,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=1234, help="Random seed for numpy")
     parser.add_argument("--rtol", type=float, default=1e-3, help="Relative tolerance")
     parser.add_argument("--atol", type=float, default=1e-3, help="Absolute tolerance")
-    parser.add_argument("--input_size", type=int, default=3, help="input_size")
-    parser.add_argument("--hidden_size", type=int, default=2, help="hidden_size")
+    parser.add_argument("--input_size", type=int, default=4, help="input_size")
+    parser.add_argument("--hidden_size", type=int, default=4, help="hidden_size")
     parser.add_argument(
         "--data_type",
         type=str,

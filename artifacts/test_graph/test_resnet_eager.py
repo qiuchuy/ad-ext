@@ -712,6 +712,7 @@ if __name__ == "__main__":
 
     if b:
         delimiter("=", color=Colors.GREEN)
+        print("shape: ", a.shape)
         center("Numeric Check Passed!", Colors.GREEN)
         delimiter("=", color=Colors.GREEN)
     else:

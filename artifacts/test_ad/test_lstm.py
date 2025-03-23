@@ -82,8 +82,10 @@ class LSTMCell:
 
 
 # Example usage
-input_size = 3
-hidden_size = 2
+#input_size = 3
+#hidden_size = 2
+input_size = 4
+hidden_size = 4
 
 # Create input and initial states for comparison
 x = np.random.randn(input_size, 1).astype(np.float32)
@@ -337,8 +339,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=1234, help="Random seed for numpy")
     parser.add_argument("--rtol", type=float, default=1e-3, help="Relative tolerance")
     parser.add_argument("--atol", type=float, default=1e-3, help="Absolute tolerance")
-    parser.add_argument("--input_size", type=int, default=3, help="input_size")
-    parser.add_argument("--hidden_size", type=int, default=2, help="hidden_size")
+    parser.add_argument("--input_size", type=int, default=4, help="input_size")
+    parser.add_argument("--hidden_size", type=int, default=4, help="hidden_size")
     parser.add_argument(
         "--data_type",
         type=str,

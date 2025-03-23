@@ -249,6 +249,7 @@ if __name__ == "__main__":
         .detach()
         .numpy()
     )
+    print("torch_res's shape: ", torch_res.shape)
     delimiter("*", color=Colors.GREEN)
     Colors.print_color(f"AILang's Results is :\n {ailang_res}", Colors.BOLD)
     delimiter("*", color=Colors.GREEN)

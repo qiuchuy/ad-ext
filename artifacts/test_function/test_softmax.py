@@ -55,6 +55,7 @@ def torch_softmax(input_data: torch.tensor):
 def torch_softmax_gpu(input_data: torch.tensor):
     x = torch.from_numpy(input_data).cuda()
     res = torch.softmax(x, -1)
+    print(f"result shape: {res.shape}")
     return res
 
 
