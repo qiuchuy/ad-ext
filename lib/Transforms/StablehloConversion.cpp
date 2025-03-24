@@ -33,6 +33,7 @@
 #include "ailang/IR/Type.h"
 #include "ailang/IR/Value.h"
 #include "ailang/Transforms/StablehloConversion.h"
+#include "ailang/Transforms/Visualize.h"
 #include "ailang/Transforms/utils.h"
 #include "mlir/Support/LLVM.h"
 #include "stablehlo/dialect/StablehloOps.h"
@@ -1069,6 +1070,7 @@ std::string StableHLOLowering(ModulePtr module) {
   auto loweringPass =
       std::make_unique<StableHLOLoweringPass>(context, module->getName());
   loweringPass->run(module);
+  visualizeModule(loweringPass->module(), "vizdot", context);
   return mlirModuleToString(loweringPass->module());
 }
 

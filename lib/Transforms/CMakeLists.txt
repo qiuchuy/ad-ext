@@ -3,6 +3,7 @@ add_ailang_library(AILangTransform
     Pass.cpp
     StablehloConversion.cpp
     utils.cpp
+    Visualize.cpp
 
     DEPENDS AILangIR
 
@@ -10,6 +11,7 @@ add_ailang_library(AILangTransform
     MLIRDialect
     MLIRFuncDialect
     MLIRIR 
+    MLIRPass
     StablehloOps 
     StablehloReferenceApi
 )

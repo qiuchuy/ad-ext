@@ -7,6 +7,9 @@ import traceback
 import signal
 from pydantic import BaseModel
 
+import torch
+import ailang
+
 app = FastAPI()
 
 class ScriptRequest(BaseModel):
