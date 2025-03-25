@@ -109,6 +109,7 @@ public:
   }
   GraphPtr getGraph() { return graph; }
   std::string getName() { return name; }
+  void setName(const std::string& new_name) { name = new_name;}
   std::string str();
   explicit operator std::string() { return str(); }
 
