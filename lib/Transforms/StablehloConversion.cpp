@@ -1070,7 +1070,9 @@ std::string StableHLOLowering(ModulePtr module) {
   auto loweringPass =
       std::make_unique<StableHLOLoweringPass>(context, module->getName());
   loweringPass->run(module);
-  visualizeModule(loweringPass->module(), "vizdot", context);
+  auto name = module->getName();
+  if (name == "forward" || name == "backward") 
+  	visualizeModule(loweringPass->module(), module->getName(), context);
   return mlirModuleToString(loweringPass->module());
 }
 

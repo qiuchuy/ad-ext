@@ -116,13 +116,14 @@ def grad(f: Union[Callable]):
         flattened_args = flatten(*args)
         tracer_args = [arg for arg in flattened_args if isinstance(arg, tracer)]
         module = al.trace_impl(f, args)
-        print("print the forward graph of the module")
-        print("===================================")
-        print(module)
-        print("print the backward graph of the module")
-        print("===================================")
+        # print("print the forward graph of the module")
+        # print("===================================")
+        # print(module)
+        fwd_mlir_str = module.to_mlir()
+        # print("print the backward graph of the module")
+        # print("===================================")
         al.grad_impl(module)
-        print(module)
+        # print(module)
         mlir_str = module.to_mlir()
         # print(mlir_str)
         target_backend, ireert_config, device = check_device(*tracer_args)
@@ -144,7 +145,7 @@ def grad(f: Union[Callable]):
             if isinstance(arg, tracer)
         ]
 
-        _jitted_f = getattr(ctx.modules, f.__name__)[f.__name__]
+        _jitted_f = getattr(ctx.modules, "backward")["backward"]
         result = _jitted_f(*numpy_args)
         if isinstance(result, tuple):
             al_arrays = []

@@ -9,12 +9,14 @@ from pydantic import BaseModel
 
 import torch
 import ailang
+import ailang as al
 
 app = FastAPI()
 
 class ScriptRequest(BaseModel):
     code: str
     timeout: int = 30  # Default timeout in seconds
+    task: str
 
 class TimeoutException(Exception):
     pass
@@ -45,18 +47,39 @@ async def execute_code(request: ScriptRequest):
                 # Create a local environment but allow global imports
                 local_vars = {}
                 # Use globals() to allow importing external libraries
-                exec(request.code, globals(), local_vars)
+                try:
+                    code_to_execute = request.code
+                    exec(code_to_execute, globals(), local_vars)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
                 result = local_vars.get('result', None)
                 
             # Disable the alarm
             signal.alarm(0)
             
             # Return the captured output and result
-            return {
+            returned_payload = {
                 "success": True,
                 "output": output_buffer.getvalue(),
                 "result": result
             }
+            if request.task == "autodiff":
+                import subprocess
+                import base64
+                fwd_dot_file = "forward"
+                bwd_dot_file = "backward"
+                subprocess.check_call(["python", "postprocessing.py", "--input", fwd_dot_file])
+                subprocess.check_call(["python", "postprocessing.py", "--input", bwd_dot_file])
+                fwd_png_graph = subprocess.check_output(["dot", "-Tsvg", fwd_dot_file])
+                bwd_png_graph = subprocess.check_output(["dot", "-Tsvg", bwd_dot_file])
+                fwd_graph = base64.b64encode(fwd_png_graph).decode('utf-8')
+                bwd_graph = base64.b64encode(bwd_png_graph).decode('utf-8')
+                # Update returned_payload after encoding both graphs
+                returned_payload.update({
+                    "fwd_graph": fwd_graph,
+                    "bwd_graph": bwd_graph
+                })
+            return returned_payload
         except TimeoutException:
             return {
                 "success": False,
