@@ -22,6 +22,7 @@ void ainl::ir::autodiffOnModule(ModulePtr M) {
 
 void AutoDiff::run(ModulePtr M) {
   auto Graph = M->getGraph();
+  M->setName("backward");
   std::vector<NodePtr> Nodes;
   for (auto *Block : *Graph) {
     for (auto *Node : *Block) {

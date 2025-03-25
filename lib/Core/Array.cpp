@@ -177,8 +177,7 @@ Array::ArrayIterator::reference Array::ArrayIterator::operator*() const {
 
 std::ostream &operator<<(std::ostream &os, const Array &arr) {
   os << "Array(";
-  os<< std::endl;
-
+  // os<< std::endl;
   switch (arr.dtype().type) {
   case Dtype::DataType::BoolType:
     arr.print<bool>(os, 0, 0);
