@@ -15,6 +15,7 @@ using namespace ainl::ir;
 
 void ainl::ir::autodiffOnModule(ModulePtr M) {
   auto AD = std::make_unique<AutoDiff>(M);
+  M->setName("backward");
   LOG_DEBUG("%s", "Running autodiff on module");
   AD->run(M);
   LOG_DEBUG("%s", "Autodiff finished");
