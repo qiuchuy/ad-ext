@@ -11,6 +11,7 @@ import base64 # Ensure base64 is imported
 # Import pygraphviz
 import pygraphviz as pgv
 
+import ailang as al
 import torch # Assuming torch is a library you are using
 # import ailang as al # You already imported ailang, this might be redundant unless it's a submodule
 
@@ -118,7 +119,9 @@ async def execute_code(request: ScriptRequest):
                     try:
                         # Create a graph from the .dot file
                         graph = pgv.AGraph(dot_file_path, strict=False, directed=True)
-                        layout_engine = 'fdp'
+                        graph.graph_attr['ranksep'] = '0' # Set ranksep to 1.0 inches
+                        graph.graph_attr['newrank'] = True # Set ranksep to 1.0 inches
+                        layout_engine = 'dot'
                         graph.layout(prog=layout_engine) # Layout the graph using 'dot'
                         
                         # Render to SVG string in memory
