@@ -7,7 +7,7 @@ cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON ../llvm -DLLVM_ENABLE_PROJECTS="mlir;llvm" -DLLVM_TARGETS_TO_BUILD="host;NVPTX;AMDGPU"
 ninja
 ```
-## Build AILang
+## Build ad-ext
 ```bash
 git submodule update --init --recursive
 export LLVM_BUILD_DIR=/path/to/llvm-project/build

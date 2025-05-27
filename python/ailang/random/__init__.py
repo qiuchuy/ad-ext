@@ -1,1 +1,1 @@
-from .randinit import randn
+from .randinit import randn, zeros

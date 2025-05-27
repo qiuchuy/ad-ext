@@ -1,6 +1,6 @@
 from ._C.libailang import *
 from ._C.libailang import _register_eval_callback
-from .random import randn
+from .random import randn, zeros
 from .transform import to_static, grad
 from . import prim
 from . import standard
